@@ -391,11 +391,11 @@ function pill(key, label, options, cur) {
 const toggle = (key, label, on) => `<button class="pill tg ${on ? 'on' : ''}" data-toggle="${key}">${on ? '✓ ' : ''}${label}</button>`;
 function pillOptions(key) {
   const c = S.app.catalog;
-  const models = Object.fromEntries(Object.entries(c.videoModels).map(([k, m]) => [k, m.label]));
+  const models = Object.fromEntries(Object.entries(c.videoModels).map(([k, m]) => [k, (typeof MODEL_NAME !== 'undefined' && MODEL_NAME[k]) || m.label]));
   return {
     model: models, camera: CAM, style: STYLE, lang: LANG, platform: PLATFORM,
     voice: voiceOptions(),
-    tier: Object.fromEntries(Object.entries(c.tiers || {}).map(([k, t]) => [k, t.label])),
+    tier: Object.fromEntries(Object.entries(c.tiers || {}).map(([k, t]) => [k, TIER_NAME[k] || t.label])),
     variants: { 1: '1 ad', 3: '3 variations', 5: '5 variations' },
     kind: { tts: 'Voice-over', sfx: 'Sound effect', music: 'Music' },
     voiceEngine: { v3: 'ElevenLabs v3 · expressive', multilingual: 'ElevenLabs Multilingual' },
@@ -406,14 +406,19 @@ function pillOptions(key) {
     seconds: { 8: '8s', 10: '10s', 15: '15s', 20: '20s', 30: '30s' },
     count: { 1: '1', 2: '2', 4: '4' },
     scenes: { 3: '3', 4: '4', 5: '5', 6: '6' },
-    format: { talking: 'Talking UGC', showcase: 'Showcase b-roll' },
+    format: { talking: 'Someone talks about it', showcase: 'Show the product' },
     angle: { review: 'Honest review', problem: 'Problem → fix', unboxing: 'Unboxing', deal: 'Flash sale', beforeafter: 'Before & after', compare: 'Vs. pricey one' },
     textMode: { script: 'Exact script', topic: 'Topic → AI writes' },
   }[key];
 }
-const MODEL_SUB = () => Object.fromEntries(Object.entries(S.app.catalog.videoModels).map(([k, m]) => [k, `${m.tag} · ~${m.perSec} cr/s`]));
-const TIER_SUB = () => Object.fromEntries(Object.entries(S.app.catalog.tiers || {}).map(([k, t]) => [k, `${t.tag} · ${TIER_COST[k] || ''}`]));
-const TIER_COST = { motion: '≈ 9 cr per ad', lite: '≈ 32 cr', fast: '≈ 49 cr', studio: '≈ 170 cr', premium: '≈ 320 cr' };
+const MODEL_SUB = () => Object.fromEntries(Object.entries(S.app.catalog.videoModels).map(([k, m]) => [k, m.label]));
+const TIER_SUB = () => Object.fromEntries(Object.entries(S.app.catalog.tiers || {}).map(([k]) => [k, TIER_DESC[k] || '']));
+// Human names for the quality tiers (the server's keys stay motion/lite/fast/studio/premium)
+const TIER_NAME = { motion: 'Quick', lite: 'Standard', fast: 'Sharper', studio: 'Lip-sync', premium: 'Best' };
+const TIER_DESC = { motion: 'Moving photo + voice · cheapest', lite: 'Real AI video, up to 8s', fast: 'Sharper picture, up to 10s', studio: 'Mouth moves with the words', premium: 'Top quality lip-sync' };
+// Simple mode hides the advanced pills; "More options" shows them. Remembered per browser.
+let ADV = false; try { ADV = localStorage.getItem('kv-advanced') === '1'; } catch {}
+function setAdvanced(v) { ADV = !!v; try { localStorage.setItem('kv-advanced', ADV ? '1' : '0'); } catch {} }
 // ---------- plan access (what the current plan unlocks) ----------
 const RANK = { free: 0, basic: 1, starter: 2, creator: 3, pro: 4 };
 const PLAN_LABEL = { basic: 'Basic', starter: 'Starter', creator: 'Creator', pro: 'Pro' };
@@ -450,21 +455,33 @@ function renderComposer(keepFocus) {
   if (pr) refs.push(`<span class="ref"><img src="${pr.image}">${esc(pr.name)}<button data-unref="productId">×</button></span>`);
   const needs = m === 'ad' && !pr ? '<button class="add req" data-attach>＋ Product</button>' : m === 'talk' && !fr && !f.image ? '<button class="add req" data-attach>＋ Who talks</button>' : '';
   const P = (k, l) => pill(k, l, pillOptions(k), f[k]);
-  const pills = {
+  if (m === 'ad' && !ADV) f.approve = true; // simple mode always shows the script first
+  const simple = {
+    video: [P('camera', '🎥'), f.startImage ? '' : P('style', '')],
+    image: [P('style', '')],
+    ad: [P('lang', ''), P('format', '')],
+    talk: [P('lang', '')],
+    story: [P('lang', '')],
+    voice: [P('kind', ''), ...(f.kind === 'tts' ? [P('voice', '🎙'), P('lang', '')] : [P('length', '⏱')])],
+  };
+  const pills = ADV ? {
     video: [P('model', ''), P('aspect', ''), P('duration', ''), P('camera', '🎥'), f.startImage ? '' : P('style', ''), f.model !== 'h3-turbo' ? toggle('audio', 'Sound', f.audio) : ''],
     image: [P('aspect', ''), P('count', '×'), P('style', '')],
     ad: [P('format', ''), P('tier', '◆'), P('variants', '×'), P('angle', ''), P('platform', ''), P('lang', ''), P('seconds', ''), P('voice', '🎙'), toggle('approve', 'Approve first', f.approve), toggle('captions', 'Captions', f.captions)],
     talk: [P('textMode', ''), P('tier', '◆'), P('lang', ''), P('voice', '🎙'), f.textMode === 'topic' ? P('seconds', '') : '', toggle('captions', 'Captions', f.captions)],
     story: ['<button class="pill brainbtn" data-board title="Plan and edit the video scene by scene">🧩 Storyboard</button>', P('tier', '◆'), P('scenes', 'Scenes'), P('aspect', ''), P('style', ''), P('lang', ''), P('voice', '🎙'), f.tier === 'motion' ? '' : P('model', ''), toggle('captions', 'Captions', f.captions)],
     voice: [P('kind', ''), ...(f.kind === 'tts' ? [P('voice', '🎙'), String(f.voice).startsWith('el:') ? P('voiceEngine', '') : P('emotion', ''), P('lang', '')] : [P('length', '⏱')])],
-  }[m].filter(Boolean).join('');
+  }[m].filter(Boolean).join('') : simple[m].filter(Boolean).join('');
+  const more = `<button class="pill more" data-more>${ADV ? 'Fewer options' : 'More options'}</button>`;
+  const hint = !ADV && m === 'ad' ? `<p class="hint">${pr ? 'We write the hook and script and show them to you before making the video.' : 'Add your product, pick the language and hit Generate. You see the script before anything is made.'}</p>` : '';
   const prompt = m === 'talk' && f.textMode === 'topic' ? 'What should they talk about?' : m === 'voice' && f.kind === 'sfx' ? 'Describe the sound… e.g. whoosh transition with a soft pop' : m === 'voice' && f.kind === 'music' ? 'Describe the track… e.g. upbeat lo-fi for a product video, no vocals' : PLACEHOLDER[m];
   const tags = m === 'voice' && f.kind === 'tts' && f.voiceEngine === 'v3' && String(f.voice).startsWith('el:')
     ? `<div class="tagrow">${['[excited]', '[whispers]', '[laughs]', '[sighs]', '[curious]', '[sarcastic]', '[pause]'].map((t) => `<button class="tagchip" data-tag="${t}">${t}</button>`).join('')}</div>` : '';
   $('#composer').innerHTML = `
     ${m === 'voice' ? tags : `<div class="refs">${refs.join('')}${needs}<button class="add" data-attach title="Add friend, product or image">＋</button></div>`}
     <textarea class="prompt" id="prompt" rows="1" placeholder="${esc(prompt)}">${esc(f.prompt)}</textarea>
-    <div class="bar2">${pills}${m === 'voice' ? '' : `<button class="pill brainbtn" data-brain title="Let Kravitas study your photos and prompt">✨ Brainstorm${lastBrain ? '' : ' <span class="k">2 cr</span>'}</button>${lastBrain ? '<button class="pill" data-brain-last title="Show last brainstorm">↺</button>' : ''}`}<button class="go" id="go">Generate <span class="c" id="est">✦ …</span></button></div>`;
+    ${hint}
+    <div class="bar2">${pills}${m === 'voice' ? '' : `<button class="pill brainbtn" data-brain title="Get hooks and ideas from your photos (2 credits)">✨ Ideas</button>${lastBrain ? '<button class="pill" data-brain-last title="Show last ideas">↺</button>' : ''}`}${more}<button class="go" id="go">Generate <span class="c" id="est">✦ …</span></button></div>`;
   autosize();
   if (keepFocus) $('#prompt').focus();
   estimate();
@@ -854,6 +871,7 @@ document.addEventListener('click', (e) => {
   if (act) { e.preventDefault(); closeModal(); return ACTIONS[act.dataset.act]?.(); }
   if (t.closest('[data-brain]')) return runBrainstorm();
   if (t.closest('[data-brain-last]') && lastBrain) return showBrain(lastBrain, [friendById(lastBrain.ctx.friendId)?.photos?.[0], productById(lastBrain.ctx.productId)?.image].filter(Boolean));
+  if (t.closest('[data-more]')) { setAdvanced(!ADV); return renderComposer(); }
   if (t.closest('[data-guide-show]')) { flag('if-guide-hidden', false); return modal(guideHTML()); }
   const rl = t.closest('[data-rail]');
   if (rl) { const st = $('#strip'); return st.scrollBy({ left: +rl.dataset.rail * st.clientWidth * 0.8, behavior: 'smooth' }); }

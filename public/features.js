@@ -72,7 +72,8 @@ const HOME_TPLS = [
   ['🦸', 'Hero walk', 'walks through a misty mountain valley at golden hour', 'crane', '3d'],
   ['🧳', 'Travel vlog', 'explores the colourful streets of Melaka with a backpack', 'pan', 'anime'],
 ];
-const HOME_ASPECT = { '9:16': 'TikTok 9:16', '16:9': 'YouTube 16:9', '1:1': 'Square 1:1' };
+const MODEL_NAME = { 'h3-turbo': 'Quick (good value)', 'seedance-fast': 'With sound', 'kling-std': 'Smooth motion', 'kling-pro': 'Best quality' };
+const HOME_ASPECT = { '9:16': 'Portrait (TikTok, Reels)', '16:9': 'Landscape (YouTube)', '1:1': 'Square' };
 const SHOT = { prompt: 'walks through a misty mountain valley at golden hour', camera: 'dolly-in', model: 'h3-turbo', style: 'photo', aspect: '9:16', friendId: undefined, job: null };
 const hueOf = (t) => { let h = 0; for (const c of String(t)) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
 const STYLE_FX = { photo: '', cinematic: 'contrast(1.15) saturate(.9)', '3d': 'saturate(1.5) brightness(1.1)', anime: 'saturate(1.9) contrast(1.1) hue-rotate(-10deg)', clay: 'sepia(.35) saturate(1.2) blur(.4px)', storybook: 'saturate(.8) brightness(1.15) blur(.8px)' };
@@ -122,8 +123,6 @@ async function shotGo(btn) {
 function studioTick() {
   const strip = $('#hs-strip'); if (!strip) return;
   strip.innerHTML = stripHTML();
-  const made = S.jobs.filter((j) => (TOOL_JOBS[S.mode] || []).includes(j.tool));
-  const cnt = $('.zz-count'); if (cnt) cnt.innerHTML = `<b>${made.length}</b> made · <b>${made.reduce((a, j) => a + (j.cost || 0), 0)}</b> credits`;
   if (S.mode === 'edit') return editTick();
   if (S.mode !== 'video') return;
   const j = SHOT.job && S.jobs.find((x) => x.id === SHOT.job);
@@ -369,7 +368,7 @@ function renderMain() {
       <textarea class="in" id="hs-p" rows="2" maxlength="1500">${esc(SHOT.prompt)}</textarea>
       <div class="zz-row">
         <div><label class="l" for="hs-cam">Camera</label><select class="in" id="hs-cam">${Object.entries(CAM).map(([k, l]) => `<option value="${k}" ${k === SHOT.camera ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
-        <div><label class="l" for="hs-md">Model</label><select class="in" id="hs-md">${Object.entries(models).map(([k, m]) => { const lock = mp[k] && !canUse(mp[k]); return `<option value="${k}" ${k === SHOT.model ? 'selected' : ''}>${esc(m.label)} · ${esc(m.tag)}${lock ? ` · 🔒 ${PLAN_LABEL[mp[k]]}` : ''}</option>`; }).join('')}</select></div>
+        <div><label class="l" for="hs-md">Model</label><select class="in" id="hs-md">${Object.entries(models).map(([k, m]) => { const lock = mp[k] && !canUse(mp[k]); return `<option value="${k}" ${k === SHOT.model ? 'selected' : ''}>${esc(MODEL_NAME[k] || m.label)}${lock ? ` · 🔒 ${PLAN_LABEL[mp[k]]} plan` : ''}</option>`; }).join('')}</select></div>
         <div><label class="l" for="hs-ar">Format</label><select class="in" id="hs-ar">${Object.entries(HOME_ASPECT).map(([k, l]) => `<option value="${k}" ${k === SHOT.aspect ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
       </div>
       <button class="go zz-go" id="hs-go">Generate shot <span class="c" id="hs-est"></span></button>`;
@@ -400,7 +399,7 @@ function renderStudio() {
     <section class="bento zz">
       <div class="bx zz-shot">
         <div class="zz-tools" role="tablist">${TOOLS.map(([k, l]) => `<button role="tab" data-mode="${k}" class="${k === S.mode ? 'on' : ''}" aria-selected="${k === S.mode}">${l}</button>`).join('')}
-          <span class="zz-count"><b>${shots.length}</b> made · <b>${shots.reduce((a, j) => a + (j.cost || 0), 0)}</b> credits</span></div>
+</div>
         <div id="zz-main"></div>
       </div>
       <div class="bx zz-chars" id="zz-s1"></div>
