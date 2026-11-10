@@ -87,8 +87,8 @@ function stageHTML(label) {
   return `<div class="sc cam-${SHOT.camera}" style="--h:${hueOf(SHOT.prompt)};filter:${STYLE_FX[SHOT.style] || 'none'}"><div class="sun"></div><div class="mt"></div><div class="who ${who ? 'ph' : ''}" style="${who}">${who ? '' : esc((f?.name || 'K')[0].toUpperCase())}</div></div><div class="vig"></div><div class="hud">${esc(label)}</div>`;
 }
 // ---------- studio: one page for Ad, Video, Image, Voice and Schedule ----------
-const TOOLS = [['ad', 'Ad'], ['video', 'Video'], ['image', 'Image'], ['voice', 'Voice'], ['edit', 'Edit'], ['schedule', 'Schedule']];
-const TOOL_JOBS = { ad: ['ugc'], video: ['shot', 'story'], image: ['image', 'avatarGen'], voice: ['voice'], edit: ['edit'], schedule: ['ugc', 'shot', 'story', 'avatar'] };
+const TOOLS = [['ideas', 'Ideas'], ['ad', 'Ad'], ['video', 'Video'], ['image', 'Image'], ['voice', 'Voice'], ['edit', 'Edit'], ['schedule', 'Schedule']];
+const TOOL_JOBS = { ad: ['ugc'], video: ['shot', 'story'], image: ['image', 'avatarGen'], voice: ['voice'], edit: ['edit'], ideas: [], schedule: ['ugc', 'shot', 'story', 'avatar'] };
 function recentJobs() {
   const want = TOOL_JOBS[S.mode] || [];
   const mine = S.jobs.filter((j) => want.includes(j.tool));
@@ -281,6 +281,120 @@ document.addEventListener('click', (e) => {
   }
 });
 
+// ----- ideas: dump messy notes → ready prompts, saved to the library -----
+const IDEAS = { dump: '', productId: null, friendId: null, lang: 'ms', result: null, chat: [], busy: false, savedIds: new Set() };
+const IDEA_MODE = { ad: 'Ad', video: 'Video', image: 'Image' };
+const IDEA_EX = ['serum vit c rm29, flash sale weekend, target mak-mak 30-45, kawan cakap kulit cerah dlm seminggu, vibe santai, free shipping', 'new kopi brand, kopitiam vibes but modern, students + office workers, launch next month, nak content yg relatable', 'tudung bawal satin 15 colours, raya collection, price RM35, ready stock, before/after styling'];
+function ideasInput(extra = {}) {
+  return { mode: 'any', prompt: IDEAS.dump, productId: IDEAS.productId, friendId: IDEAS.friendId, lang: IDEAS.lang, ...extra };
+}
+function ideaKey(x) { return `${x.mode}|${x.title}|${x.prompt}`; }
+async function ideasRun(box) {
+  if (!IDEAS.dump.trim() && !IDEAS.productId && !IDEAS.friendId) { toast('Dump some ideas first, or pick a product', true); return $('#id-dump')?.focus(); }
+  IDEAS.busy = true; IDEAS.chat = []; renderIdeas(box);
+  try {
+    const r = await api('/api/brainstorm', ideasInput());
+    IDEAS.result = r; IDEAS.busy = false; renderIdeas(box);
+    load().then(() => { $('#credits').textContent = `✦ ${S.app.credits.toLocaleString()}`; });
+  } catch (e) { IDEAS.busy = false; renderIdeas(box); toast(e.message, true); if (e.code === 'credits' || e.code === 'plan') accountModal(); }
+}
+async function ideasRefine(box, text) {
+  const b = IDEAS.result; if (!b) return;
+  IDEAS.chat.push({ role: 'user', text }); IDEAS.busy = true; renderIdeas(box);
+  try {
+    const r = await api('/api/brainstorm', ideasInput({ chat: IDEAS.chat, previous: { summary: b.summary, audience: b.audience, sellingPoints: b.sellingPoints, hooks: b.hooks, ideas: b.ideas.map(({ title, mode, prompt }) => ({ title, mode, prompt })) } }));
+    IDEAS.result = r; IDEAS.chat.push({ role: 'ai', text: r.reply || 'Updated the ideas.' });
+    load().then(() => { $('#credits').textContent = `✦ ${S.app.credits.toLocaleString()}`; });
+  } catch (e) { IDEAS.chat.pop(); toast(e.message, true); }
+  IDEAS.busy = false; renderIdeas(box);
+}
+function useIdea(x) {
+  const mode = IDEA_MODE[x.mode] ? x.mode : 'ad';
+  const f = { ...DEFAULTS[mode](), ...(x.settings || {}), prompt: x.prompt || '' };
+  if (x.productId || IDEAS.productId) f.productId = x.productId || IDEAS.productId;
+  if (x.friendId || IDEAS.friendId) f.friendId = x.friendId || IDEAS.friendId;
+  if (mode === 'ad') { f.lang = x.lang || IDEAS.lang; f.approve = true; }
+  if (f.productId && !productById(f.productId)) f.productId = null;
+  if (f.friendId && !friendById(f.friendId)) f.friendId = null;
+  S.forms[mode] = f; setMode(mode); renderAll(); window.scrollTo({ top: 0, behavior: 'smooth' });
+  toast(`Idea loaded into ${IDEA_MODE[mode]}. ${mode === 'ad' && !f.productId ? 'Add your product, then Generate.' : 'Hit Generate when ready.'}`);
+}
+async function saveIdea(x, hook) {
+  try {
+    const row = await api('/api/ideas', { mode: x.mode, title: x.title, prompt: x.prompt, why: x.why, hook: hook || '', settings: x.settings || {}, productId: IDEAS.productId, friendId: IDEAS.friendId, lang: IDEAS.lang, source: IDEAS.dump.slice(0, 400) });
+    S.ideas = [row, ...(S.ideas || [])]; IDEAS.savedIds.add(ideaKey(x)); fillSides(); toast('Saved to your ideas');
+  } catch (e) { toast(e.message, true); }
+}
+function renderIdeas(box) {
+  const r = IDEAS.result;
+  const pr = productById(IDEAS.productId), fr = friendById(IDEAS.friendId);
+  box.innerHTML = `
+    <div class="id-wrap">
+      <div class="id-in">
+        <label class="l" for="id-dump">Dump your ideas</label>
+        <textarea class="in" id="id-dump" rows="5" maxlength="4000" placeholder="Messy is fine. Product, price, promo, who buys it, the vibe, what your friends said… BM or English.">${esc(IDEAS.dump)}</textarea>
+        <div class="id-ex"><small>Try:</small>${IDEA_EX.map((x, i) => `<button data-idex="${i}">${esc(x.slice(0, 38))}…</button>`).join('')}</div>
+        <div class="zz-row">
+          <div><label class="l" for="id-prod">Product (optional)</label><select class="in" id="id-prod"><option value="">None</option>${S.products.map((p) => `<option value="${p.id}" ${p.id === IDEAS.productId ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></div>
+          <div><label class="l" for="id-face">Character (optional)</label><select class="in" id="id-face"><option value="">None</option>${S.friends.map((f) => `<option value="${f.id}" ${f.id === IDEAS.friendId ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}</select></div>
+          <div><label class="l" for="id-lang">Language</label><select class="in" id="id-lang">${Object.entries(LANG).map(([k, l]) => `<option value="${k}" ${k === IDEAS.lang ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
+        </div>
+        <button class="go zz-go" id="id-go" ${IDEAS.busy ? 'disabled' : ''}>${IDEAS.busy && !r ? 'Thinking…' : r ? 'Think again' : 'Turn into prompts'} <span class="c">✦ 2</span></button>
+      </div>
+      ${r ? `<div class="id-out ${IDEAS.busy ? 'dim' : ''}">
+        <p class="b-sum">${esc(r.summary)}</p>
+        <div class="id-cols">
+          <div><h3>Who it's for</h3><p>${esc(r.audience)}</p></div>
+          <div><h3>Selling points</h3><ul>${r.sellingPoints.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>
+          <div><h3>Hooks</h3><ul class="hooks">${r.hooks.map((x, i) => `<li><span>${esc(x)}</span><button class="link" data-hook="${i}">Copy</button></li>`).join('')}</ul></div>
+        </div>
+        <h3>Ready-to-use prompts</h3>
+        <div class="id-ideas">${r.ideas.map((x, i) => `<div class="id-idea"><div class="id-top"><span class="mtag">${IDEA_MODE[x.mode] || x.mode}</span><b>${esc(x.title)}</b></div><p class="why">${esc(x.why)}</p><p class="pr">${esc(x.prompt)}</p>${Object.keys(x.settings || {}).length ? `<div class="chips">${Object.entries(x.settings).map(([k, v]) => `<span class="chip">${esc(k)}: ${esc(v)}</span>`).join('')}</div>` : ''}<div class="id-acts"><button class="btn pri" data-use="${i}">Use it →</button><button class="btn" data-save="${i}" ${IDEAS.savedIds.has(ideaKey(x)) ? 'disabled' : ''}>${IDEAS.savedIds.has(ideaKey(x)) ? '✓ Saved' : 'Save'}</button></div></div>`).join('')}</div>
+        <div class="id-acts" style="margin-top:8px"><button class="btn" id="id-saveall">Save all ${r.ideas.length}</button></div>
+        <div class="b-chat">
+          <h3>Tell Kravitas more</h3>
+          <div class="b-thread">${IDEAS.chat.map((c) => `<div class="msg ${c.role}">${esc(c.text)}</div>`).join('')}${IDEAS.busy ? '<div class="msg ai typing"><i></i><i></i><i></i></div>' : ''}</div>
+          <div class="b-sugg">${BRAIN_SUGGEST.map((x) => `<button class="chip" data-sugg="${esc(x)}">${esc(x)}</button>`).join('')}</div>
+          <form class="b-input" id="id-form"><input id="id-msg" class="in" maxlength="500" autocomplete="off" placeholder="e.g. buyers are mums 30–45, 20% off this week, keep it in BM"><button class="btn pri" type="submit" ${IDEAS.busy ? 'disabled' : ''}>Send ✦ 1</button></form>
+        </div>
+      </div>` : IDEAS.busy ? '<div class="id-think"><i></i><b>Kravitas is reading your notes…</b><small>Making sense of them, then writing prompts you can run right away.</small></div>' : ''}
+    </div>`;
+  const on = (id, ev, fn) => { const el = $(id); if (el) el[ev] = fn; };
+  on('#id-dump', 'oninput', (e) => { IDEAS.dump = e.target.value; });
+  on('#id-prod', 'onchange', (e) => { IDEAS.productId = e.target.value || null; });
+  on('#id-face', 'onchange', (e) => { IDEAS.friendId = e.target.value || null; });
+  on('#id-lang', 'onchange', (e) => { IDEAS.lang = e.target.value; });
+  on('#id-go', 'onclick', () => ideasRun(box));
+  box.querySelectorAll('[data-idex]').forEach((b) => (b.onclick = () => { IDEAS.dump = IDEA_EX[+b.dataset.idex]; $('#id-dump').value = IDEAS.dump; $('#id-dump').focus(); }));
+  box.querySelectorAll('[data-use]').forEach((b) => (b.onclick = () => useIdea(r.ideas[+b.dataset.use])));
+  box.querySelectorAll('[data-save]').forEach((b) => (b.onclick = () => { saveIdea(r.ideas[+b.dataset.save], r.hooks?.[0]); b.disabled = true; b.textContent = '✓ Saved'; }));
+  box.querySelectorAll('[data-hook]').forEach((b) => (b.onclick = () => { navigator.clipboard?.writeText(r.hooks[+b.dataset.hook]).then(() => toast('Hook copied')).catch(() => {}); }));
+  on('#id-saveall', 'onclick', async (e) => { e.target.disabled = true; for (const x of r.ideas) if (!IDEAS.savedIds.has(ideaKey(x))) await saveIdea(x, r.hooks?.[0]); renderIdeas(box); });
+  box.querySelectorAll('[data-sugg]').forEach((b) => (b.onclick = () => ideasRefine(box, b.dataset.sugg)));
+  on('#id-form', 'onsubmit', (e) => { e.preventDefault(); const v = $('#id-msg').value.trim(); if (v) ideasRefine(box, v); });
+}
+function savedIdeasCard() {
+  const list = (S.ideas || []).slice(0, 30);
+  return `<h2>Saved ideas</h2><p class="sub">Your prompt library. Tap one to load it into a tool.</p>
+    <div class="zz-chl id-saved">${list.length ? list.map((x) => `<div class="zz-ch static id-row"><button class="id-use" data-useidea="${x.id}"><span class="mtag">${IDEA_MODE[x.mode] || x.mode}</span><span><b>${esc(x.title)}</b><small>${esc((x.prompt || '').slice(0, 70))}</small></span></button><button class="id-del" data-delidea="${x.id}" aria-label="Delete">✕</button></div>`).join('') : '<p class="hs-empty">Nothing saved yet. Turn your notes into prompts, then Save the ones you like.</p>'}</div>`;
+}
+function brandCard() {
+  return `<h2>Brand notes</h2><p class="sub">Standing guidelines Kravitas follows in every idea and script: tone, must-say, never-say.</p>
+    <textarea class="in" id="brand-notes" rows="5" maxlength="1500" placeholder="e.g. Brand: GlowLab. Tone: santai, mesra, no hard sell. Always mention halal-certified. Never compare to other brands by name.">${esc(S.app.brand || '')}</textarea>
+    <div class="zz-two one" style="margin-top:8px"><button class="btn pri" data-savebrand>Save notes</button></div>`;
+}
+function ideasHelpCard() {
+  return `<h2>How Ideas works</h2><ol class="zz-steps"><li><b>Dump</b> everything you know: product, price, promo, buyers, vibe. Messy is fine.</li><li><b>Kravitas writes</b> the audience, hooks and ready-to-run prompts for Ad, Video and Image.</li><li><b>Save</b> the ones you like. They live in your library, and <b>Use it</b> loads one straight into the right tool.</li></ol>`;
+}
+document.addEventListener('click', async (e) => {
+  const u = e.target.closest('#presets [data-useidea]');
+  if (u) { const x = (S.ideas || []).find((i) => i.id === u.dataset.useidea); if (x) useIdea(x); return; }
+  const d = e.target.closest('#presets [data-delidea]');
+  if (d) { try { await api(`/api/ideas/${d.dataset.delidea}`, null, 'DELETE'); S.ideas = (S.ideas || []).filter((i) => i.id !== d.dataset.delidea); fillSides(); toast('Deleted'); } catch (err) { toast(err.message, true); } return; }
+  const sb = e.target.closest('#presets [data-savebrand]');
+  if (sb) { sb.disabled = true; try { const r = await api('/api/brand', { brand: $('#brand-notes').value }, 'PUT'); S.app.brand = r.brand; toast('Brand notes saved'); } catch (err) { toast(err.message, true); } sb.disabled = false; }
+});
+
 // ----- side cards -----
 function characterCard() {
   const cur = S.mode === 'video' ? shotFriend()?.id : F().friendId;
@@ -329,6 +443,7 @@ const SIDES = {
   voice: [voiceCard, presetCard, creditsCard],
   schedule: [readyCard, presetCard, creditsCard],
   edit: [libraryCard, soundsCard, finishCard],
+  ideas: [savedIdeasCard, brandCard, ideasHelpCard],
 };
 function fillSides() {
   const [a, b, c] = SIDES[S.mode] || SIDES.ad;
@@ -389,6 +504,7 @@ function renderMain() {
   }
   if (S.mode === 'schedule') { box.innerHTML = '<div id="sched"></div>'; renderSchedule(); return; }
   if (S.mode === 'edit') return renderEditor(box);
+  if (S.mode === 'ideas') return renderIdeas(box);
   box.innerHTML = `${mainStage()}<p class="zz-lead">${HERO[S.mode]?.[1] || ''}</p><div class="composer inline" id="composer"></div>`;
   renderComposer();
 }

@@ -89,6 +89,7 @@ const MODES = {
   story: { tool: 'story', label: 'Story', hidden: true },
   voice: { tool: 'voice', label: 'Voice' },
   edit: { label: 'Edit' }, // the editor has its own main card (no composer)
+  ideas: { label: 'Ideas' }, // brainstorm dump → prompts, saved to the library
   schedule: { label: 'Schedule', page: true },
 };
 const TOOL_MODE = Object.fromEntries(Object.entries(MODES).filter(([, v]) => v.tool).map(([m, v]) => [v.tool, m]));
@@ -163,7 +164,7 @@ const friendById = (id) => S.friends.find((f) => f.id === id);
 const productById = (id) => S.products.find((p) => p.id === id);
 
 async function load() {
-  [S.app, S.friends, S.products, S.jobs, S.voices] = await Promise.all([api('/api/state'), api('/api/friends'), api('/api/products'), api('/api/jobs?limit=120'), api('/api/voices').catch(() => [])]);
+  [S.app, S.friends, S.products, S.jobs, S.voices, S.ideas] = await Promise.all([api('/api/state'), api('/api/friends'), api('/api/products'), api('/api/jobs?limit=120'), api('/api/voices').catch(() => []), api('/api/ideas').catch(() => [])]);
   $('#credits').textContent = `✦ ${S.app.credits.toLocaleString()}`;
 }
 
@@ -481,7 +482,7 @@ function renderComposer(keepFocus) {
     ${m === 'voice' ? tags : `<div class="refs">${refs.join('')}${needs}<button class="add" data-attach title="Add friend, product or image">＋</button></div>`}
     <textarea class="prompt" id="prompt" rows="1" placeholder="${esc(prompt)}">${esc(f.prompt)}</textarea>
     ${hint}
-    <div class="bar2">${pills}${m === 'voice' ? '' : `<button class="pill brainbtn" data-brain title="Get hooks and ideas from your photos (2 credits)">✨ Ideas</button>${lastBrain ? '<button class="pill" data-brain-last title="Show last ideas">↺</button>' : ''}`}${more}<button class="go" id="go">Generate <span class="c" id="est">✦ …</span></button></div>`;
+    <div class="bar2">${pills}${m === 'voice' ? '' : `<button class="pill brainbtn" data-brain title="Get hooks and ideas from your photos (2 credits)">✨ Ideas</button>`}${more}<button class="go" id="go">Generate <span class="c" id="est">✦ …</span></button></div>`;
   autosize();
   if (keepFocus) $('#prompt').focus();
   estimate();
@@ -869,7 +870,7 @@ document.addEventListener('click', (e) => {
   if (go) { e.preventDefault(); closeModal(); setMode(go.dataset.go); renderAll(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
   const act = t.closest('[data-act]');
   if (act) { e.preventDefault(); closeModal(); return ACTIONS[act.dataset.act]?.(); }
-  if (t.closest('[data-brain]')) return runBrainstorm();
+  if (t.closest('[data-brain]')) { const f = F(); Object.assign(IDEAS, { dump: f.prompt || IDEAS.dump, productId: f.productId || IDEAS.productId, friendId: f.friendId || IDEAS.friendId, lang: f.lang || IDEAS.lang }); setMode('ideas'); renderAll(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
   if (t.closest('[data-brain-last]') && lastBrain) return showBrain(lastBrain, [friendById(lastBrain.ctx.friendId)?.photos?.[0], productById(lastBrain.ctx.productId)?.image].filter(Boolean));
   if (t.closest('[data-more]')) { setAdvanced(!ADV); return renderComposer(); }
   if (t.closest('[data-guide-show]')) { flag('if-guide-hidden', false); return modal(guideHTML()); }

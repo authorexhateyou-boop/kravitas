@@ -580,7 +580,7 @@
         : mg ? [`Wah, ${name} this one really can ah?`, `Don't buy ${name} until you watch this lah`, `${pr?.price || 'This price'} only? Confirm worth it`]
           : [`I didn't believe it until I tried ${name}`, `Don't buy ${name} before watching this`, `${pr?.price || 'This price'} for this? Seriously?`],
       ideas: [
-        { title: `${who} reviews it`, mode: 'ad', why: 'A real face talking to camera is the highest-converting format for a first launch.', prompt: points.slice(0, 2).join(', '), settings: { format: 'talking', angle: niche === 'skincare & beauty' ? 'beforeafter' : 'review' } },
+        { title: `${who} reviews it`, mode: 'ad', why: 'A real face talking to camera is the highest-converting format for a first launch.', prompt: points.slice(0, 2).join(', ') || (prompt || '').trim().slice(0, 300) || `Honest first impressions of ${name}`, settings: { format: 'talking', angle: niche === 'skincare & beauty' ? 'beforeafter' : 'review' } },
         { title: 'Premium orbit shot', mode: 'video', why: `The ${pi ? pi.name : 'product'} packaging pops in a slow orbit with soft light.`, prompt: `${who} holds ${name} up to the camera, soft window light, product label clearly visible`, settings: { camera: 'orbit', style } },
         { title: 'Shopee listing set', mode: 'image', why: 'Clean packshots lift listing click-through.', prompt: `${name} on a ${pi && pi.light > 0.6 ? 'soft pastel' : 'dark glossy'} background, soft shadows, premium e-commerce packshot`, settings: { style: 'studio', aspect: '1:1' } },
         { title: 'Problem → fix ad', mode: 'ad', why: 'Showing the problem first keeps viewers watching and builds trust before the link.', prompt: `3 reasons people are switching to ${name}${prompt ? ` (${prompt.slice(0, 40)})` : ''}`, settings: { format: 'showcase', angle: 'problem' } },
@@ -637,7 +637,7 @@
     if (p === '/api/state') {
       return {
         userId: 'preview', mode: 'preview', mock: true, ffmpeg: true, credits: st.credits, llmModel: 'google/gemini-2.5-flash', payments: true, plan: st.plan || null, social: true,
-        access: st.plan || 'free',
+        access: st.plan || 'free', brand: st.brand || '',
         catalog: { videoModels: VIDEO_MODELS, tiers: TIERS, modelPlan: MODEL_PLAN, maxVariants: MAX_VARIANTS, voices: VOICES, emotions: EMOTIONS, markup: MARKUP, avatars: AVATARS, price: PRICE, styles: [], cameras: [], platforms: { tiktok: 'TikTok Shop', shopee: 'Shopee', lazada: 'Lazada', instagram: 'Instagram Reels' }, angles: [], langs: ['ms', 'en', 'manglish'] },
       };
     }
@@ -660,6 +660,13 @@
       const f = { id: id(), name: body.name.trim(), note: body.note || '', photos: body.photos.slice(0, 3) };
       st.friends.unshift(f); save(); return f;
     }
+    if (p === '/api/ideas' && method === 'GET') return st.ideas || [];
+    if (p === '/api/ideas' && method === 'POST') {
+      const row = { id: id(), mode: ['ad', 'video', 'image'].includes(body.mode) ? body.mode : 'ad', title: String(body.title || body.prompt || 'Idea').slice(0, 80), prompt: String(body.prompt || '').slice(0, 2000), why: String(body.why || '').slice(0, 300), hook: String(body.hook || '').slice(0, 300), settings: body.settings || {}, productId: body.productId || null, friendId: body.friendId || null, lang: body.lang || 'ms', createdAt: Date.now() };
+      (st.ideas ||= []).unshift(row); save(); return row;
+    }
+    if (p.startsWith('/api/ideas/') && method === 'DELETE') { st.ideas = (st.ideas || []).filter((x) => x.id !== p.split('/').pop()); save(); return { ok: true }; }
+    if (p === '/api/brand' && method === 'PUT') { st.brand = String(body.brand || '').slice(0, 1500); save(); return { brand: st.brand }; }
     if (p === '/api/products' && method === 'GET') return st.products;
     if (p === '/api/products' && method === 'POST') {
       if (!body.name?.trim()) throw err('Product name is required');

@@ -11,7 +11,7 @@ About 30 minutes. You need accounts on supabase.com, railway.com, stripe.com and
 ## 1. Supabase (database, guest accounts, file storage)
 
 1. Create a project (region: **Southeast Asia (Singapore)**).
-2. **SQL Editor → New query** → paste all of `supabase/schema.sql` → **Run** (run it again after updates; it's safe to re-run). This creates the tables, the credit functions and the public `media` bucket.
+2. **SQL Editor → New query** → paste all of `supabase/schema.sql` → **Run** (run it again after updates; it's safe to re-run, and the Ideas library needs the latest version). This creates the tables, the credit functions and the public `media` bucket.
 3. **Authentication → Sign In / Providers → Anonymous Sign-Ins → Enable.** This gives every visitor a guest account with no sign-up.
 4. **Project Settings → API**: copy the **Project URL**, the **anon public** key and the **service_role** key. The service_role key is a full-access secret: put it only in Railway, never in the browser or GitHub.
 

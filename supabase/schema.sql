@@ -72,6 +72,17 @@ create table if not exists public.voices (
   created_at timestamptz not null default now()
 );
 
+-- Saved ideas (prompts the user keeps) and per-user preferences such as brand notes.
+create table if not exists public.ideas (
+  id text primary key,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  data jsonb not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists ideas_user_created on public.ideas (user_id, created_at desc);
+alter table public.ideas enable row level security;
+alter table public.profiles add column if not exists prefs jsonb not null default '{}';
+
 -- Scheduled / published social posts.
 create table if not exists public.posts (
   id text primary key,

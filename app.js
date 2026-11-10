@@ -164,7 +164,7 @@ app.get('/api/state', wrap(async (req, res) => {
   const profile = await store.getProfile(req.uid);
   res.json({
     userId: req.uid, mode: MODE, mock: isMock(), ffmpeg: hasFF(), credits: profile?.credits ?? 0,
-    llmModel: llmModel(), keySet: !!falKey(), payments: !!stripe, plan: profile?.plan || null, access: await planOf(req.uid), social: social.socialEnabled(),
+    llmModel: llmModel(), keySet: !!falKey(), payments: !!stripe, plan: profile?.plan || null, brand: String(profile?.prefs?.brand || ''), access: await planOf(req.uid), social: social.socialEnabled(),
     catalog: {
       videoModels: Object.fromEntries(Object.entries(VIDEO_MODELS).map(([k, m]) => [k, { label: m.label, tag: m.tag, perSec: m.perSec }])),
       tiers: Object.fromEntries(Object.entries(TIERS).map(([k, t]) => [k, { label: t.label, tag: t.tag, maxSec: t.maxSec, plan: t.plan }])),
@@ -294,6 +294,7 @@ app.delete('/api/products/:id', wrap(async (req, res) => {
 // ---------- brainstorm ----------
 app.post('/api/brainstorm', limit('brainstorm', 30, 60), wrap(async (req, res) => {
   const { mode, prompt, friendId, productId, image, lang, chat, previous } = req.body;
+  const brand = String((await store.getProfile(req.uid))?.prefs?.brand || '');
   const followUp = Array.isArray(chat) && chat.length > 0;
   const cost = followUp ? FOLLOWUP_COST : BRAINSTORM_COST;
   const [friend, product] = await Promise.all([
@@ -304,11 +305,33 @@ app.post('/api/brainstorm', limit('brainstorm', 30, 60), wrap(async (req, res) =
   if (!friend && !product && !img && !String(prompt || '').trim()) throw fail('Add a photo, a product or a prompt first so there is something to think about');
   await store.adjust(req.uid, -cost, followUp ? 'Brainstorm follow-up' : 'Brainstorm', null);
   try {
-    res.json(await brainstorm({ mode, prompt: String(prompt || '').slice(0, 2000), friend, product, image: img, lang, chat, previous }));
+    res.json(await brainstorm({ mode, prompt: String(prompt || '').slice(0, 4000), friend, product, image: img, lang, chat, previous, brand }));
   } catch (e) {
     await store.adjust(req.uid, cost, 'Refund (brainstorm failed)', null, true);
     throw e;
   }
+}));
+
+// ---------- ideas library + brand notes ----------
+app.get('/api/ideas', wrap(async (req, res) => res.json(await store.list('ideas', req.uid))));
+app.post('/api/ideas', limit('create', 60, 60), wrap(async (req, res) => {
+  const b = req.body || {};
+  const mode = ['ad', 'video', 'image'].includes(b.mode) ? b.mode : 'ad';
+  const title = str(b.title, 80).trim(), prompt = str(b.prompt, 2000).trim();
+  if (!title && !prompt) throw fail('An idea needs a title or a prompt');
+  const settings = b.settings && typeof b.settings === 'object' ? Object.fromEntries(Object.entries(b.settings).slice(0, 12).map(([k, v]) => [str(k, 30), str(v, 60)])) : {};
+  const row = await store.insert('ideas', req.uid, {
+    id: newId(), mode, title: title || prompt.slice(0, 60), prompt, why: str(b.why, 300), hook: str(b.hook, 300), settings,
+    productId: b.productId ? str(b.productId, 60) : null, friendId: b.friendId ? str(b.friendId, 60) : null, lang: str(b.lang || 'ms', 10), source: str(b.source, 400),
+  });
+  res.json(row);
+}));
+app.delete('/api/ideas/:id', wrap(async (req, res) => { await store.remove('ideas', req.uid, req.params.id); res.json({ ok: true }); }));
+app.put('/api/brand', limit('create', 30, 60), wrap(async (req, res) => {
+  const brand = str(req.body?.brand, 1500);
+  const p = await store.getProfile(req.uid);
+  await store.setProfile(req.uid, { prefs: { ...(p?.prefs || {}), brand } });
+  res.json({ brand });
 }));
 
 // ---------- voices (clone your own) ----------
@@ -377,8 +400,8 @@ app.post('/api/social/posts', limit('posts', 60, 60), wrap(async (req, res) => {
 
 // ---------- jobs ----------
 async function lookups(uid) {
-  const [friends, products, voices] = await Promise.all([store.list('friends', uid), store.list('products', uid), store.list('voices', uid)]);
-  return { friends, products, voices, friend: (id) => friends.find((f) => f.id === id), product: (id) => products.find((p) => p.id === id) };
+  const [friends, products, voices, profile] = await Promise.all([store.list('friends', uid), store.list('products', uid), store.list('voices', uid), store.getProfile(uid)]);
+  return { friends, products, voices, brand: String(profile?.prefs?.brand || ''), friend: (id) => friends.find((f) => f.id === id), product: (id) => products.find((p) => p.id === id) };
 }
 const str = (v, n) => String(v ?? '').slice(0, n);
 function cleanInput(input) {
