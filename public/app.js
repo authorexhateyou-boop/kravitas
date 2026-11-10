@@ -444,11 +444,12 @@ function voiceOptions() {
 }
 const voiceSub = (k) => (k.startsWith('clone:') ? 'Cloned voice' : k.startsWith('mm:') ? 'MiniMax · natural Bahasa Melayu' : 'ElevenLabs');
 
+const REFS_OK = new Set(['ad', 'video', 'image']);
 function renderComposer(keepFocus) {
   if (!$('#composer') || !MODES[S.mode]?.tool) return;
   const f = F();
   const m = S.mode;
-  const refs = [];
+  const refs = REFS_OK.has(m) ? IDEAS.refs.map((r, i) => `<span class="ref">${r.kind === 'image' ? `<img src="${r.url}">` : '📄 '}${esc((r.name || 'File').slice(0, 18))}<button data-cpun="${i}">×</button></span>`) : [];
   const fr = friendById(f.friendId), pr = productById(f.productId);
   if (f.startImage) refs.push(`<span class="ref"><img src="${f.startImage}">Start frame<button data-unref="startImage">×</button></span>`);
   if (f.image) refs.push(`<span class="ref"><img src="${f.image}">Photo<button data-unref="image">×</button></span>`);
@@ -479,10 +480,12 @@ function renderComposer(keepFocus) {
   const tags = m === 'voice' && f.kind === 'tts' && f.voiceEngine === 'v3' && String(f.voice).startsWith('el:')
     ? `<div class="tagrow">${['[excited]', '[whispers]', '[laughs]', '[sighs]', '[curious]', '[sarcastic]', '[pause]'].map((t) => `<button class="tagchip" data-tag="${t}">${t}</button>`).join('')}</div>` : '';
   $('#composer').innerHTML = `
-    ${m === 'voice' ? tags : `<div class="refs">${refs.join('')}${needs}<button class="add" data-attach title="Add friend, product or image">＋</button></div>`}
+    ${m === 'voice' ? tags : `<div class="refs">${refs.join('')}${needs}<button class="add" data-attach title="Add friend, product or image">＋</button>${REFS_OK.has(m) ? `<label class="add clip" title="Attach images, PDF, Word or text as references">📎<input type="file" id="cp-file" accept="${REF_ACCEPT}" multiple hidden></label>` : ''}</div>`}
     <textarea class="prompt" id="prompt" rows="1" placeholder="${esc(prompt)}">${esc(f.prompt)}</textarea>
     ${hint}
-    <div class="bar2">${pills}${m === 'voice' ? '' : `<button class="pill brainbtn" data-brain title="Get hooks and ideas from your photos (2 credits)">✨ Ideas</button>`}${more}<button class="go" id="go">Generate <span class="c" id="est">✦ …</span></button></div>`;
+    <div class="bar2">${pills}${m === 'voice' ? '' : `<button class="pill brainbtn" data-brain title="Get hooks and ideas from your photos (2 credits)">${IDEAS.refs.length && REFS_OK.has(m) ? '✨ Prompt from files' : '✨ Ideas'}</button>`}${more}<button class="go" id="go">Generate <span class="c" id="est">✦ …</span></button></div>`;
+  $('#cp-file')?.addEventListener('change', (e) => attachRefs([...e.target.files], () => renderComposer()));
+  $('#composer').querySelectorAll('[data-cpun]').forEach((b) => (b.onclick = () => { IDEAS.refs.splice(+b.dataset.cpun, 1); renderComposer(); }));
   autosize();
   if (keepFocus) $('#prompt').focus();
   estimate();
@@ -654,7 +657,7 @@ function friendModal() {
       if (!$('#fok', m).checked) { toast('Please confirm you have permission to use these photos', true); e.target.disabled = false; return; }
       const fr = await api('/api/friends', { name: $('#fn', m).value, photos, consent: true });
       await load();
-      F().friendId = fr.id;
+      if (S.mode === 'ideas') IDEAS.friendId = fr.id; else F().friendId = fr.id;
       closeModal(); renderAll(); toast(`${fr.name} added`);
     } catch (err) { toast(err.message, true); e.target.disabled = false; }
   };
@@ -676,7 +679,7 @@ function productModal() {
       e.target.textContent = 'Saving…';
       const p = await api('/api/products', { name: $('#pn', m).value, price: $('#pp', m).value, benefits: $('#pb', m).value, image, cutout: $('#cut', m).checked });
       await load();
-      F().productId = p.id;
+      if (S.mode === 'ideas') IDEAS.productId = p.id; else F().productId = p.id;
       closeModal(); renderAll(); toast(`${p.name} added`);
     } catch (err) { toast(err.message, true); e.target.disabled = false; e.target.textContent = 'Save product'; }
   };
@@ -870,7 +873,7 @@ document.addEventListener('click', (e) => {
   if (go) { e.preventDefault(); closeModal(); setMode(go.dataset.go); renderAll(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
   const act = t.closest('[data-act]');
   if (act) { e.preventDefault(); closeModal(); return ACTIONS[act.dataset.act]?.(); }
-  if (t.closest('[data-brain]')) { const f = F(); Object.assign(IDEAS, { dump: f.prompt || IDEAS.dump, productId: f.productId || IDEAS.productId, friendId: f.friendId || IDEAS.friendId, lang: f.lang || IDEAS.lang }); setMode('ideas'); renderAll(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+  if (t.closest('[data-brain]')) { const f = F(); Object.assign(IDEAS, { dump: f.prompt || IDEAS.dump, productId: f.productId || IDEAS.productId, friendId: f.friendId || IDEAS.friendId, lang: f.lang || IDEAS.lang, autorun: !!(IDEAS.refs.length && REFS_OK.has(S.mode)) }); setMode('ideas'); renderAll(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
   if (t.closest('[data-brain-last]') && lastBrain) return showBrain(lastBrain, [friendById(lastBrain.ctx.friendId)?.photos?.[0], productById(lastBrain.ctx.productId)?.image].filter(Boolean));
   if (t.closest('[data-more]')) { setAdvanced(!ADV); return renderComposer(); }
   if (t.closest('[data-guide-show]')) { flag('if-guide-hidden', false); return modal(guideHTML()); }

@@ -327,6 +327,24 @@ async function saveIdea(x, hook) {
     S.ideas = [row, ...(S.ideas || [])]; IDEAS.savedIds.add(ideaKey(x)); fillSides(); toast('Saved to your ideas');
   } catch (e) { toast(e.message, true); }
 }
+function refChips() {
+  return (IDEAS.refs.length || IDEAS.uploading) ? `<div class="id-refs">${IDEAS.refs.map((r, i) => `<span class="id-ref ${r.kind}">${r.kind === 'image' ? `<img src="${r.url}" alt="">` : '<i>📄</i>'}<span><b>${esc(r.name || (r.kind === 'image' ? 'Image' : 'Document'))}</b><small>${r.kind === 'image' ? 'Shown to Kravitas' : `${(r.chars || r.text?.length || 0).toLocaleString()} characters read`}</small></span><button type="button" data-unref="${i}" aria-label="Remove">✕</button></span>`).join('')}${IDEAS.uploading ? `<span class="id-ref busy"><i class="spin"></i><span><b>Reading ${IDEAS.uploading} file${IDEAS.uploading > 1 ? 's' : ''}…</b><small>PDF and Word are read as text</small></span></span>` : ''}</div>` : '';
+}
+// Shared by the Ideas chatbox and the studio composer: upload each file, keep the result in IDEAS.refs.
+async function attachRefs(files, done) {
+  files = files.slice(0, 8 - IDEAS.refs.length);
+  if (!files.length) return;
+  IDEAS.uploading += files.length; done();
+  for (const f of files) {
+    try {
+      if (f.size > 10 * 1024 * 1024) throw new Error(`${f.name} is too large (max 10 MB)`);
+      const dataUrl = await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => no(new Error(`Could not read ${f.name}`)); r.readAsDataURL(f); });
+      const ref = await api('/api/refs', { file: dataUrl, name: f.name || 'pasted-image.png' });
+      IDEAS.refs.push({ ...ref, name: ref.name || f.name });
+    } catch (err) { toast(err.message, true); }
+    IDEAS.uploading -= 1; done();
+  }
+}
 function renderIdeas(box) {
   const r = IDEAS.result;
   const pr = productById(IDEAS.productId), fr = friendById(IDEAS.friendId);
@@ -334,19 +352,21 @@ function renderIdeas(box) {
     <div class="id-wrap">
       <div class="id-in">
         <label class="l" for="id-dump">Dump your ideas</label>
-        <textarea class="in" id="id-dump" rows="5" maxlength="4000" placeholder="Messy is fine. Product, price, promo, who buys it, the vibe, what your friends said… BM or English.">${esc(IDEAS.dump)}</textarea>
+        <div class="id-chat" id="id-chat">
+          ${refChips()}
+          <textarea id="id-dump" rows="4" maxlength="4000" placeholder="Messy is fine. Type, paste, or drop files here: product sheets, screenshots, PDF, Word. Kravitas reads them and writes the prompts.">${esc(IDEAS.dump)}</textarea>
+          <div class="id-bar">
+            <label class="id-clip ${IDEAS.refs.length >= 8 ? 'off' : ''}" title="Attach images, PDF, Word or text">📎 Attach<input type="file" id="id-file" accept="${REF_ACCEPT}" multiple hidden></label>
+            <span class="id-n">${IDEAS.refs.length ? `${IDEAS.refs.length}/8 files` : 'images · PDF · Word · text'}</span>
+            <button class="go zz-go" id="id-go" ${IDEAS.busy ? 'disabled' : ''}>${IDEAS.busy && !r ? 'Thinking…' : r ? 'Think again' : 'Turn into prompts'} <span class="c">✦ 2</span></button>
+          </div>
+        </div>
         <div class="id-ex"><small>Try:</small>${IDEA_EX.map((x, i) => `<button data-idex="${i}">${esc(x.slice(0, 38))}…</button>`).join('')}</div>
-        <label class="l">References <small class="muted">· images, PDF, Word, text · the more the better</small></label>
-        <div class="id-refs">${IDEAS.refs.map((r, i) => `<span class="id-ref ${r.kind}">${r.kind === 'image' ? `<img src="${r.url}" alt="">` : '<i>📄</i>'}<span><b>${esc(r.name || (r.kind === 'image' ? 'Image' : 'Document'))}</b><small>${r.kind === 'image' ? 'Shown to Kravitas' : `${(r.chars || r.text?.length || 0).toLocaleString()} characters read`}</small></span><button data-unref="${i}" aria-label="Remove">✕</button></span>`).join('')}
-          ${IDEAS.uploading ? `<span class="id-ref busy"><i class="spin"></i><span><b>Reading ${IDEAS.uploading} file${IDEAS.uploading > 1 ? 's' : ''}…</b><small>PDF and Word are read as text</small></span></span>` : ''}
-          ${IDEAS.refs.length < 8 ? `<label class="id-addref">＋ Add files<input type="file" id="id-file" accept="${REF_ACCEPT}" multiple hidden></label>` : ''}
-          <p class="id-refhint">Brand decks, product sheets, competitor screenshots, past captions that worked, customer reviews. Kravitas reads them before writing.</p></div>
         <div class="zz-row">
-          <div><label class="l" for="id-prod">Product (optional)</label><select class="in" id="id-prod"><option value="">None</option>${S.products.map((p) => `<option value="${p.id}" ${p.id === IDEAS.productId ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></div>
-          <div><label class="l" for="id-face">Character (optional)</label><select class="in" id="id-face"><option value="">None</option>${S.friends.map((f) => `<option value="${f.id}" ${f.id === IDEAS.friendId ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}</select></div>
+          <div><label class="l" for="id-prod">Product (optional)</label><div class="id-selrow"><select class="in" id="id-prod"><option value="">None</option>${S.products.map((p) => `<option value="${p.id}" ${p.id === IDEAS.productId ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select><button class="id-plus" data-newprod title="Add a product photo">＋</button></div></div>
+          <div><label class="l" for="id-face">Character (optional)</label><div class="id-selrow"><select class="in" id="id-face"><option value="">None</option>${S.friends.map((f) => `<option value="${f.id}" ${f.id === IDEAS.friendId ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}</select><button class="id-plus" data-newface title="Add a character">＋</button></div></div>
           <div><label class="l" for="id-lang">Language</label><select class="in" id="id-lang">${Object.entries(LANG).map(([k, l]) => `<option value="${k}" ${k === IDEAS.lang ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
         </div>
-        <button class="go zz-go" id="id-go" ${IDEAS.busy ? 'disabled' : ''}>${IDEAS.busy && !r ? 'Thinking…' : r ? 'Think again' : 'Turn into prompts'} <span class="c">✦ 2</span></button>
       </div>
       ${r ? `<div class="id-out ${IDEAS.busy ? 'dim' : ''}">
         <p class="b-sum">${esc(r.summary)}</p>
@@ -362,7 +382,7 @@ function renderIdeas(box) {
           <h3>Tell Kravitas more</h3>
           <div class="b-thread">${IDEAS.chat.map((c) => `<div class="msg ${c.role}">${esc(c.text)}</div>`).join('')}${IDEAS.busy ? '<div class="msg ai typing"><i></i><i></i><i></i></div>' : ''}</div>
           <div class="b-sugg">${BRAIN_SUGGEST.map((x) => `<button class="chip" data-sugg="${esc(x)}">${esc(x)}</button>`).join('')}</div>
-          <form class="b-input" id="id-form"><input id="id-msg" class="in" maxlength="500" autocomplete="off" placeholder="e.g. buyers are mums 30–45, 20% off this week, keep it in BM"><button class="btn pri" type="submit" ${IDEAS.busy ? 'disabled' : ''}>Send ✦ 1</button></form>
+          <form class="b-input" id="id-form"><label class="id-clip sm ${IDEAS.refs.length >= 8 ? 'off' : ''}" title="Attach more files">📎<input type="file" id="id-file2" accept="${REF_ACCEPT}" multiple hidden></label><input id="id-msg" class="in" maxlength="500" autocomplete="off" placeholder="e.g. buyers are mums 30–45, 20% off this week, keep it in BM"><button class="btn pri" type="submit" ${IDEAS.busy ? 'disabled' : ''}>Send ✦ 1</button></form>
         </div>
       </div>` : IDEAS.busy ? '<div class="id-think"><i></i><b>Kravitas is reading your notes…</b><small>Making sense of them, then writing prompts you can run right away.</small></div>' : ''}
     </div>`;
@@ -372,20 +392,20 @@ function renderIdeas(box) {
   on('#id-face', 'onchange', (e) => { IDEAS.friendId = e.target.value || null; });
   on('#id-lang', 'onchange', (e) => { IDEAS.lang = e.target.value; });
   on('#id-go', 'onclick', () => ideasRun(box));
-  on('#id-file', 'onchange', async (e) => {
-    const files = [...e.target.files].slice(0, 8 - IDEAS.refs.length);
-    if (!files.length) return;
-    IDEAS.uploading += files.length; renderIdeas(box);
-    for (const f of files) {
-      try {
-        if (f.size > 10 * 1024 * 1024) throw new Error(`${f.name} is too large (max 10 MB)`);
-        const dataUrl = await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => no(new Error(`Could not read ${f.name}`)); r.readAsDataURL(f); });
-        const ref = await api('/api/refs', { file: dataUrl, name: f.name });
-        IDEAS.refs.push({ ...ref, name: ref.name || f.name });
-      } catch (err) { toast(err.message, true); }
-      IDEAS.uploading -= 1; renderIdeas(box);
-    }
-  });
+  if (IDEAS.autorun) { IDEAS.autorun = false; setTimeout(() => ideasRun(box), 0); }
+  const again = () => renderIdeas(box);
+  on('#id-file', 'onchange', (e) => attachRefs([...e.target.files], again));
+  on('#id-file2', 'onchange', (e) => attachRefs([...e.target.files], again));
+  const chat = $('#id-chat');
+  if (chat) {
+    chat.ondragover = (e) => { e.preventDefault(); chat.classList.add('drop'); };
+    chat.ondragleave = () => chat.classList.remove('drop');
+    chat.ondrop = (e) => { e.preventDefault(); chat.classList.remove('drop'); attachRefs([...(e.dataTransfer?.files || [])], again); };
+    chat.onpaste = (e) => { const fl = [...(e.clipboardData?.files || [])]; if (fl.length) { e.preventDefault(); attachRefs(fl, again); } };
+  }
+  box.querySelector('[data-newprod]')?.addEventListener('click', () => productModal());
+  box.querySelector('[data-newface]')?.addEventListener('click', () => friendModal());
+  //on('[data-newprod]', 'onclick', () => productModal());
   box.querySelectorAll('[data-unref]').forEach((b) => (b.onclick = () => { IDEAS.refs.splice(+b.dataset.unref, 1); renderIdeas(box); }));
   box.querySelectorAll('[data-idex]').forEach((b) => (b.onclick = () => { IDEAS.dump = IDEA_EX[+b.dataset.idex]; $('#id-dump').value = IDEAS.dump; $('#id-dump').focus(); }));
   box.querySelectorAll('[data-use]').forEach((b) => (b.onclick = () => useIdea(r.ideas[+b.dataset.use])));
