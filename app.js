@@ -10,8 +10,8 @@ import { config, MODE, PACKS, PLANS, ROOT } from './lib/config.js';
 import { store } from './lib/store/index.js';
 import { saveDataUrl, saveAudioDataUrl, uid as newId } from './lib/media.js';
 import { isMock, falKey, llmModel, run as falRun, toRemote } from './lib/fal.js';
-import { TOOLS, STYLES, CAMERAS, createJob, expireStale, removeBg, live, planStory } from './lib/pipelines.js';
-import { VIDEO_MODELS, VOICES, PRICE, TIERS, EMOTIONS, MODELS, MARKUP, MODEL_PLAN, MAX_VARIANTS, allowed } from './lib/models.js';
+import { TOOLS, STYLES, CAMERAS, createJob, expireStale, removeBg, live, planStory, planPanels, drawPanel } from './lib/pipelines.js';
+import { VIDEO_MODELS, VOICES, PRICE, TIERS, EMOTIONS, MODELS, MARKUP, MODEL_PLAN, MAX_VARIANTS, allowed, imageCost } from './lib/models.js';
 import { AVATAR_PRESETS } from './lib/avatars.js';
 import * as social from './lib/social.js';
 import { PLATFORMS, ANGLES, LANGS } from './lib/prompts.js';
@@ -382,6 +382,48 @@ app.post('/api/storyboard/plan', limit('plan', 40, 60), wrap(async (req, res) =>
   }
 }));
 
+// ---------- idea → storyboard panels (sketch first, real keyframes on request) ----------
+const ASPECTS = ['9:16', '16:9', '1:1', '4:5'];
+app.post('/api/panels/plan', limit('plan', 30, 60), wrap(async (req, res) => {
+  const b = req.body || {};
+  const prompt = str(b.prompt, 2000).trim();
+  if (!prompt) throw fail('Pick an idea first');
+  const L = await lookups(req.uid);
+  const n = Math.min(6, Math.max(3, +b.panels || 4));
+  const aspect = ASPECTS.includes(b.aspect) ? b.aspect : '9:16';
+  const cost = PRICE.llm + n * imageCost('lite', false);
+  await store.adjust(req.uid, -cost, 'Storyboard (plan + sketches)', null);
+  let spent = 0;
+  const ctx = { charge(c) { spent += c; } };
+  try {
+    const plan = await planPanels(ctx, { prompt, lang: b.lang, panels: n, product: L.product(b.productId), friend: L.friend(b.friendId), brand: L.brand, notes: str(b.notes, 3000) });
+    plan.panels = await Promise.all(plan.panels.map(async (x) => ({ ...x, image: await drawPanel(ctx, { kind: 'sketch', visual: x.visual, look: plan.look, aspect }), kind: 'sketch' })));
+    res.json({ ...plan, aspect, cost });
+  } catch (e) {
+    await store.adjust(req.uid, cost, 'Refund (storyboard failed)', null, true);
+    throw e;
+  }
+}));
+app.post('/api/panels/draw', limit('draw', 120, 60), wrap(async (req, res) => {
+  const b = req.body || {};
+  const kind = b.kind === 'keyframe' ? 'keyframe' : 'sketch';
+  const visual = str(b.visual, 600).trim();
+  if (!visual) throw fail('Describe what happens in this panel first');
+  const L = await lookups(req.uid);
+  const aspect = ASPECTS.includes(b.aspect) ? b.aspect : '9:16';
+  const quality = kind === 'keyframe' && allowed(await planOf(req.uid), 'creator') ? 'full' : 'lite';
+  const f = L.friend(b.friendId), p = L.product(b.productId);
+  const cost = kind === 'sketch' ? imageCost('lite', false) : imageCost(quality, !!(f || p));
+  await store.adjust(req.uid, -cost, kind === 'sketch' ? 'Storyboard sketch' : 'Storyboard keyframe', null);
+  try {
+    const image = await drawPanel({ charge() {} }, { kind, visual, look: str(b.look, 800), style: str(b.style, 20), aspect, friend: f, product: p, quality });
+    res.json({ image, kind, cost });
+  } catch (e) {
+    await store.adjust(req.uid, cost, 'Refund (panel failed)', null, true);
+    throw e;
+  }
+}));
+
 // ---------- auto-posting ----------
 const needSocial = () => { if (!social.socialEnabled()) throw fail('Auto-posting is not switched on yet (add POSTFORME_API_KEY).', 501); };
 app.get('/api/social/accounts', wrap(async (req, res) => { needSocial(); res.json(await social.listAccounts(req.uid)); }));
@@ -417,6 +459,7 @@ function cleanInput(input) {
   const i = { ...input };
   for (const k of ['startImage', 'image']) if (i[k] && !store.isOwnUrl(i[k])) delete i[k];
   delete i.refs;
+  if (i.look != null) i.look = str(i.look, 800);
   for (const k of ['prompt', 'script', 'notes', 'topic', 'tone', 'text']) if (typeof i[k] === 'string') i[k] = i[k].slice(0, k === 'text' ? 5000 : 2000);
   if (i.variants != null) i.variants = [1, 3, 5].includes(+i.variants) ? +i.variants : 1;
   if (i.scripts != null) i.scripts = (Array.isArray(i.scripts) ? i.scripts : []).slice(0, 5).map((x) => str(x, 1200));
@@ -426,7 +469,7 @@ function cleanInput(input) {
     const b = i.board;
     i.board = {
       title: str(b.title, 120), caption: str(b.caption, 600), hashtags: (Array.isArray(b.hashtags) ? b.hashtags : []).slice(0, 15).map((h) => str(h, 40)),
-      scenes: (Array.isArray(b.scenes) ? b.scenes : []).slice(0, 8).map((s) => ({ narration: str(s.narration, 400), visual: str(s.visual, 600), motion: str(s.motion, 200) })).filter((s) => s.narration.trim()),
+      scenes: (Array.isArray(b.scenes) ? b.scenes : []).slice(0, 8).map((s) => ({ narration: str(s.narration, 400), visual: str(s.visual, 600), motion: str(s.motion, 200), ...(s.frame && store.isOwnUrl(s.frame) ? { frame: str(s.frame, 600) } : {}) })).filter((s) => s.narration.trim()),
     };
     if (!i.board.scenes.length) delete i.board;
   }

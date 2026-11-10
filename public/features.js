@@ -346,6 +346,7 @@ async function attachRefs(files, done) {
   }
 }
 function renderIdeas(box) {
+  if (IDEAS.sb) return renderSb(box);
   const r = IDEAS.result;
   const pr = productById(IDEAS.productId), fr = friendById(IDEAS.friendId);
   box.innerHTML = `
@@ -376,7 +377,7 @@ function renderIdeas(box) {
           <div><h3>Hooks</h3><ul class="hooks">${r.hooks.map((x, i) => `<li><span>${esc(x)}</span><button class="link" data-hook="${i}">Copy</button></li>`).join('')}</ul></div>
         </div>
         <h3>Ready-to-use prompts</h3>
-        <div class="id-ideas">${r.ideas.map((x, i) => `<div class="id-idea"><div class="id-top"><span class="mtag">${IDEA_MODE[x.mode] || x.mode}</span><b>${esc(x.title)}</b></div><p class="why">${esc(x.why)}</p><p class="pr">${esc(x.prompt)}</p>${Object.keys(x.settings || {}).length ? `<div class="chips">${Object.entries(x.settings).map(([k, v]) => `<span class="chip">${esc(k)}: ${esc(v)}</span>`).join('')}</div>` : ''}<div class="id-acts"><button class="btn pri" data-use="${i}">Use it →</button><button class="btn" data-save="${i}" ${IDEAS.savedIds.has(ideaKey(x)) ? 'disabled' : ''}>${IDEAS.savedIds.has(ideaKey(x)) ? '✓ Saved' : 'Save'}</button></div></div>`).join('')}</div>
+        <div class="id-ideas">${r.ideas.map((x, i) => `<div class="id-idea"><div class="id-top"><span class="mtag">${IDEA_MODE[x.mode] || x.mode}</span><b>${esc(x.title)}</b></div><p class="why">${esc(x.why)}</p><p class="pr">${esc(x.prompt)}</p>${Object.keys(x.settings || {}).length ? `<div class="chips">${Object.entries(x.settings).map(([k, v]) => `<span class="chip">${esc(k)}: ${esc(v)}</span>`).join('')}</div>` : ''}<div class="id-acts"><button class="btn pri" data-sb="${i}">🎞 Storyboard <small>✦ ${sbPlanCost()}</small></button><button class="btn" data-use="${i}">Use it →</button><button class="btn" data-save="${i}" ${IDEAS.savedIds.has(ideaKey(x)) ? 'disabled' : ''}>${IDEAS.savedIds.has(ideaKey(x)) ? '✓ Saved' : 'Save'}</button></div></div>`).join('')}</div>
         <div class="id-acts" style="margin-top:8px"><button class="btn" id="id-saveall">Save all ${r.ideas.length}</button></div>
         <div class="b-chat">
           <h3>Tell Kravitas more</h3>
@@ -408,12 +409,121 @@ function renderIdeas(box) {
   //on('[data-newprod]', 'onclick', () => productModal());
   box.querySelectorAll('[data-unref]').forEach((b) => (b.onclick = () => { IDEAS.refs.splice(+b.dataset.unref, 1); renderIdeas(box); }));
   box.querySelectorAll('[data-idex]').forEach((b) => (b.onclick = () => { IDEAS.dump = IDEA_EX[+b.dataset.idex]; $('#id-dump').value = IDEAS.dump; $('#id-dump').focus(); }));
+  box.querySelectorAll('[data-sb]').forEach((b) => (b.onclick = () => sbStart(box, r.ideas[+b.dataset.sb])));
   box.querySelectorAll('[data-use]').forEach((b) => (b.onclick = () => useIdea(r.ideas[+b.dataset.use])));
   box.querySelectorAll('[data-save]').forEach((b) => (b.onclick = () => { saveIdea(r.ideas[+b.dataset.save], r.hooks?.[0]); b.disabled = true; b.textContent = '✓ Saved'; }));
   box.querySelectorAll('[data-hook]').forEach((b) => (b.onclick = () => { navigator.clipboard?.writeText(r.hooks[+b.dataset.hook]).then(() => toast('Hook copied')).catch(() => {}); }));
   on('#id-saveall', 'onclick', async (e) => { e.target.disabled = true; for (const x of r.ideas) if (!IDEAS.savedIds.has(ideaKey(x))) await saveIdea(x, r.hooks?.[0]); renderIdeas(box); });
   box.querySelectorAll('[data-sugg]').forEach((b) => (b.onclick = () => ideasRefine(box, b.dataset.sugg)));
   on('#id-form', 'onsubmit', (e) => { e.preventDefault(); const v = $('#id-msg').value.trim(); if (v) ideasRefine(box, v); });
+}
+
+// ---------- idea → storyboard (sketch panels → real keyframes → video) ----------
+const SB_TIER_MODEL = { motion: 'h3-turbo', lite: 'h3-turbo', fast: 'h3-turbo', studio: 'kling-std', premium: 'kling-pro' };
+const SB_N = 4;
+const px = () => S.app.catalog.price || {};
+const sbPlanCost = () => (px().llm || 1) + SB_N * (px().imageSchnell || 1);
+const sbKeyCost = () => (canUse('creator') ? px().image : px().imageLite) || 6;
+const sbRefresh = () => load().then(() => { const c = $('#credits'); if (c) c.textContent = `✦ ${S.app.credits.toLocaleString()}`; });
+async function sbStart(box, idea) {
+  const aspect = ['9:16', '16:9', '1:1', '4:5'].includes(idea.settings?.aspect) ? idea.settings.aspect : '9:16';
+  IDEAS.sb = { idea, title: idea.title, look: '', caption: '', hashtags: [], aspect, panels: [], busy: 'plan', tier: 'motion', est: null };
+  renderSb(box);
+  try {
+    const notes = IDEAS.refs.filter((x) => x.kind === 'doc').map((x) => x.text).join('\n\n').slice(0, 3000);
+    const r = await api('/api/panels/plan', { prompt: idea.prompt, productId: IDEAS.productId, friendId: IDEAS.friendId, lang: IDEAS.lang, panels: SB_N, aspect, notes });
+    Object.assign(IDEAS.sb, { title: r.title || idea.title, look: r.look, caption: r.caption, hashtags: r.hashtags, panels: r.panels.map((x) => ({ ...x, busy: null })), busy: null });
+    sbRefresh();
+  } catch (e) { IDEAS.sb = null; toast(e.message, true); if (e.code === 'credits' || e.code === 'plan') accountModal(); }
+  renderIdeas(box);
+}
+async function sbDraw(box, k, kind) {
+  const b = IDEAS.sb, pn = b.panels[k];
+  if (pn.busy) return;
+  pn.busy = kind; renderSb(box);
+  try {
+    const r = await api('/api/panels/draw', { kind, visual: pn.visual, look: b.look, aspect: b.aspect, productId: IDEAS.productId, friendId: IDEAS.friendId, style: 'cinematic' });
+    pn.image = r.image; pn.kind = r.kind;
+  } catch (e) { toast(e.message, true); if (e.code === 'credits' || e.code === 'plan') accountModal(); }
+  pn.busy = null; if (IDEAS.sb === b) renderSb(box);
+  sbRefresh();
+}
+function sbBoard() {
+  const b = IDEAS.sb;
+  return { title: b.title, caption: b.caption, hashtags: b.hashtags, scenes: b.panels.map((x) => ({ narration: x.narration, visual: x.visual, motion: x.motion, ...(x.kind === 'keyframe' && x.image ? { frame: x.image } : {}) })) };
+}
+function sbJobInput() {
+  const b = IDEAS.sb;
+  return { prompt: b.title, friendId: IDEAS.friendId, productId: IDEAS.productId, look: b.look, board: sbBoard(), tier: b.tier, model: SB_TIER_MODEL[b.tier], aspect: b.aspect, style: 'cinematic', lang: IDEAS.lang, voice: IDEAS.lang === 'ms' ? 'mm:Lively_Girl' : 'el:Aria', captions: true };
+}
+let sbEstT;
+function sbEstimate() {
+  clearTimeout(sbEstT);
+  sbEstT = setTimeout(async () => {
+    if (!IDEAS.sb || IDEAS.sb.busy) return;
+    try { const r = await api('/api/estimate', { tool: 'story', input: sbJobInput() }); IDEAS.sb.est = r.credits; const el = $('#sb-est'); if (el) el.textContent = `✦ ${r.credits}`; } catch {}
+  }, 250);
+}
+async function sbMake(box) {
+  const b = IDEAS.sb;
+  if (b.panels.some((x) => x.busy)) return toast('Wait for the panels to finish drawing', true);
+  if (b.panels.some((x) => !x.narration.trim())) return toast('Every panel needs a line to say', true);
+  try {
+    const job = await api('/api/jobs', { tool: 'story', input: sbJobInput() });
+    S.jobs.unshift(job); renderFeed(); poll();
+    toast('Making your video. Watch it under Recent.');
+    sbRefresh();
+  } catch (e) { toast(e.message, true); if (e.code === 'credits' || e.code === 'plan') accountModal(); }
+}
+function renderSb(box) {
+  const b = IDEAS.sb;
+  const tiers = S.app.catalog.tiers || {};
+  const keyed = b.panels.filter((x) => x.kind === 'keyframe').length;
+  const loading = b.busy === 'plan';
+  const [aw, ah] = b.aspect.split(':').map(Number);
+  box.innerHTML = `<div class="sb2">
+    <div class="sb2-top"><button class="link" id="sb-back">← Back to ideas</button><span class="mtag">Storyboard</span></div>
+    <input class="in sb2-title" id="sb-title" maxlength="120" value="${esc(b.title)}" ${loading ? 'disabled' : ''}>
+    <p class="sb2-help">Check the story and the character here before you spend on video. Sketches are cheap. Turn the panels you like into real keyframes with your character and product, and the video is made from those.</p>
+    ${loading ? `<div class="id-think"><i></i><b>Planning your shots and sketching them…</b><small>This takes about 20 seconds.</small></div>` : `
+    <label class="l" for="sb-look">Same in every panel <small class="muted">· character, product, setting · edit it, then redraw</small></label>
+    <textarea class="in" id="sb-look" rows="3" maxlength="800">${esc(b.look)}</textarea>
+    <div class="sb2-strip">${b.panels.map((x, k) => `<div class="sb2-p ${x.busy ? 'busy' : ''}">
+        <div class="sb2-img" style="aspect-ratio:${aw}/${ah}"><img src="${x.image}" alt="Panel ${k + 1}"><span class="sb2-n">${k + 1}</span><span class="sb2-badge ${x.kind}">${x.kind === 'keyframe' ? 'Keyframe ✓' : 'Sketch'}</span>${x.busy ? `<div class="sb2-wait"><i class="spin"></i><small>${x.busy === 'keyframe' ? 'Drawing keyframe…' : 'Sketching…'}</small></div>` : ''}</div>
+        <textarea class="in" data-vis="${k}" rows="3" maxlength="600" aria-label="What happens in panel ${k + 1}">${esc(x.visual)}</textarea>
+        <input class="in" data-nar="${k}" maxlength="400" value="${esc(x.narration)}" aria-label="Line spoken in panel ${k + 1}" placeholder="What is said">
+        <div class="sb2-pa">
+          ${x.kind === 'keyframe' ? `<button class="btn" data-redraw="${k}">Redraw <small>✦ ${sbKeyCost()}</small></button>` : `<button class="btn" data-redraw="${k}">Redraw <small>✦ ${px().imageSchnell || 1}</small></button><button class="btn pri" data-key="${k}">Real keyframe <small>✦ ${sbKeyCost()}</small></button>`}
+          ${b.panels.length > 2 ? `<button class="btn" data-pdel="${k}" aria-label="Remove panel">✕</button>` : ''}
+        </div></div>`).join('')}</div>
+    <div class="sb2-bar">
+      <div><label class="l" for="sb-tier">Video quality</label>
+        <select class="in" id="sb-tier">${Object.keys(tiers).map((k) => { const need = tiers[k].plan, lock = need && !canUse(need); return `<option value="${k}" ${k === b.tier ? 'selected' : ''}>${esc(TIER_NAME[k] || tiers[k].label)} · ${esc(TIER_DESC[k] || '')}${lock ? ` · 🔒 ${PLAN_LABEL[need]}` : ''}</option>`; }).join('')}</select></div>
+      <div class="sb2-go">
+        ${keyed < b.panels.length ? `<button class="btn" id="sb-all">Real keyframes for all <small>✦ ${(b.panels.length - keyed) * sbKeyCost()}</small></button>` : ''}
+        <button class="go" id="sb-make">Make the video <span class="c" id="sb-est">${b.est != null ? `✦ ${b.est}` : '✦ …'}</span></button>
+      </div>
+    </div>
+    <p class="sb2-note">${keyed ? `${keyed} of ${b.panels.length} panels are real keyframes.` : 'All panels are still sketches.'} Panels left as sketches are painted as real images when you make the video, so you only pay for them once.</p>`}
+  </div>`;
+  if (loading) return;
+  const on = (sel, fn) => box.querySelectorAll(sel).forEach((el) => fn(el));
+  $('#sb-back').onclick = () => { IDEAS.sb = null; renderIdeas(box); };
+  $('#sb-title').oninput = (e) => { b.title = e.target.value; };
+  $('#sb-look').oninput = (e) => { b.look = e.target.value; };
+  on('[data-vis]', (el) => (el.oninput = () => { b.panels[+el.dataset.vis].visual = el.value; }));
+  on('[data-nar]', (el) => (el.oninput = () => { b.panels[+el.dataset.nar].narration = el.value; sbEstimate(); }));
+  on('[data-redraw]', (el) => (el.onclick = () => sbDraw(box, +el.dataset.redraw, b.panels[+el.dataset.redraw].kind)));
+  on('[data-key]', (el) => (el.onclick = () => sbDraw(box, +el.dataset.key, 'keyframe')));
+  on('[data-pdel]', (el) => (el.onclick = () => { b.panels.splice(+el.dataset.pdel, 1); b.est = null; renderSb(box); sbEstimate(); }));
+  $('#sb-all') && ($('#sb-all').onclick = () => b.panels.forEach((x, k) => x.kind !== 'keyframe' && sbDraw(box, k, 'keyframe')));
+  $('#sb-tier').onchange = (e) => {
+    const need = tiers[e.target.value]?.plan;
+    if (need && !canUse(need)) { toast(`${TIER_NAME[e.target.value]} is on the ${PLAN_LABEL[need]} plan`); e.target.value = b.tier; return accountModal(); }
+    b.tier = e.target.value; b.est = null; sbEstimate(); $('#sb-est').textContent = '✦ …';
+  };
+  $('#sb-make').onclick = () => sbMake(box);
+  sbEstimate();
 }
 function savedIdeasCard() {
   const list = (S.ideas || []).slice(0, 30);

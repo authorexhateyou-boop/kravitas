@@ -67,7 +67,7 @@
       return i.draft ? prep : i.fromDraft ? render : prep + render;
     },
     avatar: (i) => { const t = tierOf(i.tier); const w = String(i.script || '').trim().split(/\s+/).filter(Boolean).length; const sec = w ? Math.max(3, w / 2.6) : i.seconds || 8; return (i.script ? 0 : PRICE.llm) + tts$(i.script || words(sec), t.voice) + talk$(i.tier, sec); },
-    story: (i) => { const t = tierOf(i.tier || 'motion'); const sc = i.board?.scenes; const n = sc?.length || i.scenes || 4; return (sc ? 0 : PRICE.llm) + (sc ? sc.reduce((a, x) => a + tts$(x.narration, t.voice), 0) : n * tts$(words(7), t.voice)) + n * (img$(t.image, false) + (i.tier === 'motion' || !i.tier ? 0 : vsec(i.model, 6))); },
+    story: (i) => { const t = tierOf(i.tier || 'motion'); const sc = i.board?.scenes; const n = sc?.length || i.scenes || 4; const unf = sc ? sc.filter((x) => !x.frame).length : n; return (sc ? 0 : PRICE.llm) + (sc ? sc.reduce((a, x) => a + tts$(x.narration, t.voice), 0) : n * tts$(words(7), t.voice)) + unf * img$(t.image, false) + n * (i.tier === 'motion' || !i.tier ? 0 : vsec(i.model, 6)); },
     edit: (i) => 1 + (i.newVoice?.text ? tts$(i.newVoice.text, 'turbo') : 0) + (i.musicPrompt ? credits(30) : 0),
     voice: (i) => (i.kind === 'sfx' ? credits(0.2 * (i.length || 5)) : i.kind === 'music' ? credits(1 * (i.length || 30)) : tts$(i.text || 'x')),
     avatarGen: (i) => PRICE.image * (i.preset ? 1 : Math.min(4, i.count || 4)),
@@ -505,7 +505,7 @@
           await step(`Recording voice-overs${reused ? ` (${reused} reused)` : ''}`, 900);
           await step(`Painting ${n} scenes`, 1200);
           const frames = [];
-          for (let k = 0; k < n; k++) { const c = await compose({ prompt: (scenes[k].visual || input.prompt) + k, friend: fr, aspect: input.aspect, style: input.style }); frames.push(c); await out('image', await toBlob(c), `Scene ${k + 1}`); }
+          for (let k = 0; k < n; k++) { let c; const fim = scenes[k].frame && await loadImg(scenes[k].frame); if (fim) { c = document.createElement('canvas'); c.width = fim.width; c.height = fim.height; c.getContext('2d').drawImage(fim, 0, 0); } else c = await compose({ prompt: (scenes[k].visual || input.prompt) + k, friend: fr, aspect: input.aspect, style: input.style }); frames.push(c); await out('image', await toBlob(c), `Scene ${k + 1}`); }
           job.steps.push({ label: `Animating ${n - reused} clip${n - reused === 1 ? '' : 's'} & editing`, status: 'running' });
           if (reused) job.reusedScenes = reused;
           const v = await record({ frames, aspect: input.aspect, seconds: Math.min(12, n * 2.4), move: 'dolly-in', captions: input.captions !== false ? lines.join(' ') : '' });
@@ -711,6 +711,35 @@
       if (st.credits < PRICE.llm) throw err('Not enough credits. Top up to continue.', 'credits');
       await sleep(1400); st.credits -= PRICE.llm; st.ledger.unshift({ at: Date.now(), what: 'Storyboard plan', credits: -PRICE.llm }); save();
       return planBoard(body.prompt, body.scenes);
+    }
+    if (p === '/api/panels/plan' || p === '/api/panels/draw') {
+      const plan = p.endsWith('plan');
+      const n = Math.min(6, Math.max(3, +body.panels || 4));
+      const kind = body.kind === 'keyframe' ? 'keyframe' : 'sketch';
+      const full = kind === 'keyframe' && (RANK[st.plan || 'free'] ?? 0) >= RANK.creator;
+      const cost = plan ? PRICE.llm + n * PRICE.imageSchnell : kind === 'sketch' ? PRICE.imageSchnell : (full ? PRICE.image : PRICE.imageLite);
+      if (!plan && !String(body.visual || '').trim()) throw err('Describe what happens in this panel first');
+      if (plan && !String(body.prompt || '').trim()) throw err('Pick an idea first');
+      if (st.credits < cost) throw err('Not enough credits. Top up to continue.', 'credits');
+      const fr = st.friends.find((f) => f.id === body.friendId) || null, pr = st.products.find((x) => x.id === body.productId) || null;
+      const draw = async (visual, k, sketch) => {
+        const c = await compose({ prompt: visual + k, friend: sketch ? null : fr, product: sketch ? null : pr, aspect: body.aspect || '9:16', style: sketch ? 'photo' : 'cinematic' });
+        const o = document.createElement('canvas'); o.width = 270; o.height = Math.round(270 * c.height / c.width);
+        const x = o.getContext('2d'); if (sketch) x.filter = 'grayscale(1) contrast(1.5) brightness(1.15)';
+        x.drawImage(c, 0, 0, o.width, o.height);
+        return o.toDataURL('image/jpeg', 0.7);
+      };
+      await sleep(plan ? 1600 : 900);
+      st.credits -= cost; st.ledger.unshift({ at: Date.now(), what: plan ? 'Storyboard (plan + sketches)' : kind === 'sketch' ? 'Storyboard sketch' : 'Storyboard keyframe', credits: -cost }); save();
+      if (!plan) return { image: await draw(body.visual, Math.floor(Math.random() * 99), kind === 'sketch'), kind, cost };
+      const topic = String(body.prompt).slice(0, 60), who = fr?.name || 'The creator', what = pr?.name || 'the product';
+      const panels = Array.from({ length: n }, (_, k) => ({
+        visual: k === 0 ? `Close-up: ${who} looks into the camera, surprised` : k === n - 1 ? `${who} holds up ${what}, tap-the-basket gesture` : `Medium shot: ${what} in use, scene ${k + 1}`,
+        motion: ['slow push-in', 'handheld sway', 'smooth pan', 'slow pull back'][k % 4],
+        narration: k === 0 ? 'Jangan beli lagi sebelum tengok ni!' : k === n - 1 ? 'Tekan beg kuning sekarang!' : `Ini sebab kenapa orang suka ${what}, part ${k}.`,
+      }));
+      for (const x of panels) { x.image = await draw(x.visual, panels.indexOf(x), true); x.kind = 'sketch'; }
+      return { title: topic, caption: `${topic} ✨`, hashtags: ['#fyp', '#malaysia'], look: `${who}${fr?.note ? ` (${fr.note})` : ''}, same outfit in every panel, ${what} always the same packaging, bright room, soft window light, warm colours.`, panels, aspect: body.aspect || '9:16', cost };
     }
     if (p === '/api/voices' && method === 'GET') return Promise.all((st.voices || []).map(async (v) => ({ ...v, preview_url: await resolveUrl(v.preview_url) })));
     if (p === '/api/voices' && method === 'POST') {

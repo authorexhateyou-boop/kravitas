@@ -91,3 +91,7 @@ List users: `curl https://<your-domain>/api/admin/users -H "x-admin-token: <ADMI
 - **Redeploys:** generations running during a redeploy are marked failed and their unused credits refunded automatically.
 - **Storage:** generated media is public by unguessable URL (fal.ai needs to fetch inputs). Don't use it for anything private.
 - **Local mode still works:** with no Supabase variables, `start.bat` runs the single-user studio on your PC as before.
+
+## Idea → storyboard → video
+In **Ideas**, each idea has a **🎞 Storyboard** button. It plans 4 panels with the LLM (through fal.ai, same key) and draws cheap comic sketches (FLUX Schnell, about 1 credit each). People edit the "same in every panel" look text and each panel's action and line, redraw sketches, and turn panels into **real keyframes** (Seedream edit on Basic/Starter, Nano Banana 2 on Creator and up) that use the character photo and product photo as references. "Make the video" runs the story tool: approved keyframes are used as-is, sketches are painted fresh, and the video quality list is locked by plan (Quick free/Basic, Standard/Sharper Starter, Lip-sync Creator, Best Pro).
+Routes: `POST /api/panels/plan`, `POST /api/panels/draw`.

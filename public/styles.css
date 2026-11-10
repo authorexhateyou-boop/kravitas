@@ -656,3 +656,25 @@ body[data-view="studio"] main{padding-bottom:60px}
 .id-plus{border:1px dashed #555;background:none;color:var(--fg);width:40px;font-size:18px;cursor:pointer}.id-plus:hover{border-color:#fff}
 .add.clip{display:inline-grid;place-items:center;cursor:pointer}
 .b-input{align-items:stretch}
+
+/* ideas: storyboard */
+.sb2{display:flex;flex-direction:column;gap:10px}
+.sb2-top{display:flex;align-items:center;justify-content:space-between}
+.sb2-title{font-size:18px;font-weight:700}
+.sb2-help,.sb2-note{margin:0;font-size:12.5px;color:var(--muted)}
+.sb2-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.sb2-p{border:1px solid var(--line);padding:8px;display:flex;flex-direction:column;gap:6px;background:var(--bg)}
+.sb2-p.busy{opacity:.9}
+.sb2-p textarea.in{font-size:12.5px;min-height:0;resize:vertical}.sb2-p input.in{font-size:12.5px}
+.sb2-img{position:relative;width:100%;background:#111;overflow:hidden;border:1px solid var(--line)}
+.sb2-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.sb2-n{position:absolute;left:0;top:0;background:#fff;color:#000;font-weight:800;font-size:12px;padding:2px 8px}
+.sb2-badge{position:absolute;right:0;bottom:0;background:#000;color:#fff;font-size:10.5px;font-weight:700;padding:3px 7px;border:1px solid #444}
+.sb2-badge.keyframe{background:#fff;color:#000;border-color:#fff}
+.sb2-wait{position:absolute;inset:0;background:rgba(0,0,0,.7);display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center}
+.sb2-wait .spin{width:22px;height:22px;border:2px solid #444;border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite}
+.sb2-pa{display:flex;gap:6px;flex-wrap:wrap}.sb2-pa .btn{padding:7px 9px;font-size:12px;flex:1}.sb2-pa small,.id-acts small{opacity:.7;font-weight:500}
+.sb2-bar{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:12px}
+.sb2-bar>div:first-child{flex:1;min-width:220px}
+.sb2-go{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sb2-go .go{width:auto}
+.sb2-pa [data-pdel]{flex:none;width:34px}
