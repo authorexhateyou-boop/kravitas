@@ -282,15 +282,17 @@ document.addEventListener('click', (e) => {
 });
 
 // ----- ideas: dump messy notes → ready prompts, saved to the library -----
-const IDEAS = { dump: '', productId: null, friendId: null, lang: 'ms', result: null, chat: [], busy: false, savedIds: new Set() };
+const IDEAS = { dump: '', productId: null, friendId: null, lang: 'ms', result: null, chat: [], busy: false, savedIds: new Set(), refs: [], uploading: 0 };
+const REF_ACCEPT = '.png,.jpg,.jpeg,.webp,.pdf,.docx,.txt,.md,.csv,image/png,image/jpeg,image/webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain';
 const IDEA_MODE = { ad: 'Ad', video: 'Video', image: 'Image' };
 const IDEA_EX = ['serum vit c rm29, flash sale weekend, target mak-mak 30-45, kawan cakap kulit cerah dlm seminggu, vibe santai, free shipping', 'new kopi brand, kopitiam vibes but modern, students + office workers, launch next month, nak content yg relatable', 'tudung bawal satin 15 colours, raya collection, price RM35, ready stock, before/after styling'];
 function ideasInput(extra = {}) {
-  return { mode: 'any', prompt: IDEAS.dump, productId: IDEAS.productId, friendId: IDEAS.friendId, lang: IDEAS.lang, ...extra };
+  return { mode: 'any', prompt: IDEAS.dump, productId: IDEAS.productId, friendId: IDEAS.friendId, lang: IDEAS.lang, refs: IDEAS.refs.map(({ kind, url, name, text }) => ({ kind, url, name, text })), ...extra };
 }
 function ideaKey(x) { return `${x.mode}|${x.title}|${x.prompt}`; }
 async function ideasRun(box) {
-  if (!IDEAS.dump.trim() && !IDEAS.productId && !IDEAS.friendId) { toast('Dump some ideas first, or pick a product', true); return $('#id-dump')?.focus(); }
+  if (!IDEAS.dump.trim() && !IDEAS.productId && !IDEAS.friendId && !IDEAS.refs.length) { toast('Dump some ideas first, or add a product or a reference', true); return $('#id-dump')?.focus(); }
+  if (IDEAS.uploading) return toast('Still reading your files, one moment', true);
   IDEAS.busy = true; IDEAS.chat = []; renderIdeas(box);
   try {
     const r = await api('/api/brainstorm', ideasInput());
@@ -334,6 +336,11 @@ function renderIdeas(box) {
         <label class="l" for="id-dump">Dump your ideas</label>
         <textarea class="in" id="id-dump" rows="5" maxlength="4000" placeholder="Messy is fine. Product, price, promo, who buys it, the vibe, what your friends said… BM or English.">${esc(IDEAS.dump)}</textarea>
         <div class="id-ex"><small>Try:</small>${IDEA_EX.map((x, i) => `<button data-idex="${i}">${esc(x.slice(0, 38))}…</button>`).join('')}</div>
+        <label class="l">References <small class="muted">· images, PDF, Word, text · the more the better</small></label>
+        <div class="id-refs">${IDEAS.refs.map((r, i) => `<span class="id-ref ${r.kind}">${r.kind === 'image' ? `<img src="${r.url}" alt="">` : '<i>📄</i>'}<span><b>${esc(r.name || (r.kind === 'image' ? 'Image' : 'Document'))}</b><small>${r.kind === 'image' ? 'Shown to Kravitas' : `${(r.chars || r.text?.length || 0).toLocaleString()} characters read`}</small></span><button data-unref="${i}" aria-label="Remove">✕</button></span>`).join('')}
+          ${IDEAS.uploading ? `<span class="id-ref busy"><i class="spin"></i><span><b>Reading ${IDEAS.uploading} file${IDEAS.uploading > 1 ? 's' : ''}…</b><small>PDF and Word are read as text</small></span></span>` : ''}
+          ${IDEAS.refs.length < 8 ? `<label class="id-addref">＋ Add files<input type="file" id="id-file" accept="${REF_ACCEPT}" multiple hidden></label>` : ''}
+          <p class="id-refhint">Brand decks, product sheets, competitor screenshots, past captions that worked, customer reviews. Kravitas reads them before writing.</p></div>
         <div class="zz-row">
           <div><label class="l" for="id-prod">Product (optional)</label><select class="in" id="id-prod"><option value="">None</option>${S.products.map((p) => `<option value="${p.id}" ${p.id === IDEAS.productId ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></div>
           <div><label class="l" for="id-face">Character (optional)</label><select class="in" id="id-face"><option value="">None</option>${S.friends.map((f) => `<option value="${f.id}" ${f.id === IDEAS.friendId ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}</select></div>
@@ -365,6 +372,21 @@ function renderIdeas(box) {
   on('#id-face', 'onchange', (e) => { IDEAS.friendId = e.target.value || null; });
   on('#id-lang', 'onchange', (e) => { IDEAS.lang = e.target.value; });
   on('#id-go', 'onclick', () => ideasRun(box));
+  on('#id-file', 'onchange', async (e) => {
+    const files = [...e.target.files].slice(0, 8 - IDEAS.refs.length);
+    if (!files.length) return;
+    IDEAS.uploading += files.length; renderIdeas(box);
+    for (const f of files) {
+      try {
+        if (f.size > 10 * 1024 * 1024) throw new Error(`${f.name} is too large (max 10 MB)`);
+        const dataUrl = await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => no(new Error(`Could not read ${f.name}`)); r.readAsDataURL(f); });
+        const ref = await api('/api/refs', { file: dataUrl, name: f.name });
+        IDEAS.refs.push({ ...ref, name: ref.name || f.name });
+      } catch (err) { toast(err.message, true); }
+      IDEAS.uploading -= 1; renderIdeas(box);
+    }
+  });
+  box.querySelectorAll('[data-unref]').forEach((b) => (b.onclick = () => { IDEAS.refs.splice(+b.dataset.unref, 1); renderIdeas(box); }));
   box.querySelectorAll('[data-idex]').forEach((b) => (b.onclick = () => { IDEAS.dump = IDEA_EX[+b.dataset.idex]; $('#id-dump').value = IDEAS.dump; $('#id-dump').focus(); }));
   box.querySelectorAll('[data-use]').forEach((b) => (b.onclick = () => useIdea(r.ideas[+b.dataset.use])));
   box.querySelectorAll('[data-save]').forEach((b) => (b.onclick = () => { saveIdea(r.ideas[+b.dataset.save], r.hooks?.[0]); b.disabled = true; b.textContent = '✓ Saved'; }));
@@ -384,7 +406,7 @@ function brandCard() {
     <div class="zz-two one" style="margin-top:8px"><button class="btn pri" data-savebrand>Save notes</button></div>`;
 }
 function ideasHelpCard() {
-  return `<h2>How Ideas works</h2><ol class="zz-steps"><li><b>Dump</b> everything you know: product, price, promo, buyers, vibe. Messy is fine.</li><li><b>Kravitas writes</b> the audience, hooks and ready-to-run prompts for Ad, Video and Image.</li><li><b>Save</b> the ones you like. They live in your library, and <b>Use it</b> loads one straight into the right tool.</li></ol>`;
+  return `<h2>How Ideas works</h2><ol class="zz-steps"><li><b>Dump</b> everything you know: product, price, promo, buyers, vibe. Messy is fine. Add files too: a product sheet, brand deck, competitor screenshots, reviews.</li><li><b>Kravitas writes</b> the audience, hooks and ready-to-run prompts for Ad, Video and Image.</li><li><b>Save</b> the ones you like. They live in your library, and <b>Use it</b> loads one straight into the right tool.</li></ol>`;
 }
 document.addEventListener('click', async (e) => {
   const u = e.target.closest('#presets [data-useidea]');

@@ -49,6 +49,10 @@ About 30 minutes. You need accounts on supabase.com, railway.com, stripe.com and
 2. Add `POSTFORME_API_KEY` in Railway/Vercel and redeploy. The Schedule tab's Connect buttons then open the real TikTok, Instagram, Facebook, YouTube and Threads logins.
 3. Videos must be on Supabase storage (hosted mode) so the platforms can fetch them. Posting doesn't work from the PC-only version.
 
+## Ideas references
+
+Users can attach images, PDFs, Word (.docx) and text files in the Ideas tab. Documents are read as text on the server (`pdf-parse`, `mammoth`; up to 10 MB each, about 12,000 characters per brainstorm are sent to the model) and are not stored; images are saved like any other upload. Scanned PDFs without a text layer are rejected with a clear message.
+
 ## Pricing
 
 Credits = AI cost in US cents × `CREDIT_MARKUP` (1.9), so 1 credit ≈ US$0.0053 of AI cost.

@@ -18,6 +18,7 @@ import { PLATFORMS, ANGLES, LANGS } from './lib/prompts.js';
 import { hasFF } from './lib/ffmpeg.js';
 import { securityHeaders, limit } from './lib/security.js';
 import { brainstorm, BRAINSTORM_COST, FOLLOWUP_COST } from './lib/brainstorm.js';
+import { readReference } from './lib/refs.js';
 
 const stripe = config.stripeSecret ? new Stripe(config.stripeSecret) : null;
 const app = express();
@@ -294,6 +295,7 @@ app.delete('/api/products/:id', wrap(async (req, res) => {
 // ---------- brainstorm ----------
 app.post('/api/brainstorm', limit('brainstorm', 30, 60), wrap(async (req, res) => {
   const { mode, prompt, friendId, productId, image, lang, chat, previous } = req.body;
+  const refs = (Array.isArray(req.body.refs) ? req.body.refs : []).slice(0, 8).map((r) => (r?.kind === 'image' ? (store.isOwnUrl(r.url) ? { kind: 'image', url: r.url, name: str(r.name, 80) } : null) : r?.kind === 'doc' ? { kind: 'doc', name: str(r.name, 80), text: str(r.text, 30000) } : null)).filter(Boolean);
   const brand = String((await store.getProfile(req.uid))?.prefs?.brand || '');
   const followUp = Array.isArray(chat) && chat.length > 0;
   const cost = followUp ? FOLLOWUP_COST : BRAINSTORM_COST;
@@ -302,14 +304,21 @@ app.post('/api/brainstorm', limit('brainstorm', 30, 60), wrap(async (req, res) =
     productId ? store.get('products', req.uid, productId) : null,
   ]);
   const img = image && store.isOwnUrl(image) ? image : null;
-  if (!friend && !product && !img && !String(prompt || '').trim()) throw fail('Add a photo, a product or a prompt first so there is something to think about');
+  if (!friend && !product && !img && !refs.length && !String(prompt || '').trim()) throw fail('Add a photo, a product, a reference or some notes first so there is something to think about');
   await store.adjust(req.uid, -cost, followUp ? 'Brainstorm follow-up' : 'Brainstorm', null);
   try {
-    res.json(await brainstorm({ mode, prompt: String(prompt || '').slice(0, 4000), friend, product, image: img, lang, chat, previous, brand }));
+    res.json(await brainstorm({ mode, prompt: String(prompt || '').slice(0, 4000), friend, product, image: img, lang, chat, previous, brand, refs }));
   } catch (e) {
     await store.adjust(req.uid, cost, 'Refund (brainstorm failed)', null, true);
     throw e;
   }
+}));
+
+// ---------- reference files for Ideas (image / PDF / DOCX / text) ----------
+app.post('/api/refs', limit('create', 40, 60), wrap(async (req, res) => {
+  const { file, name } = req.body || {};
+  if (typeof file !== 'string' || file.length > 14 * 1024 * 1024) throw fail('That file is too large (max 10 MB)');
+  res.json(await readReference(file, str(name, 120)));
 }));
 
 // ---------- ideas library + brand notes ----------

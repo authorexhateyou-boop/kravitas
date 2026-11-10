@@ -660,6 +660,27 @@
       const f = { id: id(), name: body.name.trim(), note: body.note || '', photos: body.photos.slice(0, 3) };
       st.friends.unshift(f); save(); return f;
     }
+    if (p === '/api/refs') {
+      const m = /^data:([\w/+.-]+)(?:;[^,]*)?;base64,(.+)$/s.exec(body.file || '');
+      if (!m) throw err('That file could not be read');
+      const name = String(body.name || '');
+      if (/^image\//.test(m[1])) return { kind: 'image', url: body.file, name };
+      if (/^text\/|json$/.test(m[1]) || /\.(txt|md|csv|json)$/i.test(name)) { const text = decodeURIComponent(escape(atob(m[2]))).slice(0, 24000); return { kind: 'doc', name, chars: text.length, text }; }
+      if (/pdf$/.test(m[1]) || /\.pdf$/i.test(name)) {
+        // preview: read a PDF in the browser with pdf.js
+        if (!window.pdfjsLib) await new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'; sc.onload = ok; sc.onerror = () => no(err('Could not load the PDF reader')); document.head.append(sc); });
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const bytes = Uint8Array.from(atob(m[2]), (c) => c.charCodeAt(0));
+        const pdf = await window.pdfjsLib.getDocument({ data: bytes }).promise;
+        let text = '';
+        for (let i = 1; i <= Math.min(40, pdf.numPages); i++) { const pg = await pdf.getPage(i); const c = await pg.getTextContent(); text += c.items.map((x) => x.str).join(' ') + '\n'; }
+        text = text.replace(/\s+\n/g, '\n').trim();
+        if (!text) throw err(`${name} has no readable text (a scanned PDF needs OCR first)`);
+        return { kind: 'doc', name, chars: text.length, text: text.slice(0, 24000) };
+      }
+      if (/wordprocessingml|\.docx$/i.test(m[1] + name)) throw err('Word files are read in the full version. For this preview, paste the text or save it as PDF.');
+      throw err(`${name}: use an image, PDF, Word (.docx) or text file`);
+    }
     if (p === '/api/ideas' && method === 'GET') return st.ideas || [];
     if (p === '/api/ideas' && method === 'POST') {
       const row = { id: id(), mode: ['ad', 'video', 'image'].includes(body.mode) ? body.mode : 'ad', title: String(body.title || body.prompt || 'Idea').slice(0, 80), prompt: String(body.prompt || '').slice(0, 2000), why: String(body.why || '').slice(0, 300), hook: String(body.hook || '').slice(0, 300), settings: body.settings || {}, productId: body.productId || null, friendId: body.friendId || null, lang: body.lang || 'ms', createdAt: Date.now() };
