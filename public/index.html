@@ -183,6 +183,9 @@ footer a{text-decoration:none}footer a:hover{color:var(--fg)}
   .strip .wrap{justify-content:flex-start}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto!important}}
+.mt-wrap{margin-top:20px;border:1px solid #2a2a2a}.mt-wrap summary{cursor:pointer;padding:16px 20px;font-weight:700;list-style:none}.mt-wrap summary::after{content:"+";float:right}.mt-wrap[open] summary::after{content:"−"}
+.mt-scroll{overflow-x:auto}.mt{width:100%;border-collapse:collapse;font-size:14px;min-width:640px}.mt th,.mt td{padding:10px 14px;border-top:1px solid #2a2a2a;text-align:center}.mt th:first-child,.mt td:first-child{text-align:left}
+.mt thead th{color:#9a9a9a;font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-weight:700}.mt tr.g th{text-align:left;background:#111;color:#fff;font-size:12px;letter-spacing:.06em}.mt td small{display:block;color:#8a8a8a;font-size:12px}.mt .no{color:#444}
 </style>
 </head>
 <body>
@@ -295,6 +298,7 @@ footer a{text-decoration:none}footer a:hover{color:var(--fg)}
     <div class="wrap">
       <div class="sec-h"><h2>Simple monthly plans.</h2><p>Credits refill every month. A Motion ad costs about 9 credits and a Lite AI-video ad about 32.</p></div>
       <div class="plans" id="plans"></div>
+      <details class="mt-wrap"><summary>See every model, plan by plan</summary><div class="mt-scroll"><table class="mt" id="models-table"></table></div></details>
       <p class="fine">Prices in Malaysian ringgit. Cancel anytime; unused credits stay on your account. Secure checkout by Stripe. One-off top-ups from RM25.</p>
     </div>
   </section>
@@ -325,6 +329,7 @@ footer a{text-decoration:none}footer a:hover{color:var(--fg)}
   <div class="wrap"><span>© Kravitas</span><span><a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></span></div>
 </footer>
 
+<script src="modeldata.js"></script>
 <script src="landing.js"></script>
 </body>
 </html>

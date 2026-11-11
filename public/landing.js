@@ -19,6 +19,17 @@
         '<a class="btn" href="' + studio + '" data-studio>Choose ' + esc(p.name) + '</a></div>';
     }).join('');
   }
+  function models() {
+    var t = document.getElementById('models-table'); if (!t || !window.ModelData) return;
+    var order = ['basic', 'starter', 'creator', 'pro'], rows = ModelData.rows(), g = '', h = '<thead><tr><th>Model</th>' + order.map(function (k) { return '<th>' + ModelData.LABEL[k] + '</th>'; }).join('') + '</tr></thead><tbody>';
+    rows.forEach(function (r) {
+      if (r.g !== g) { g = r.g; h += '<tr class="g"><th colspan="5">' + esc(g) + '</th></tr>'; }
+      var min = Math.max(1, ModelData.RANK[r.p]);
+      h += '<tr><td>' + esc(r.n) + '<small>' + esc(r.d) + '</small></td>' + order.map(function (k) { return ModelData.RANK[k] >= min ? '<td>✓</td>' : '<td class="no">–</td>'; }).join('') + '</tr>';
+    });
+    t.innerHTML = h + '</tbody>';
+  }
+  models();
   var studio = document.querySelector('[data-studio]').getAttribute('href');
   draw(FALLBACK);
   fetch('/api/config').then(function (r) { return r.ok ? r.json() : null; }).then(function (c) {

@@ -768,6 +768,19 @@ function jobModal(id) {
 
 const ledgerTable = (ledger) => `<table>${ledger.slice(0, 12).map((l) => `<tr><td>${new Date(l.at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</td><td>${esc(l.what)}</td><td class="n" style="color:${l.credits > 0 ? 'var(--ok)' : 'inherit'}">${l.credits > 0 ? '+' : ''}${l.credits}</td></tr>`).join('') || '<tr><td class="muted">Nothing yet</td></tr>'}</table>`;
 
+function modelsModal() {
+  const plan = access(), rows = ModelData.rows(S.app.catalog, S.app.catalog.price);
+  const ok = (r) => canUse(r.p);
+  const n = rows.filter(ok).length;
+  const groups = [...new Set(rows.map((r) => r.g))];
+  const nextPlan = ['basic', 'starter', 'creator', 'pro'].find((k) => (RANK[k] ?? 0) > (RANK[plan] ?? 0));
+  const m = modal(`<h2>Models</h2>
+    <p class="muted" style="margin:0 0 4px">${S.app.mode === 'local' ? 'Everything is unlocked on your own computer.' : `Your plan: <b>${plan === 'free' ? 'Free trial' : esc(PLAN_LABEL[plan])}</b>. You can use <b>${n} of ${rows.length}</b>.`}</p>
+    ${groups.map((g) => `<label class="l" style="margin-top:16px">${esc(g)}</label><div class="mrows">${rows.filter((r) => r.g === g).map((r) => `<div class="mrow ${ok(r) ? '' : 'lock'}"><div><b>${esc(r.n)}</b><small>${esc(r.d)}</small></div><span class="mcost">${esc(r.c || '')}</span><span class="mplan">${ok(r) ? '✓' : `🔒 ${esc(PLAN_LABEL[r.p])}`}</span></div>`).join('')}</div>`).join('')}
+    ${n < rows.length && S.app.mode !== 'local' ? `<div class="acts" style="margin-top:16px"><button class="btn pri" id="mm-up">See plans${nextPlan ? ` · from ${PLAN_LABEL[nextPlan]}` : ''}</button></div>` : ''}`);
+  $('#mm-up', m) && ($('#mm-up', m).onclick = () => { closeModal && closeModal(); accountModal(); });
+}
+
 async function accountModal() {
   await load();
   const a = S.app;
@@ -853,6 +866,7 @@ document.addEventListener('click', (e) => {
   if (!$('#pop').hidden && !t.closest('#pop') && !t.closest('[data-pill],[data-attach]')) closePop();
   const mode = t.closest('[data-mode]');
   if (mode) { e.preventDefault(); setMode(mode.dataset.mode); renderAll(); return; }
+  if (t.closest('[data-open="models"]')) return modelsModal();
   if (t.closest('[data-open="settings"]')) return accountModal();
   const nw = t.closest('[data-new]');
   if (nw) return nw.dataset.new === 'friend' ? friendModal() : productModal();
