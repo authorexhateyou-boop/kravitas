@@ -393,11 +393,11 @@ function pill(key, label, options, cur) {
 const toggle = (key, label, on) => `<button class="pill tg ${on ? 'on' : ''}" data-toggle="${key}">${on ? '✓ ' : ''}${label}</button>`;
 function pillOptions(key) {
   const c = S.app.catalog;
-  const models = Object.fromEntries(Object.entries(c.videoModels).map(([k, m]) => [k, (typeof MODEL_NAME !== 'undefined' && MODEL_NAME[k]) || m.label]));
+  const models = Object.fromEntries(Object.entries(c.videoModels).map(([k, m]) => [k, m.label]));
   return {
     model: models, camera: CAM, style: STYLE, lang: LANG, platform: PLATFORM,
     voice: voiceOptions(),
-    tier: Object.fromEntries(Object.entries(c.tiers || {}).map(([k, t]) => [k, `${TIER_NAME[k] || t.label} · ${(typeof TIER_MODEL !== 'undefined' && TIER_MODEL[k]?.[0]) || t.label}`])),
+    tier: Object.fromEntries(Object.entries(c.tiers || {}).map(([k, t]) => [k, (typeof TIER_SHORT !== 'undefined' && TIER_SHORT[k]) || t.label])),
     variants: { 1: '1 ad', 3: '3 variations', 5: '5 variations' },
     kind: { tts: 'Voice-over', sfx: 'Sound effect', music: 'Music' },
     voiceEngine: { v3: 'ElevenLabs v3 · expressive', multilingual: 'ElevenLabs Multilingual' },
@@ -414,8 +414,8 @@ function pillOptions(key) {
     textMode: { script: 'Exact script', topic: 'Topic → AI writes' },
   }[key];
 }
-const MODEL_SUB = () => Object.fromEntries(Object.entries(S.app.catalog.videoModels).map(([k, m]) => [k, m.label]));
-const TIER_SUB = () => Object.fromEntries(Object.entries(S.app.catalog.tiers || {}).map(([k]) => [k, TIER_DESC[k] || '']));
+const MODEL_SUB = () => Object.fromEntries(Object.entries(S.app.catalog.videoModels).map(([k, m]) => [k, [m.tag, m.perSec ? `✦ ${m.perSec}/sec` : ''].filter(Boolean).join(' · ')]));
+const TIER_SUB = () => Object.fromEntries(Object.entries(S.app.catalog.tiers || {}).map(([k]) => [k, `${TIER_NAME[k] || k} · ${TIER_DESC[k] || ''}`]));
 // Human names for the quality tiers (the server's keys stay motion/lite/fast/studio/premium)
 const TIER_NAME = { motion: 'Quick', lite: 'Standard', fast: 'Sharper', studio: 'Lip-sync', premium: 'Best' };
 const TIER_DESC = { motion: 'Moving photo + voice · cheapest', lite: 'Real AI video, up to 8s', fast: 'Sharper picture, up to 10s', studio: 'Mouth moves with the words', premium: 'Top quality lip-sync' };
@@ -461,9 +461,10 @@ function renderComposer(keepFocus) {
   const needs = m === 'ad' && !pr ? '<button class="add req" data-attach>＋ Product</button>' : m === 'talk' && !fr && !f.image ? '<button class="add req" data-attach>＋ Who talks</button>' : '';
   const P = (k, l) => pill(k, l, pillOptions(k), f[k]);
   const MCHIP = () => `<button class="pill mchip" data-open="models" title="The AI model this uses. Tap to see all models."><span class="k">◆</span>${esc(modelInfo().name)}</button>`;
+  const VBOARD = '<button class="pill" data-vboard title="Plan the video scene by scene with pictures before you pay for it">🎞 Storyboard</button>';
   if (m === 'ad' && !ADV) f.approve = true; // simple mode always shows the script first
   const simple = {
-    video: [P('camera', '🎥'), f.startImage ? '' : P('style', '')],
+    video: [P('model', '◆'), P('camera', '🎥'), P('aspect', ''), VBOARD],
     image: [P('quality', '◆'), P('count', '×'), P('style', '')],
     ad: [P('tier', '◆'), P('lang', ''), P('format', '')],
     talk: [P('lang', '')],
@@ -471,7 +472,7 @@ function renderComposer(keepFocus) {
     voice: [MCHIP(), P('kind', ''), ...(f.kind === 'tts' ? [P('voice', '🎙'), P('lang', '')] : [P('length', '⏱')])],
   };
   const pills = ADV ? {
-    video: [P('model', ''), P('aspect', ''), P('duration', ''), P('camera', '🎥'), f.startImage ? '' : P('style', ''), f.model !== 'h3-turbo' ? toggle('audio', 'Sound', f.audio) : ''],
+    video: [P('model', '◆'), P('aspect', ''), P('duration', ''), P('camera', '🎥'), f.startImage ? '' : P('style', ''), f.model !== 'h3-turbo' ? toggle('audio', 'Sound', f.audio) : '', VBOARD],
     image: [P('quality', '◆'), P('aspect', ''), P('count', '×'), P('style', '')],
     ad: [P('format', ''), P('tier', '◆'), P('variants', '×'), P('angle', ''), P('platform', ''), P('lang', ''), P('seconds', ''), P('voice', '🎙'), toggle('approve', 'Approve first', f.approve), toggle('captions', 'Captions', f.captions)],
     talk: [P('textMode', ''), P('tier', '◆'), P('lang', ''), P('voice', '🎙'), f.textMode === 'topic' ? P('seconds', '') : '', toggle('captions', 'Captions', f.captions)],
@@ -585,6 +586,12 @@ function pillMenu(anchor, key) {
   });
 }
 
+function madeImages() {
+  const urls = [];
+  for (const j of S.jobs) if (j.status === 'done') for (const o of j.outputs || []) if (o.type === 'image' && o.url && !urls.includes(o.url)) urls.push(o.url);
+  if (!urls.length) return '<hr><div class="h">Images you made</div><p class="muted" style="margin:4px 10px 8px;font-size:12.5px">Images you generate show up here, ready to become a video.</p>';
+  return `<hr><div class="h">Use an image you made</div><div class="madegrid">${urls.slice(0, 8).map((u) => `<button class="it mg" data-v="img:${u}" title="Use as the start frame"><img src="${u}"></button>`).join('')}</div>`;
+}
 function attachMenu(anchor) {
   const m = S.mode;
   const showProducts = m !== 'talk' && m !== 'story';
@@ -599,7 +606,8 @@ function attachMenu(anchor) {
     ${S.products.map((p) => `<button class="it" data-v="p:${p.id}"><img src="${p.image}"><span>${esc(p.name)}<small>${esc(p.price)}</small></span><span class="x" data-del="p:${p.id}" title="Delete">🗑</span></button>`).join('')}
     <button class="it" data-v="new:product">＋ New product</button>` : ''}
     ${REFS_OK.has(m) ? `<hr><button class="it" data-v="ref">📎 Reference file · image, PDF, Word, text</button>` : ''}
-    ${showUpload ? `<hr><button class="it" data-v="upload">⬆ Upload ${m === 'talk' ? 'a photo' : 'a start frame'}</button>` : ''}`;
+    ${showUpload ? `<hr><button class="it" data-v="upload">⬆ Upload ${m === 'talk' ? 'a photo' : 'a start frame'} from your computer</button>` : ''}
+    ${m === 'video' ? madeImages() : ''}`;
   openPop(anchor, html, async (v, e) => {
     const del = e.target.closest('[data-del]');
     if (del) {
@@ -614,6 +622,7 @@ function attachMenu(anchor) {
     closePop();
     const f = F();
     if (v === 'ref') return $('#cp-file')?.click();
+    if (v.startsWith('img:')) f.startImage = v.slice(4);
     if (v.startsWith('f:')) { f.friendId = v.slice(2); f.image = null; }
     else if (v.startsWith('p:')) f.productId = v.slice(2);
     else if (v === 'new:friend') return friendModal();
@@ -901,6 +910,12 @@ document.addEventListener('click', (e) => {
   if (un) { F()[un.dataset.unref] = null; return renderComposer(); }
   if (t.closest('#go')) return generate();
   if (t.closest('[data-board]')) return storyboardModal({ input: F() });
+  if (t.closest('[data-vboard]')) {
+    const f = F(); if (!f.prompt.trim()) return toast('Describe the video first, then open the storyboard', true);
+    Object.assign(IDEAS, { dump: f.prompt, productId: f.productId || IDEAS.productId, friendId: f.friendId || IDEAS.friendId, result: null, chat: [] });
+    setMode('ideas'); renderAll();
+    return sbStart($('#zz-main'), { title: 'Video', mode: 'video', why: '', prompt: f.prompt, settings: { camera: f.camera, style: f.style, aspect: f.aspect } });
+  }
   const tc = t.closest('[data-tag]');
   if (tc) { const ta = $('#prompt'); const at = ta.selectionStart ?? ta.value.length; ta.value = ta.value.slice(0, at) + tc.dataset.tag + ' ' + ta.value.slice(at); F().prompt = ta.value; ta.focus(); estimate(); return; }
   const go = t.closest('[data-go]');

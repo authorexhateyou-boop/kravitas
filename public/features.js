@@ -330,7 +330,7 @@ function useIdea(x, quiet) {
 async function genIdea(x, btn) {
   if (btn.dataset.arm) { clearTimeout(+btn.dataset.arm); delete btn.dataset.arm; btn.textContent = 'Starting…'; btn.disabled = true;
     const mode = useIdea(x, true);
-    if (mode === 'video') await shotGo($('#hs-go')); else { await new Promise((r) => setTimeout(r, 80)); if (mode === 'ad' && !F().productId) return toast('Add your product first, then press Generate', true); await generate(); }
+    { await new Promise((r) => setTimeout(r, 80)); if (mode === 'ad' && !F().productId) return toast('Add your product first, then press Generate', true); await generate(); }
     return; }
   try {
     const mode = IDEA_MODE[x.mode] ? x.mode : 'ad';
@@ -615,7 +615,7 @@ function presetCard() {
     <div class="zz-tpls">${list.map((x) => { const on = !!x.set && S.preset[S.mode] === x.id && Object.entries(x.set).every(([k, v]) => k === 'prompt' || f[k] === v); return `<button class="zz-opt ${on ? 'on' : ''}" data-preset="${x.id}"><b>${x.e} ${esc(x.t)}</b></button>`; }).join('')}</div>`;
 }
 function styleCard() {
-  const cur = S.mode === 'video' ? SHOT.style : F().style;
+  const cur = F().style;
   return `<h2>Visual style</h2><div class="zz-styles">${HOME_STYLES.map((x) => `<button class="zz-sty ${x[0] === cur ? 'on' : ''}" data-st="${x[0]}" title="${esc(x[2])}">${x[1]}</button>`).join('')}</div>`;
 }
 const SIDES = {
@@ -657,33 +657,6 @@ function mainStage() {
 }
 function renderMain() {
   const box = $('#zz-main'); if (!box) return;
-  if (S.mode === 'video') {
-    const c = S.app.catalog, models = c.videoModels || {}, mp = c.modelPlan || {};
-    box.innerHTML = `
-      <div class="zz-stagewrap"><div class="zz-stage" id="hs-stage" style="aspect-ratio:${SHOT.aspect.replace(':', '/')}">${stageHTML('PREVIEW · ' + (HOME_STYLES.find((x) => x[0] === SHOT.style)?.[1] || ''))}</div></div>
-      <label class="l" for="hs-p">Scene prompt</label>
-      <textarea class="in" id="hs-p" rows="2" maxlength="1500">${esc(SHOT.prompt)}</textarea>
-      <div class="zz-row">
-        <div><label class="l" for="hs-cam">Camera</label><select class="in" id="hs-cam">${Object.entries(CAM).map(([k, l]) => `<option value="${k}" ${k === SHOT.camera ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
-        <div><label class="l" for="hs-md">Model</label><select class="in" id="hs-md">${Object.entries(models).map(([k, m]) => { const lock = mp[k] && !canUse(mp[k]); return `<option value="${k}" ${k === SHOT.model ? 'selected' : ''}>${esc(MODEL_NAME[k] || m.label)}${lock ? ` · 🔒 ${PLAN_LABEL[mp[k]]} plan` : ''}</option>`; }).join('')}</select></div>
-        <div><label class="l" for="hs-ar">Format</label><select class="in" id="hs-ar">${Object.entries(HOME_ASPECT).map(([k, l]) => `<option value="${k}" ${k === SHOT.aspect ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
-      </div>
-      <button class="go zz-go" id="hs-go">Generate shot <span class="c" id="hs-est"></span></button>`;
-    const preview = () => { if (!SHOT.job) $('#hs-stage').innerHTML = stageHTML('PREVIEW · ' + (HOME_STYLES.find((x) => x[0] === SHOT.style)?.[1] || '')); shotEstimate(); };
-    studioPreview = preview;
-    $('#hs-p').oninput = (e) => { SHOT.prompt = e.target.value; clearTimeout(preview.t); preview.t = setTimeout(preview, 300); };
-    $('#hs-cam').onchange = (e) => { SHOT.camera = e.target.value; preview(); };
-    $('#hs-md').onchange = (e) => {
-      const v = e.target.value, need = mp[v];
-      if (need && !canUse(need)) { e.target.value = SHOT.model; toast(`${models[v]?.label || 'That model'} is on the ${PLAN_LABEL[need]} plan`); return accountModal(); }
-      SHOT.model = v; shotEstimate(); $('#zz-model').innerHTML = modelCard();
-    };
-    $('#hs-ar').onchange = (e) => { SHOT.aspect = e.target.value; $('#hs-stage').style.aspectRatio = SHOT.aspect.replace(':', '/'); preview(); };
-    $('#hs-go').onclick = (e) => shotGo(e.currentTarget);
-    if (SHOT.job) studioTick();
-    shotEstimate();
-    return;
-  }
   if (S.mode === 'schedule') { box.innerHTML = '<div id="sched"></div>'; renderSchedule(); return; }
   if (S.mode === 'edit') return renderEditor(box);
   if (S.mode === 'ideas') return renderIdeas(box);
@@ -702,14 +675,16 @@ const RAIL = [
   ['Library', [['media', '▦', 'All media'], ['chars', '☺', 'Characters'], ['products', '▣', 'Products']]],
 ];
 const LIB_MODES = new Set(['media', 'chars', 'products']);
-const COMPOSER_MODES = new Set(['ad', 'image', 'voice']);
-const FL_TITLE = { ad: 'Make an ad', image: 'Make an image', voice: 'Make a voice-over' };
-const FL_NOUN = { ad: 'ads', image: 'images', voice: 'voice-overs' };
+const COMPOSER_MODES = new Set(['ad', 'image', 'video', 'voice']);
+const FL_TITLE = { ad: 'Make an ad', image: 'Make an image', video: 'Make a video', voice: 'Make a voice-over' };
+const FL_NOUN = { ad: 'ads', image: 'images', video: 'videos', voice: 'voice-overs' };
 const FL_EX = {
   ad: ['50% off today only, free shipping', 'Halal and safe for sensitive skin', 'New arrival, limited stock'],
+  video: ['Slow orbit around the product on a marble table, soft window light', 'A creator unboxes the product and smiles at the camera', 'Hand picks up the product, steam rising, cosy cafe'],
   image: ['Product on a marble table, soft morning light', 'Flat lay with flowers, top view', 'A young woman holding the product in a cafe'],
   voice: ['Hai semua! Hari ni saya nak kongsi satu produk yang memang best.', 'Limited time offer. Tap the yellow basket now!', 'Jom cuba sekarang, stok terhad!'],
 };
+const TIER_SHORT = { motion: 'Motion style', lite: 'MiniMax H3 Turbo', fast: 'MiniMax H3 Turbo HD', studio: 'VEED Fabric', premium: 'OmniHuman 1.5' };
 const TIER_MODEL = { motion: ['Motion style (animated photo + voice)', 'Not full AI video: your photo moves with voice and captions'], lite: ['MiniMax H3 Turbo', 'minimax/h3-max-turbo/image-to-video'], fast: ['MiniMax H3 Turbo HD', 'minimax/h3-max-turbo/image-to-video'], studio: ['VEED Fabric lip-sync', 'veed/fabric-1.0'], premium: ['OmniHuman 1.5', 'fal-ai/bytedance/omnihuman/v1.5'] };
 const VIDEO_FAL = { 'h3-turbo': 'minimax/h3-max-turbo/image-to-video', 'seedance-fast': 'bytedance/seedance-2.0/fast/image-to-video', 'kling-std': 'fal-ai/kling-video/v3/standard/image-to-video', 'kling-pro': 'fal-ai/kling-video/v3/pro/image-to-video' };
 // Which AI model the current tool will use (all run on fal.ai).
@@ -726,7 +701,7 @@ function llmName() {
 function modelInfo() {
   const c = S.app.catalog, m = S.mode;
   if (m === 'ad') { const k = F().tier || 'lite'; return { name: TIER_MODEL[k]?.[0] || k, fal: TIER_MODEL[k]?.[1], note: `${TIER_NAME[k] || k} quality. ${TIER_DESC[k] || ''}`, extra: 'Script: AI writer · Picture: ' + (c.tiers?.[k] && ['fast', 'studio', 'premium'].includes(k) ? 'Nano Banana 2' : 'Seedream 4') + ' · Voice: ElevenLabs or MiniMax' }; }
-  if (m === 'video') { const k = SHOT.model; return { name: c.videoModels?.[k]?.label || k, fal: VIDEO_FAL[k], note: c.videoModels?.[k]?.tag || '', extra: 'Start picture: Nano Banana 2' }; }
+  if (m === 'video') { const k = F().model || 'h3-turbo'; return { name: c.videoModels?.[k]?.label || k, fal: VIDEO_FAL[k], note: c.videoModels?.[k]?.tag || '', extra: 'Start picture: Nano Banana 2' }; }
   if (m === 'image') return F().quality === 'lite' ? { name: 'Seedream 4', fal: 'fal-ai/bytedance/seedream/v4', note: 'Good quality and cheaper. Upgrade to Creator for the sharpest model.' } : { name: 'Nano Banana 2', fal: 'fal-ai/nano-banana-2', note: 'Sharpest images. Keeps your character and product when you add them.' };
   if (m === 'voice') {
     const f = F();
@@ -793,7 +768,7 @@ document.addEventListener('click', (e) => {
   const t = e.target;
   const fr = t.closest('#presets [data-fr]');
   if (fr) {
-    if (S.mode === 'video') { SHOT.friendId = fr.dataset.fr; fillSides(); return studioPreview(); }
+    if (S.mode === 'video') { F().friendId = fr.dataset.fr; fillSides(); return renderComposer(); }
     F().friendId = F().friendId === fr.dataset.fr ? null : fr.dataset.fr; fillSides(); renderComposer(); if (S.mode === 'ad') $('#zz-main') && renderMain(); return;
   }
   const pd = t.closest('#presets [data-pd]');
@@ -802,7 +777,7 @@ document.addEventListener('click', (e) => {
   if (tp) { const x = HOME_TPLS[+tp.dataset.tpl]; Object.assign(SHOT, { prompt: x[2], camera: x[3], style: x[4] }); fillSides(); return renderMain(); }
   const st = t.closest('#presets [data-st]');
   if (st) {
-    if (S.mode === 'video') { SHOT.style = st.dataset.st; fillSides(); return studioPreview(); }
+    if (S.mode === 'video') { F().style = st.dataset.st; fillSides(); return renderComposer(); }
     F().style = st.dataset.st; fillSides(); return renderMain();
   }
   const pj = t.closest('#presets [data-postjob]');
