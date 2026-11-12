@@ -177,7 +177,7 @@ function renderTabs() {
 const HERO = {
   video: ['Direct your <em>friends</em>', 'Same face in every shot. Pick a camera move, describe the scene.'],
   image: ['Shoot <em>anything</em>', 'Packshots, lifestyle and thumbnails with your friends and products.'],
-  ad: ['Affiliate ads in <em>one click</em>', 'Product + friend → script, voice, lip-synced UGC video and captions for TikTok Shop & Shopee.'],
+  ad: ['Affiliate ads in <em>one click</em>', 'Add your product. Kravitas writes the script, records the voice and makes a short video for TikTok Shop and Shopee.'],
   talk: ['Make them <em>talk</em>', 'Your friend says anything, lip-synced, with captions.'],
   story: ['One prompt, <em>full video</em>', 'Plan it scene by scene, edit any line, and re-render only what changed.'],
   voice: ['Voice <em>studio</em>', 'ElevenLabs voice-overs, natural Bahasa Melayu voices, your own cloned voice, music and sound effects.'],
@@ -396,7 +396,7 @@ function pillOptions(key) {
   return {
     model: models, camera: CAM, style: STYLE, lang: LANG, platform: PLATFORM,
     voice: voiceOptions(),
-    tier: Object.fromEntries(Object.entries(c.tiers || {}).map(([k, t]) => [k, TIER_NAME[k] || t.label])),
+    tier: Object.fromEntries(Object.entries(c.tiers || {}).map(([k, t]) => [k, `${TIER_NAME[k] || t.label} · ${(typeof TIER_MODEL !== 'undefined' && TIER_MODEL[k]?.[0]) || t.label}`])),
     variants: { 1: '1 ad', 3: '3 variations', 5: '5 variations' },
     kind: { tts: 'Voice-over', sfx: 'Sound effect', music: 'Music' },
     voiceEngine: { v3: 'ElevenLabs v3 · expressive', multilingual: 'ElevenLabs Multilingual' },
@@ -457,22 +457,23 @@ function renderComposer(keepFocus) {
   if (pr) refs.push(`<span class="ref"><img src="${pr.image}">${esc(pr.name)}<button data-unref="productId">×</button></span>`);
   const needs = m === 'ad' && !pr ? '<button class="add req" data-attach>＋ Product</button>' : m === 'talk' && !fr && !f.image ? '<button class="add req" data-attach>＋ Who talks</button>' : '';
   const P = (k, l) => pill(k, l, pillOptions(k), f[k]);
+  const MCHIP = () => `<button class="pill mchip" data-open="models" title="The AI model this uses. Tap to see all models."><span class="k">◆</span>${esc(modelInfo().name)}</button>`;
   if (m === 'ad' && !ADV) f.approve = true; // simple mode always shows the script first
   const simple = {
     video: [P('camera', '🎥'), f.startImage ? '' : P('style', '')],
-    image: [P('style', '')],
-    ad: [P('lang', ''), P('format', '')],
+    image: [MCHIP(), P('style', '')],
+    ad: [P('tier', '◆'), P('lang', ''), P('format', '')],
     talk: [P('lang', '')],
     story: [P('lang', '')],
-    voice: [P('kind', ''), ...(f.kind === 'tts' ? [P('voice', '🎙'), P('lang', '')] : [P('length', '⏱')])],
+    voice: [MCHIP(), P('kind', ''), ...(f.kind === 'tts' ? [P('voice', '🎙'), P('lang', '')] : [P('length', '⏱')])],
   };
   const pills = ADV ? {
     video: [P('model', ''), P('aspect', ''), P('duration', ''), P('camera', '🎥'), f.startImage ? '' : P('style', ''), f.model !== 'h3-turbo' ? toggle('audio', 'Sound', f.audio) : ''],
-    image: [P('aspect', ''), P('count', '×'), P('style', '')],
+    image: [MCHIP(), P('aspect', ''), P('count', '×'), P('style', '')],
     ad: [P('format', ''), P('tier', '◆'), P('variants', '×'), P('angle', ''), P('platform', ''), P('lang', ''), P('seconds', ''), P('voice', '🎙'), toggle('approve', 'Approve first', f.approve), toggle('captions', 'Captions', f.captions)],
     talk: [P('textMode', ''), P('tier', '◆'), P('lang', ''), P('voice', '🎙'), f.textMode === 'topic' ? P('seconds', '') : '', toggle('captions', 'Captions', f.captions)],
     story: ['<button class="pill brainbtn" data-board title="Plan and edit the video scene by scene">🧩 Storyboard</button>', P('tier', '◆'), P('scenes', 'Scenes'), P('aspect', ''), P('style', ''), P('lang', ''), P('voice', '🎙'), f.tier === 'motion' ? '' : P('model', ''), toggle('captions', 'Captions', f.captions)],
-    voice: [P('kind', ''), ...(f.kind === 'tts' ? [P('voice', '🎙'), String(f.voice).startsWith('el:') ? P('voiceEngine', '') : P('emotion', ''), P('lang', '')] : [P('length', '⏱')])],
+    voice: [MCHIP(), P('kind', ''), ...(f.kind === 'tts' ? [P('voice', '🎙'), String(f.voice).startsWith('el:') ? P('voiceEngine', '') : P('emotion', ''), P('lang', '')] : [P('length', '⏱')])],
   }[m].filter(Boolean).join('') : simple[m].filter(Boolean).join('');
   const more = `<button class="pill more" data-more>${ADV ? 'Fewer options' : 'More options'}</button>`;
   const hint = !ADV && m === 'ad' ? `<p class="hint">${pr ? 'We write the hook and script and show them to you before making the video.' : 'Add your product, pick the language and hit Generate. You see the script before anything is made.'}</p>` : '';
@@ -486,6 +487,7 @@ function renderComposer(keepFocus) {
     <div class="bar2">${pills}${m === 'voice' ? '' : `<button class="pill brainbtn" data-brain title="Get hooks and ideas from your photos (2 credits)">${IDEAS.refs.length && REFS_OK.has(m) ? '✨ Prompt from files' : '✨ Ideas'}</button>`}${more}<button class="go" id="go">Generate <span class="c" id="est">✦ …</span></button></div>`;
   $('#cp-file')?.addEventListener('change', (e) => attachRefs([...e.target.files], () => renderComposer()));
   $('#composer').querySelectorAll('[data-cpun]').forEach((b) => (b.onclick = () => { IDEAS.refs.splice(+b.dataset.cpun, 1); renderComposer(); }));
+  { const mc = $('#zz-model'); if (mc && typeof modelCard === 'function') mc.innerHTML = modelCard(); }
   autosize();
   if (keepFocus) $('#prompt').focus();
   estimate();

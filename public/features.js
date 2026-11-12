@@ -121,6 +121,7 @@ async function shotGo(btn) {
 }
 // called by the job poller
 function studioTick() {
+  const gal = $('#fl-gal'); if (gal) gal.innerHTML = galleryHTML();
   const strip = $('#hs-strip'); if (!strip) return;
   strip.innerHTML = stripHTML();
   if (S.mode === 'edit') return editTick();
@@ -600,7 +601,7 @@ const SIDES = {
 function fillSides() {
   const [a, b, c] = SIDES[S.mode] || SIDES.ad;
   const set = (id, fn) => { const el = $(id); if (el) el.innerHTML = fn(); };
-  set('#zz-s1', a); set('#zz-s2', b); set('#zz-s3', c);
+  set('#zz-s1', a); set('#zz-s2', b); set('#zz-s3', c); set('#zz-model', modelCard);
 }
 // app.js calls renderPresets() after composer changes: keep the side cards in sync
 function refreshSides() { if ($('#zz-s1')) fillSides(); }
@@ -646,7 +647,7 @@ function renderMain() {
     $('#hs-md').onchange = (e) => {
       const v = e.target.value, need = mp[v];
       if (need && !canUse(need)) { e.target.value = SHOT.model; toast(`${models[v]?.label || 'That model'} is on the ${PLAN_LABEL[need]} plan`); return accountModal(); }
-      SHOT.model = v; shotEstimate();
+      SHOT.model = v; shotEstimate(); $('#zz-model').innerHTML = modelCard();
     };
     $('#hs-ar').onchange = (e) => { SHOT.aspect = e.target.value; $('#hs-stage').style.aspectRatio = SHOT.aspect.replace(':', '/'); preview(); };
     $('#hs-go').onclick = (e) => shotGo(e.currentTarget);
@@ -657,23 +658,75 @@ function renderMain() {
   if (S.mode === 'schedule') { box.innerHTML = '<div id="sched"></div>'; renderSchedule(); return; }
   if (S.mode === 'edit') return renderEditor(box);
   if (S.mode === 'ideas') return renderIdeas(box);
-  box.innerHTML = `${mainStage()}<p class="zz-lead">${HERO[S.mode]?.[1] || ''}</p><div class="composer inline" id="composer"></div>`;
+  box.innerHTML = `<div class="fl-head"><h1>${FL_TITLE[S.mode] || ''}</h1><p>${HERO[S.mode]?.[1] || ''}</p></div>
+    <div class="fl-gal" id="fl-gal">${galleryHTML()}</div>
+    <div class="composer inline" id="composer"></div>
+    <div class="id-ex fl-ex"><small>Try:</small>${(FL_EX[S.mode] || []).map((x, i) => `<button data-flex="${i}">${esc(x)}</button>`).join('')}</div>`;
+  box.querySelectorAll('[data-flex]').forEach((b) => (b.onclick = () => { F().prompt = FL_EX[S.mode][+b.dataset.flex]; renderComposer(true); }));
   renderComposer();
 }
 let studioPreview = () => {};
+// ---------- workspace shell: tool rail · work area · settings panel ----------
+const RAIL = [
+  ['Create', [['ideas', '✨', 'Ideas'], ['ad', '🛍', 'Ad'], ['video', '🎬', 'Video'], ['image', '🖼', 'Image'], ['voice', '🎙', 'Voice']]],
+  ['Finish', [['edit', '✂', 'Edit'], ['schedule', '📅', 'Schedule']]],
+];
+const COMPOSER_MODES = new Set(['ad', 'image', 'voice']);
+const FL_TITLE = { ad: 'Make an ad', image: 'Make an image', voice: 'Make a voice-over' };
+const FL_NOUN = { ad: 'ads', image: 'images', voice: 'voice-overs' };
+const FL_EX = {
+  ad: ['50% off today only, free shipping', 'Halal and safe for sensitive skin', 'New arrival, limited stock'],
+  image: ['Product on a marble table, soft morning light', 'Flat lay with flowers, top view', 'A young woman holding the product in a cafe'],
+  voice: ['Hai semua! Hari ni saya nak kongsi satu produk yang memang best.', 'Limited time offer. Tap the yellow basket now!', 'Jom cuba sekarang, stok terhad!'],
+};
+const TIER_MODEL = { motion: ['Motion (photo + voice)', 'ffmpeg, no AI video'], lite: ['MiniMax H3 Turbo', 'minimax/h3-max-turbo/image-to-video'], fast: ['MiniMax H3 Turbo HD', 'minimax/h3-max-turbo/image-to-video'], studio: ['VEED Fabric lip-sync', 'veed/fabric-1.0'], premium: ['OmniHuman 1.5', 'fal-ai/bytedance/omnihuman/v1.5'] };
+const VIDEO_FAL = { 'h3-turbo': 'minimax/h3-max-turbo/image-to-video', 'seedance-fast': 'bytedance/seedance-2.0/fast/image-to-video', 'kling-std': 'fal-ai/kling-video/v3/standard/image-to-video', 'kling-pro': 'fal-ai/kling-video/v3/pro/image-to-video' };
+// Which AI model the current tool will use (all run on fal.ai).
+function modelInfo() {
+  const c = S.app.catalog, m = S.mode;
+  if (m === 'ad') { const k = F().tier || 'lite'; return { name: TIER_MODEL[k]?.[0] || k, fal: TIER_MODEL[k]?.[1], note: `${TIER_NAME[k] || k} quality. ${TIER_DESC[k] || ''}`, extra: 'Script: AI writer · Picture: ' + (c.tiers?.[k] && ['fast', 'studio', 'premium'].includes(k) ? 'Nano Banana 2' : 'Seedream 4') + ' · Voice: ElevenLabs or MiniMax' }; }
+  if (m === 'video') { const k = SHOT.model; return { name: c.videoModels?.[k]?.label || k, fal: VIDEO_FAL[k], note: c.videoModels?.[k]?.tag || '', extra: 'Start picture: Nano Banana 2' }; }
+  if (m === 'image') return { name: 'Nano Banana 2', fal: 'fal-ai/nano-banana-2', note: 'Sharpest images. Keeps your character and product when you add them.' };
+  if (m === 'voice') {
+    const f = F();
+    if (f.kind === 'sfx') return { name: 'ElevenLabs Sound Effects', fal: 'fal-ai/elevenlabs/sound-effects/v2', note: 'Short sounds from a description.' };
+    if (f.kind === 'music') return { name: 'ElevenLabs Music', fal: 'fal-ai/elevenlabs/music', note: 'Background tracks from a description.' };
+    return String(f.voice).startsWith('el:') ? { name: 'ElevenLabs voices', fal: 'fal-ai/elevenlabs/tts', note: 'Natural English voices.' } : { name: 'MiniMax Speech', fal: 'fal-ai/minimax/speech-02-hd', note: 'Best for Bahasa Melayu, and your cloned voice.' };
+  }
+  if (m === 'ideas') return { name: 'AI writer', fal: S.app.llmModel || 'openrouter/router', note: 'Writes ideas, prompts and storyboards.', extra: 'Sketches: FLUX Schnell · Keyframes: ' + (canUse('creator') ? 'Nano Banana 2' : 'Seedream 4 Edit') };
+  if (m === 'edit') return { name: 'No AI needed to join clips', fal: '', note: 'New voice-overs use ElevenLabs or MiniMax. New music uses ElevenLabs Music.' };
+  return { name: 'No AI model', fal: '', note: 'Scheduling and posting do not use credits.' };
+}
+function modelCard() {
+  const i = modelInfo();
+  return `<div class="zz-top"><h2>Model</h2><button class="link" data-open="models">All models</button></div>
+    <div class="mdl"><b>${esc(i.name)}</b>${i.fal ? `<code>${esc(i.fal)}</code>` : ''}<small>${esc(i.note)}</small>${i.extra ? `<small>${esc(i.extra)}</small>` : ''}</div>
+    <p class="mdl-foot">Runs on fal.ai · ${S.app.mode === 'local' ? 'everything unlocked on your PC' : `your plan: ${access() === 'free' ? 'Free trial' : PLAN_LABEL[access()]}`}</p>`;
+}
+function galleryHTML() {
+  const want = TOOL_JOBS[S.mode] || [];
+  const list = S.jobs.filter((j) => want.includes(j.tool)).slice(0, 8);
+  if (!list.length) return `<div class="fl-empty"><span>${RAIL.flatMap((g) => g[1]).find((x) => x[0] === S.mode)?.[1] || '✨'}</span><b>Your ${FL_NOUN[S.mode] || 'work'} will appear here</b><small>Type below, or tap an example to start.</small></div>`;
+  return list.map((j) => {
+    const t = thumbOf(j), step = j.steps?.find((x) => x.status === 'running'), audio = j.outputs.some((o) => o.type === 'audio');
+    return `<button class="hs-card" data-job="${j.id}"><div class="hs-th">${j.status === 'running' ? `<div class="hs-run"><i></i><small>${esc(step?.label || 'Starting')}…</small></div>` : t ? (t.type === 'video' ? `<video src="${t.url}#t=0.3" muted preload="metadata"></video>` : `<img src="${t.url}" alt="">`) : `<div class="hs-run"><small>${j.status === 'error' ? 'Failed' : audio ? '🎙 Audio' : j.status === 'review' ? 'Check the script' : '…'}</small></div>`}</div><p>${esc(j.title || '')}</p></button>`;
+  }).join('');
+}
 function renderStudio() {
-  const shots = S.jobs.filter((j) => (TOOL_JOBS[S.mode] || []).includes(j.tool));
+  const comp = COMPOSER_MODES.has(S.mode);
   $('#presets').innerHTML = `
-    <section class="bento zz">
-      <div class="bx zz-shot">
-        <div class="zz-tools" role="tablist">${TOOLS.map(([k, l]) => `<button role="tab" data-mode="${k}" class="${k === S.mode ? 'on' : ''}" aria-selected="${k === S.mode}">${l}</button>`).join('')}
-</div>
-        <div id="zz-main"></div>
+    <section class="bento zz ws">
+      <nav class="ws-rail" aria-label="Tools">${RAIL.map(([g, items]) => `<small>${g}</small>${items.map(([k, ic, l]) => `<button data-mode="${k}" class="${k === S.mode ? 'on' : ''}" aria-current="${k === S.mode}"><i>${ic}</i><span>${l}</span></button>`).join('')}`).join('')}</nav>
+      <div class="ws-center">
+        <div class="bx zz-shot"><div id="zz-main"></div></div>
+        ${comp ? '' : `<div class="bx zz-strip"><div class="zz-top"><h2>Recent</h2><span>Tap to open</span></div><div class="zz-row2" id="hs-strip">${stripHTML()}</div></div>`}
       </div>
-      <div class="bx zz-chars" id="zz-s1"></div>
-      <div class="bx zz-tpl" id="zz-s2"></div>
-      <div class="bx zz-strip"><div class="zz-top"><h2>Recent</h2><span>Tap to open</span></div><div class="zz-row2" id="hs-strip">${stripHTML()}</div></div>
-      <div class="bx zz-style" id="zz-s3"></div>
+      <aside class="ws-side">
+        <div class="bx ws-model" id="zz-model"></div>
+        <div class="bx" id="zz-s1"></div>
+        <div class="bx" id="zz-s2"></div>
+        <div class="bx" id="zz-s3"></div>
+      </aside>
     </section>`;
   fillSides();
   renderMain();

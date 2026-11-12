@@ -687,3 +687,30 @@ body[data-view="studio"] main{padding-bottom:60px}
 .mcost{font-size:12px;color:var(--muted);white-space:nowrap}.mplan{font-size:12px;font-weight:800;min-width:78px;text-align:right}
 .mrow.lock b,.mrow.lock small{opacity:.55}
 @media(max-width:560px){.mrow{grid-template-columns:1fr auto}.mcost{display:none}}
+
+/* workspace shell: rail · center · settings (AI Studio / Flow style) */
+.bento.zz.ws{display:grid;grid-template-columns:190px minmax(0,1fr) 310px;grid-template-areas:none;grid-auto-rows:auto;gap:12px;align-items:start;margin-top:8px}
+.ws-rail{position:sticky;top:76px;border:1px solid var(--line);background:var(--s1,#0c0c0c);padding:10px;display:flex;flex-direction:column;gap:2px}
+.ws-rail small{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:10px 8px 6px}
+.ws-rail button{display:flex;align-items:center;gap:10px;border:0;background:none;color:var(--muted);font:inherit;font-size:14px;font-weight:700;padding:10px 10px;text-align:left;cursor:pointer}
+.ws-rail button i{font-style:normal;width:20px;text-align:center;filter:grayscale(1)}
+.ws-rail button:hover{color:var(--fg);background:#141414}
+.ws-rail button.on{background:#fff;color:#000}
+.ws-center{display:flex;flex-direction:column;gap:12px;min-width:0}
+.ws-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.ws .bx{grid-area:auto}
+.mdl{border:1px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:6px}
+.mdl b{font-size:15px}.mdl code{font-size:11px;color:var(--muted);word-break:break-all;font-family:ui-monospace,Menlo,monospace}
+.mdl small{font-size:12px;color:var(--muted);line-height:1.45}
+.mdl-foot{margin:8px 0 0;font-size:11.5px;color:var(--muted)}
+.link{background:none;border:0;color:var(--muted);font:inherit;font-size:12px;text-decoration:underline;cursor:pointer;padding:0}.link:hover{color:var(--fg)}
+.fl-head h1{margin:0;font-size:26px;letter-spacing:-.03em}.fl-head p{margin:6px 0 14px;color:var(--muted);font-size:13px}
+.fl-gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:14px;max-height:216px;overflow-y:auto}
+.fl-gal .hs-card{width:auto}
+.fl-empty{grid-column:1/-1;border:1px dashed #333;min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:20px}
+.fl-empty span{font-size:30px;filter:grayscale(1)}.fl-empty b{font-size:15px}.fl-empty small{color:var(--muted);font-size:12.5px}
+.fl-ex{margin-top:10px}
+.pill.mchip{border-style:solid;border-color:#fff}
+.lang-btn{letter-spacing:.04em}
+@media (max-width:1150px){.bento.zz.ws{grid-template-columns:170px minmax(0,1fr)}.ws-side{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:720px){.bento.zz.ws{grid-template-columns:1fr}.ws-rail{position:static;flex-direction:row;overflow-x:auto;padding:6px;gap:4px}.ws-rail small{display:none}.ws-rail button{flex:none;padding:9px 12px;font-size:13px}.ws-side{grid-template-columns:1fr}.fl-head h1{font-size:22px}.fl-empty{min-height:130px;min-width:100%}.models-btn{padding:8px 10px;font-size:12px}.fl-gal{display:flex;overflow-x:auto;max-height:none}.fl-gal .hs-card{flex:none;width:104px}}

@@ -95,3 +95,7 @@ List users: `curl https://<your-domain>/api/admin/users -H "x-admin-token: <ADMI
 ## Idea → storyboard → video
 In **Ideas**, each idea has a **🎞 Storyboard** button. It plans 4 panels with the LLM (through fal.ai, same key) and draws cheap comic sketches (FLUX Schnell, about 1 credit each). People edit the "same in every panel" look text and each panel's action and line, redraw sketches, and turn panels into **real keyframes** (Seedream edit on Basic/Starter, Nano Banana 2 on Creator and up) that use the character photo and product photo as references. "Make the video" runs the story tool: approved keyframes are used as-is, sketches are painted fresh, and the video quality list is locked by plan (Quick free/Basic, Standard/Sharper Starter, Lip-sync Creator, Best Pro).
 Routes: `POST /api/panels/plan`, `POST /api/panels/draw`.
+
+## Studio layout and languages
+The studio is a three-part workspace: a tool rail on the left (Ideas, Ad, Video, Image, Voice, then Edit and Schedule), the work area in the middle (your results above, the chatbox below), and a settings panel on the right that starts with a **Model** card naming the fal.ai model the current tool uses. The chatbox also carries a model chip.
+`public/i18n.js` makes the whole studio bilingual. The **EN · BM** button in the header switches English and Bahasa Melayu and remembers the choice in the browser. To add or fix a translation, edit the dictionary at the top of that file (English text on the left, BM on the right). Text that is not in the dictionary stays in English.
