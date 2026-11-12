@@ -91,6 +91,7 @@ const MODES = {
   edit: { label: 'Edit' }, // the editor has its own main card (no composer)
   ideas: { label: 'Ideas' }, // brainstorm dump → prompts, saved to the library
   schedule: { label: 'Schedule', page: true },
+  media: { label: 'All media' }, chars: { label: 'Characters' }, products: { label: 'Products' }, // library pages in the sidebar
 };
 const TOOL_MODE = Object.fromEntries(Object.entries(MODES).filter(([, v]) => v.tool).map(([m, v]) => [v.tool, m]));
 TOOL_MODE.avatarGen = 'avatars';
@@ -139,7 +140,7 @@ const PRESETS = {
 
 const DEFAULTS = {
   video: () => ({ prompt: '', friendId: null, productId: null, startImage: null, camera: 'dolly-in', style: 'cinematic', model: 'h3-turbo', duration: 5, aspect: '9:16', audio: false }),
-  image: () => ({ prompt: '', friendId: null, productId: null, style: 'photo', aspect: '9:16', count: 2 }),
+  image: () => ({ prompt: '', friendId: null, productId: null, style: 'photo', aspect: '9:16', count: 1, quality: canUse('creator') ? 'full' : 'lite' }),
   ad: () => ({ prompt: '', friendId: null, productId: null, format: 'talking', tier: startTier(), approve: true, variants: 1, angle: 'review', platform: 'tiktok', lang: 'ms', seconds: 8, voice: 'mm:Lively_Girl', captions: true }),
   talk: () => ({ prompt: '', friendId: null, image: null, textMode: 'script', tier: startTier(), lang: 'ms', voice: 'mm:Lively_Girl', captions: true, seconds: 8 }),
   story: () => ({ prompt: '', friendId: null, scenes: 4, tier: 'motion', aspect: '9:16', style: 'cinematic', lang: 'en', voice: 'el:Aria', model: 'h3-turbo', captions: true }),
@@ -158,7 +159,7 @@ const PLACEHOLDER = {
 
 // ---------- state ----------
 // Every visit opens on the homepage (Ad); switching tabs is per visit.
-const S = { app: null, friends: [], products: [], jobs: [], voices: [], mode: 'ad', forms: {}, preset: {} };
+const S = { app: null, friends: [], products: [], jobs: [], voices: [], mode: 'ideas', forms: {}, preset: {} };
 const F = () => S.forms[S.mode] || (S.forms[S.mode] = (DEFAULTS[S.mode] || (() => ({ prompt: '' })))());
 const friendById = (id) => S.friends.find((f) => f.id === id);
 const productById = (id) => S.products.find((p) => p.id === id);
@@ -177,7 +178,7 @@ function renderTabs() {
 const HERO = {
   video: ['Direct your <em>friends</em>', 'Same face in every shot. Pick a camera move, describe the scene.'],
   image: ['Shoot <em>anything</em>', 'Packshots, lifestyle and thumbnails with your friends and products.'],
-  ad: ['Affiliate ads in <em>one click</em>', 'Product + friend → script, voice, lip-synced UGC video and captions for TikTok Shop & Shopee.'],
+  ad: ['Affiliate ads in <em>one click</em>', 'Add your product. Kravitas writes the script, records the voice and makes a short video for TikTok Shop and Shopee.'],
   talk: ['Make them <em>talk</em>', 'Your friend says anything, lip-synced, with captions.'],
   story: ['One prompt, <em>full video</em>', 'Plan it scene by scene, edit any line, and re-render only what changed.'],
   voice: ['Voice <em>studio</em>', 'ElevenLabs voice-overs, natural Bahasa Melayu voices, your own cloned voice, music and sound effects.'],
@@ -396,7 +397,7 @@ function pillOptions(key) {
   return {
     model: models, camera: CAM, style: STYLE, lang: LANG, platform: PLATFORM,
     voice: voiceOptions(),
-    tier: Object.fromEntries(Object.entries(c.tiers || {}).map(([k, t]) => [k, TIER_NAME[k] || t.label])),
+    tier: Object.fromEntries(Object.entries(c.tiers || {}).map(([k, t]) => [k, `${TIER_NAME[k] || t.label} · ${(typeof TIER_MODEL !== 'undefined' && TIER_MODEL[k]?.[0]) || t.label}`])),
     variants: { 1: '1 ad', 3: '3 variations', 5: '5 variations' },
     kind: { tts: 'Voice-over', sfx: 'Sound effect', music: 'Music' },
     voiceEngine: { v3: 'ElevenLabs v3 · expressive', multilingual: 'ElevenLabs Multilingual' },
@@ -406,6 +407,7 @@ function pillOptions(key) {
     duration: { 5: '5s', 8: '8s', 10: '10s' },
     seconds: { 8: '8s', 10: '10s', 15: '15s', 20: '20s', 30: '30s' },
     count: { 1: '1', 2: '2', 4: '4' },
+    quality: { lite: 'Standard · Seedream 4', full: 'Best · Nano Banana 2' },
     scenes: { 3: '3', 4: '4', 5: '5', 6: '6' },
     format: { talking: 'Someone talks about it', showcase: 'Show the product' },
     angle: { review: 'Honest review', problem: 'Problem → fix', unboxing: 'Unboxing', deal: 'Flash sale', beforeafter: 'Before & after', compare: 'Vs. pricey one' },
@@ -429,6 +431,7 @@ function needFor(key, v) {
   const c = S.app.catalog;
   if (key === 'tier') return c.tiers?.[v]?.plan;
   if (key === 'model') return c.modelPlan?.[v];
+  if (key === 'quality') return v === 'full' ? 'creator' : null;
   if (key === 'variants') return v > (c.maxVariants?.[access()] || 3) ? 'creator' : null;
   return null;
 }
@@ -457,22 +460,23 @@ function renderComposer(keepFocus) {
   if (pr) refs.push(`<span class="ref"><img src="${pr.image}">${esc(pr.name)}<button data-unref="productId">×</button></span>`);
   const needs = m === 'ad' && !pr ? '<button class="add req" data-attach>＋ Product</button>' : m === 'talk' && !fr && !f.image ? '<button class="add req" data-attach>＋ Who talks</button>' : '';
   const P = (k, l) => pill(k, l, pillOptions(k), f[k]);
+  const MCHIP = () => `<button class="pill mchip" data-open="models" title="The AI model this uses. Tap to see all models."><span class="k">◆</span>${esc(modelInfo().name)}</button>`;
   if (m === 'ad' && !ADV) f.approve = true; // simple mode always shows the script first
   const simple = {
     video: [P('camera', '🎥'), f.startImage ? '' : P('style', '')],
-    image: [P('style', '')],
-    ad: [P('lang', ''), P('format', '')],
+    image: [P('quality', '◆'), P('count', '×'), P('style', '')],
+    ad: [P('tier', '◆'), P('lang', ''), P('format', '')],
     talk: [P('lang', '')],
     story: [P('lang', '')],
-    voice: [P('kind', ''), ...(f.kind === 'tts' ? [P('voice', '🎙'), P('lang', '')] : [P('length', '⏱')])],
+    voice: [MCHIP(), P('kind', ''), ...(f.kind === 'tts' ? [P('voice', '🎙'), P('lang', '')] : [P('length', '⏱')])],
   };
   const pills = ADV ? {
     video: [P('model', ''), P('aspect', ''), P('duration', ''), P('camera', '🎥'), f.startImage ? '' : P('style', ''), f.model !== 'h3-turbo' ? toggle('audio', 'Sound', f.audio) : ''],
-    image: [P('aspect', ''), P('count', '×'), P('style', '')],
+    image: [P('quality', '◆'), P('aspect', ''), P('count', '×'), P('style', '')],
     ad: [P('format', ''), P('tier', '◆'), P('variants', '×'), P('angle', ''), P('platform', ''), P('lang', ''), P('seconds', ''), P('voice', '🎙'), toggle('approve', 'Approve first', f.approve), toggle('captions', 'Captions', f.captions)],
     talk: [P('textMode', ''), P('tier', '◆'), P('lang', ''), P('voice', '🎙'), f.textMode === 'topic' ? P('seconds', '') : '', toggle('captions', 'Captions', f.captions)],
     story: ['<button class="pill brainbtn" data-board title="Plan and edit the video scene by scene">🧩 Storyboard</button>', P('tier', '◆'), P('scenes', 'Scenes'), P('aspect', ''), P('style', ''), P('lang', ''), P('voice', '🎙'), f.tier === 'motion' ? '' : P('model', ''), toggle('captions', 'Captions', f.captions)],
-    voice: [P('kind', ''), ...(f.kind === 'tts' ? [P('voice', '🎙'), String(f.voice).startsWith('el:') ? P('voiceEngine', '') : P('emotion', ''), P('lang', '')] : [P('length', '⏱')])],
+    voice: [MCHIP(), P('kind', ''), ...(f.kind === 'tts' ? [P('voice', '🎙'), String(f.voice).startsWith('el:') ? P('voiceEngine', '') : P('emotion', ''), P('lang', '')] : [P('length', '⏱')])],
   }[m].filter(Boolean).join('') : simple[m].filter(Boolean).join('');
   const more = `<button class="pill more" data-more>${ADV ? 'Fewer options' : 'More options'}</button>`;
   const hint = !ADV && m === 'ad' ? `<p class="hint">${pr ? 'We write the hook and script and show them to you before making the video.' : 'Add your product, pick the language and hit Generate. You see the script before anything is made.'}</p>` : '';
@@ -480,12 +484,14 @@ function renderComposer(keepFocus) {
   const tags = m === 'voice' && f.kind === 'tts' && f.voiceEngine === 'v3' && String(f.voice).startsWith('el:')
     ? `<div class="tagrow">${['[excited]', '[whispers]', '[laughs]', '[sighs]', '[curious]', '[sarcastic]', '[pause]'].map((t) => `<button class="tagchip" data-tag="${t}">${t}</button>`).join('')}</div>` : '';
   $('#composer').innerHTML = `
-    ${m === 'voice' ? tags : `<div class="refs">${refs.join('')}${needs}<button class="add" data-attach title="Add friend, product or image">＋</button>${REFS_OK.has(m) ? `<label class="add clip" title="Attach images, PDF, Word or text as references">📎<input type="file" id="cp-file" accept="${REF_ACCEPT}" multiple hidden></label>` : ''}</div>`}
+    ${m === 'voice' ? tags : `<div class="refs">${refs.join('')}${needs}</div>`}
     <textarea class="prompt" id="prompt" rows="1" placeholder="${esc(prompt)}">${esc(f.prompt)}</textarea>
     ${hint}
-    <div class="bar2">${pills}${m === 'voice' ? '' : `<button class="pill brainbtn" data-brain title="Get hooks and ideas from your photos (2 credits)">${IDEAS.refs.length && REFS_OK.has(m) ? '✨ Prompt from files' : '✨ Ideas'}</button>`}${more}<button class="go" id="go">Generate <span class="c" id="est">✦ …</span></button></div>`;
+    <div class="bar2">${m === 'voice' ? '' : `<button class="ib2 plus" data-attach title="Add a product, character, photo or file" aria-label="Attach"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>`}${pills}${m === 'voice' ? '' : `<button class="ib2" data-brain title="${IDEAS.refs.length && REFS_OK.has(m) ? 'Write a prompt from your files' : 'Get hooks and ideas'} (2 tokens)" aria-label="Ideas"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg></button>`}<span class="sp"></span><span class="cap" id="cap"></span><button class="ib2 tune ${ADV ? 'on' : ''}" data-more title="${ADV ? 'Fewer options' : 'More options'}" aria-label="More options"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button><button class="send" id="go" title="Generate" aria-label="Generate"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button><span class="c est-hid" id="est"></span></div>
+    ${REFS_OK.has(m) ? `<input type="file" id="cp-file" accept="${REF_ACCEPT}" multiple hidden>` : ''}`;
   $('#cp-file')?.addEventListener('change', (e) => attachRefs([...e.target.files], () => renderComposer()));
   $('#composer').querySelectorAll('[data-cpun]').forEach((b) => (b.onclick = () => { IDEAS.refs.splice(+b.dataset.cpun, 1); renderComposer(); }));
+  { const mc = $('#zz-model'); if (mc && typeof modelCard === 'function') mc.innerHTML = modelCard(); }
   autosize();
   if (keepFocus) $('#prompt').focus();
   estimate();
@@ -495,11 +501,21 @@ function autosize() {
   t.style.height = 'auto';
   t.style.height = Math.min(180, t.scrollHeight) + 'px';
 }
+const CAP_NOUN = { ad: 'ads', image: 'images', video: 'videos', talk: 'videos', story: 'videos', voice: 'clips' };
+function capLine(cost) {
+  const el = $('#cap'), go = $('#go'); if (!el) return;
+  const have = S.app.credits || 0, f = F();
+  const per = S.mode === 'image' ? cost / Math.max(1, f.count || 1) : cost;
+  const n = per > 0 ? Math.floor(have / per) : 0;
+  el.textContent = cost ? `✦ ${cost} · ≈ ${n.toLocaleString()} ${S.mode === 'image' ? 'images' : CAP_NOUN[S.mode] || 'more'} left` : '';
+  el.title = cost ? `This costs ✦ ${cost}. Your ✦ ${have.toLocaleString()} balance covers about ${n.toLocaleString()} like it.` : '';
+  if (go) { go.title = cost ? `Generate (✦ ${cost})` : 'Generate'; go.classList.toggle('low', cost > have); }
+}
 let estT;
 function estimate() {
   clearTimeout(estT);
   estT = setTimeout(async () => {
-    try { const { credits } = await api('/api/estimate', { tool: MODES[S.mode].tool, input: payload() }); $('#est').textContent = `✦ ${credits}`; } catch { $('#est').textContent = ''; }
+    try { const { credits } = await api('/api/estimate', { tool: MODES[S.mode].tool, input: payload() }); $('#est').textContent = `✦ ${credits}`; capLine(credits); } catch { $('#est').textContent = ''; capLine(0); }
   }, 200);
 }
 
@@ -582,6 +598,7 @@ function attachMenu(anchor) {
     ${showProducts ? `<hr><div class="h">Products</div>
     ${S.products.map((p) => `<button class="it" data-v="p:${p.id}"><img src="${p.image}"><span>${esc(p.name)}<small>${esc(p.price)}</small></span><span class="x" data-del="p:${p.id}" title="Delete">🗑</span></button>`).join('')}
     <button class="it" data-v="new:product">＋ New product</button>` : ''}
+    ${REFS_OK.has(m) ? `<hr><button class="it" data-v="ref">📎 Reference file · image, PDF, Word, text</button>` : ''}
     ${showUpload ? `<hr><button class="it" data-v="upload">⬆ Upload ${m === 'talk' ? 'a photo' : 'a start frame'}</button>` : ''}`;
   openPop(anchor, html, async (v, e) => {
     const del = e.target.closest('[data-del]');
@@ -596,6 +613,7 @@ function attachMenu(anchor) {
     }
     closePop();
     const f = F();
+    if (v === 'ref') return $('#cp-file')?.click();
     if (v.startsWith('f:')) { f.friendId = v.slice(2); f.image = null; }
     else if (v.startsWith('p:')) f.productId = v.slice(2);
     else if (v === 'new:friend') return friendModal();
@@ -850,6 +868,8 @@ function poll() {
 }
 
 // ---------- events ----------
+function setDrawer(on) { document.body.classList.toggle('drawer', !!on); try { localStorage.setItem('kv-drawer', on ? '1' : '0'); } catch {} }
+try { if (localStorage.getItem('kv-drawer') === '1') document.body.classList.add('drawer'); if (localStorage.getItem('kv-rail') === '1') document.body.classList.add('rail-min'); } catch {}
 function setMode(m) {
   if (!MODES[m] || MODES[m].hidden) m = 'ad';
   S.mode = m;
@@ -889,7 +909,9 @@ document.addEventListener('click', (e) => {
   if (act) { e.preventDefault(); closeModal(); return ACTIONS[act.dataset.act]?.(); }
   if (t.closest('[data-brain]')) { const f = F(); Object.assign(IDEAS, { dump: f.prompt || IDEAS.dump, productId: f.productId || IDEAS.productId, friendId: f.friendId || IDEAS.friendId, lang: f.lang || IDEAS.lang, autorun: !!(IDEAS.refs.length && REFS_OK.has(S.mode)) }); setMode('ideas'); renderAll(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
   if (t.closest('[data-brain-last]') && lastBrain) return showBrain(lastBrain, [friendById(lastBrain.ctx.friendId)?.photos?.[0], productById(lastBrain.ctx.productId)?.image].filter(Boolean));
-  if (t.closest('[data-more]')) { setAdvanced(!ADV); return renderComposer(); }
+  if (t.closest('[data-more]')) { setAdvanced(!ADV); setDrawer(ADV); return renderComposer(); }
+  if (t.closest('[data-drawer]')) return setDrawer(!document.body.classList.contains('drawer'));
+  if (t.closest('[data-collapse]')) { const on = document.body.classList.toggle('rail-min'); try { localStorage.setItem('kv-rail', on ? '1' : '0'); } catch {} return; }
   if (t.closest('[data-guide-show]')) { flag('if-guide-hidden', false); return modal(guideHTML()); }
   const rl = t.closest('[data-rail]');
   if (rl) { const st = $('#strip'); return st.scrollBy({ left: +rl.dataset.rail * st.clientWidth * 0.8, behavior: 'smooth' }); }
@@ -931,6 +953,13 @@ document.addEventListener('mouseout', (e) => { const v = e.target.closest('.card
           if (r.paid) { await load(); toast(`✓ Payment received, ${Number(r.credits).toLocaleString()} credits added`); } else toast('Payment is processing. Credits appear once it clears.');
         } catch (e) { toast(e.message, true); }
       } else toast('Checkout cancelled');
+    }
+    if (q.has('idea')) {
+      IDEAS.dump = (q.get('idea') || '').slice(0, 4000);
+      if (LANG[q.get('lang')]) IDEAS.lang = q.get('lang');
+      IDEAS.autorun = q.get('go') === '1' && !!IDEAS.dump.trim();
+      S.mode = 'ideas';
+      history.replaceState(null, '', location.pathname);
     }
     renderAll();
     if (S.jobs.some((j) => j.status === 'running')) poll();

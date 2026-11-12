@@ -57,7 +57,7 @@
   const img$ = (q, refs = true) => (q === 'lite' ? (refs ? PRICE.imageLite : PRICE.imageSchnell) : PRICE.image);
   const words = (sec) => 'x'.repeat(Math.round(sec * 14));
   const ESTIMATE = {
-    image: (i) => PRICE.image * (i.count || 1),
+    image: (i) => (i.quality === 'lite' ? ((i.friendId || i.productId || i.startImage) ? PRICE.imageLite : PRICE.imageSchnell) : PRICE.image) * (i.count || 1),
     shot: (i) => (i.startImage ? 0 : PRICE.image) + vsec(i.model, i.duration || 5),
     ugc: (i) => {
       const t = tierOf(i.tier), n = [1, 3, 5].includes(i.variants) ? i.variants : 1;
@@ -345,6 +345,7 @@
     const lock = (need, what) => { if ((RANK[plan] ?? 0) < (RANK[need] ?? 0)) throw err(`${what} is on the ${PLAN_NAME[need]} plan. Upgrade to use it.`, 'plan'); };
     if (['ugc', 'avatar', 'story'].includes(tool)) { const TT = TIERS[input.tier] || TIERS[tool === 'story' ? 'motion' : 'lite']; lock(TT.plan, `${TT.label} quality`); }
     if (input.model && !(tool === 'story' && (input.tier || 'motion') === 'motion')) lock(MODEL_PLAN[input.model] || 'free', VIDEO_MODELS[input.model]?.label || 'That model');
+    if (tool === 'image') { if (!input.quality) input.quality = (RANK[plan] ?? 0) >= RANK.creator ? 'full' : 'lite'; if (input.quality === 'full') lock('creator', 'Best image quality (Nano Banana 2)'); }
     if (tool === 'ugc' && (input.variants || 1) > MAX_VARIANTS[plan]) lock('creator', `${input.variants} variations`);
     const prevDraft = input.fromDraft ? st.jobs.find((x) => x.id === input.fromDraft) : null;
     if (input.fromDraft && !(prevDraft?.stage === 'review' && prevDraft.draftData)) throw err('That draft is no longer available. Make a new one.');
@@ -638,7 +639,7 @@
       return {
         userId: 'preview', mode: 'preview', mock: true, ffmpeg: true, credits: st.credits, llmModel: 'google/gemini-2.5-flash', payments: true, plan: st.plan || null, social: true,
         access: st.plan || 'free', brand: st.brand || '',
-        catalog: { videoModels: VIDEO_MODELS, tiers: TIERS, modelPlan: MODEL_PLAN, maxVariants: MAX_VARIANTS, voices: VOICES, emotions: EMOTIONS, markup: MARKUP, avatars: AVATARS, price: PRICE, styles: [], cameras: [], platforms: { tiktok: 'TikTok Shop', shopee: 'Shopee', lazada: 'Lazada', instagram: 'Instagram Reels' }, angles: [], langs: ['ms', 'en', 'manglish'] },
+        catalog: { writers: { flash: { name: 'Gemini 2.5 Flash', plan: 'free', note: 'Fast and cheap' }, pro: { name: 'Gemini 2.5 Pro', plan: 'starter', note: 'Deeper thinking' }, gpt: { name: 'GPT-4o', plan: 'creator', note: 'Strong with images' }, claude: { name: 'Claude 3.7 Sonnet', plan: 'creator', note: 'Best writing' } }, videoModels: VIDEO_MODELS, tiers: TIERS, modelPlan: MODEL_PLAN, maxVariants: MAX_VARIANTS, voices: VOICES, emotions: EMOTIONS, markup: MARKUP, avatars: AVATARS, price: PRICE, styles: [], cameras: [], platforms: { tiktok: 'TikTok Shop', shopee: 'Shopee', lazada: 'Lazada', instagram: 'Instagram Reels' }, angles: [], langs: ['ms', 'en', 'manglish'] },
       };
     }
     if (p === '/api/ledger') return st.ledger.slice(0, 100);

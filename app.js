@@ -11,7 +11,7 @@ import { store } from './lib/store/index.js';
 import { saveDataUrl, saveAudioDataUrl, uid as newId } from './lib/media.js';
 import { isMock, falKey, llmModel, run as falRun, toRemote } from './lib/fal.js';
 import { TOOLS, STYLES, CAMERAS, createJob, expireStale, removeBg, live, planStory, planPanels, drawPanel } from './lib/pipelines.js';
-import { VIDEO_MODELS, VOICES, PRICE, TIERS, EMOTIONS, MODELS, MARKUP, MODEL_PLAN, MAX_VARIANTS, allowed, imageCost } from './lib/models.js';
+import { WRITERS, VIDEO_MODELS, VOICES, PRICE, TIERS, EMOTIONS, MODELS, MARKUP, MODEL_PLAN, MAX_VARIANTS, allowed, imageCost } from './lib/models.js';
 import { AVATAR_PRESETS } from './lib/avatars.js';
 import * as social from './lib/social.js';
 import { PLATFORMS, ANGLES, LANGS } from './lib/prompts.js';
@@ -156,6 +156,7 @@ function checkPlan(plan, tool, i) {
     const need = MODEL_PLAN[i.model];
     if (need && !allowed(plan, need)) throw planFail(VIDEO_MODELS[i.model]?.label || 'That model', need);
   }
+  if (tool === 'image' && i.quality === 'full' && !allowed(plan, 'creator')) throw planFail('Best image quality (Nano Banana 2)', 'creator');
   if (tool === 'ugc' && (i.variants || 1) > MAX_VARIANTS[plan]) throw planFail(`${i.variants} variations`, 'creator');
 }
 async function needPlan(uid, need, what) { const plan = await planOf(uid); if (!allowed(plan, need)) throw planFail(what, need); }
@@ -169,7 +170,7 @@ app.get('/api/state', wrap(async (req, res) => {
     catalog: {
       videoModels: Object.fromEntries(Object.entries(VIDEO_MODELS).map(([k, m]) => [k, { label: m.label, tag: m.tag, perSec: m.perSec }])),
       tiers: Object.fromEntries(Object.entries(TIERS).map(([k, t]) => [k, { label: t.label, tag: t.tag, maxSec: t.maxSec, plan: t.plan }])),
-      modelPlan: MODEL_PLAN, maxVariants: MAX_VARIANTS, voices: VOICES, emotions: EMOTIONS, markup: MARKUP,
+      writers: WRITERS, modelPlan: MODEL_PLAN, maxVariants: MAX_VARIANTS, voices: VOICES, emotions: EMOTIONS, markup: MARKUP,
       avatars: AVATAR_PRESETS.map(({ id, name, tagline, look }) => ({ id, name, tagline, look })),
       styles: Object.keys(STYLES), cameras: Object.keys(CAMERAS), price: PRICE,
       platforms: Object.fromEntries(Object.entries(PLATFORMS).map(([k, p]) => [k, p.name])),
@@ -307,7 +308,9 @@ app.post('/api/brainstorm', limit('brainstorm', 30, 60), wrap(async (req, res) =
   if (!friend && !product && !img && !refs.length && !String(prompt || '').trim()) throw fail('Add a photo, a product, a reference or some notes first so there is something to think about');
   await store.adjust(req.uid, -cost, followUp ? 'Brainstorm follow-up' : 'Brainstorm', null);
   try {
-    res.json(await brainstorm({ mode, prompt: String(prompt || '').slice(0, 4000), friend, product, image: img, lang, chat, previous, brand, refs }));
+    const w = WRITERS[req.body.writer];
+    if (w && !allowed(await planOf(req.uid), w.plan)) throw planFail(w.name, w.plan);
+    res.json(await brainstorm({ mode, prompt: String(prompt || '').slice(0, 4000), friend, product, image: img, lang, chat, previous, brand, refs, model: w && w.id !== WRITERS.flash.id ? w.id : null }));
   } catch (e) {
     await store.adjust(req.uid, cost, 'Refund (brainstorm failed)', null, true);
     throw e;
@@ -461,6 +464,7 @@ function cleanInput(input) {
   delete i.refs;
   if (i.look != null) i.look = str(i.look, 800);
   for (const k of ['prompt', 'script', 'notes', 'topic', 'tone', 'text']) if (typeof i[k] === 'string') i[k] = i[k].slice(0, k === 'text' ? 5000 : 2000);
+  if (i.quality != null) i.quality = i.quality === 'lite' ? 'lite' : 'full';
   if (i.variants != null) i.variants = [1, 3, 5].includes(+i.variants) ? +i.variants : 1;
   if (i.scripts != null) i.scripts = (Array.isArray(i.scripts) ? i.scripts : []).slice(0, 5).map((x) => str(x, 1200));
   for (const k of ['fromDraft', 'reuseFrom', 'tier']) if (i[k] != null) i[k] = str(i[k], 40);
@@ -486,7 +490,9 @@ function cleanInput(input) {
 app.post('/api/estimate', wrap(async (req, res) => {
   const t = TOOLS[req.body.tool];
   if (!t) throw fail('Unknown tool');
-  res.json({ credits: Math.ceil(t.estimate(cleanInput(req.body.input || {}))) });
+  const ein = cleanInput(req.body.input || {});
+  if (req.body.tool === 'image' && !ein.quality) ein.quality = allowed(await planOf(req.uid), 'creator') ? 'full' : 'lite';
+  res.json({ credits: Math.ceil(t.estimate(ein)) });
 }));
 
 app.post('/api/jobs', limit('jobs', 60, 60), wrap(async (req, res) => {
@@ -498,7 +504,9 @@ app.post('/api/jobs', limit('jobs', 60, 60), wrap(async (req, res) => {
   const input = cleanInput(req.body.input || {});
   if (req.body.tool === 'edit' && !input.clips?.length) throw fail('Add at least one of your images or videos to edit.');
   const L = await lookups(req.uid);
-  checkPlan(await planOf(req.uid), req.body.tool, input);
+  const plan0 = await planOf(req.uid);
+  if (req.body.tool === 'image' && !input.quality) input.quality = allowed(plan0, 'creator') ? 'full' : 'lite';
+  checkPlan(plan0, req.body.tool, input);
   if (input.reuseFrom) L.prev = await store.getJob(req.uid, String(input.reuseFrom)); // reuse unchanged scenes (own jobs only)
   if (input.fromDraft) { L.prev = await store.getJob(req.uid, String(input.fromDraft)); if (!L.prev) throw fail('That draft was not found'); }
   if (input.friendId && !L.friend(input.friendId)) input.friendId = null;

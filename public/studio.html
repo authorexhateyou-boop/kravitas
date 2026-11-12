@@ -18,14 +18,17 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='black'/><text x='16' y='23' font-family='Arial,sans-serif' font-weight='900' font-size='20' fill='white' text-anchor='middle'>K</text></svg>">
 </head>
 <body>
-<header class="top">
+<header class="top fl">
   <a class="logo" href="./" title="Kravitas home">kravitas</a>
-  <span class="top-sub">Studio</span>
+  <label class="fl-search"><span>⌕</span><input id="fl-q" type="search" placeholder="Search your media" autocomplete="off"></label>
   <div class="right">
-    <button class="models-btn" data-open="models" title="See every model and what your plan unlocks">Models</button>
-    <button class="credits" id="credits" data-open="settings">✦ —</button>
+    <button class="icon" data-mode="ideas" title="Start something new">＋</button>
     <button class="icon" data-guide-show title="Show the step-by-step guide">?</button>
     <button class="icon" data-open="settings" title="Settings">⚙</button>
+    <button class="icon" data-drawer title="Options panel: model, product, character, style">☰</button>
+    <button class="models-btn lang-btn" data-uilang title="Tukar bahasa / Switch language">EN · BM</button>
+    <button class="tok" data-open="settings" title="Your tokens. Tap to top up."><span id="credits">✦ —</span><small>tokens</small></button>
+    <button class="avatar" data-open="settings" title="Your account" id="me-av">K</button>
   </div>
 </header>
 
@@ -38,6 +41,7 @@
 <div id="pop" class="pop" hidden></div>
 <div id="modal" class="modal" hidden></div>
 <div id="toast"></div>
+<script src="i18n.js"></script>
 <script src="app.js"></script>
 <script src="modeldata.js"></script>
 <script src="features.js"></script>
