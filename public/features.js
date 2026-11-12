@@ -317,6 +317,8 @@ function useIdea(x) {
   if (x.productId || IDEAS.productId) f.productId = x.productId || IDEAS.productId;
   if (x.friendId || IDEAS.friendId) f.friendId = x.friendId || IDEAS.friendId;
   if (mode === 'ad') { f.lang = x.lang || IDEAS.lang; f.approve = true; }
+  const refImg = (IDEAS.refs.find((r) => r.kind === 'image') || {}).url;
+  if (refImg && (mode === 'image' || mode === 'video')) f.startImage = refImg; // the reference picture goes with the idea
   if (f.productId && !productById(f.productId)) f.productId = null;
   if (f.friendId && !friendById(f.friendId)) f.friendId = null;
   S.forms[mode] = f; setMode(mode); renderAll(); window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -352,7 +354,7 @@ function renderIdeas(box) {
   const pr = productById(IDEAS.productId), fr = friendById(IDEAS.friendId);
   box.innerHTML = `
     <div class="id-wrap">
-      ${r ? `<div class="id-out ${IDEAS.busy ? 'dim' : ''}">
+      ${r ? `<div class="id-out ${IDEAS.busy ? 'dim' : ''}">${(S.app.mock || !S.app.keySet) ? '<div class="id-demo-banner">Demo mode: these ideas are placeholders. The AI is not reading your image or following your text yet. Add your fal.ai key (Settings ⚙) or start Kravitas with start.bat to get real results.</div>' : ''}
         <p class="b-sum">${esc(r.summary)}</p>
         <div class="id-cols">
           <div><h3>Who it's for</h3><p>${esc(r.audience)}</p></div>

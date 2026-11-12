@@ -804,3 +804,8 @@ label.add.plus{cursor:pointer}label.add.plus.off{opacity:.4;pointer-events:none}
 @keyframes sp{to{transform:rotate(360deg)}}
 @media (max-width:560px){.mdl{max-width:84px}.ib .v{max-width:56px}}
 .ib.lg{background:transparent;color:#d0d0d6;border:1px solid #36363b}.ib.lg:hover{background:#2c2c30}
+
+/* keep results readable behind the floating chatbox */
+.id-wrap{padding-bottom:12px}
+.id-dock{padding-top:26px;background:linear-gradient(to bottom,transparent,var(--bg) 38%)}
+.id-demo-banner{border:1px solid #6b5a1f;color:#e6c35c;border-radius:14px;padding:10px 14px;font-size:13px;margin-bottom:12px}
