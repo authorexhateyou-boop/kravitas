@@ -13,7 +13,7 @@
       var pop = p.tag === 'Popular';
       return '<div class="plan' + (pop ? ' pop' : '') + '">' + (p.tag ? '<span class="badge">' + esc(p.tag) + '</span>' : '') +
         '<h3>' + esc(p.name) + '</h3><div class="price">RM' + p.price + '<small>/month</small></div>' +
-        '<div class="cred">' + Number(p.credits).toLocaleString('en-MY') + ' credits</div>' +
+        '<div class="cred">' + Number(p.credits).toLocaleString('en-MY') + ' tokens</div>' +
         '<div class="est">≈ ' + Math.floor(p.credits / 9) + ' Motion ads or ' + Math.floor(p.credits / 32) + ' Lite ads</div>' +
         '<ul>' + (p.features || []).map(function (f) { return '<li>' + esc(f) + '</li>'; }).join('') + '</ul>' +
         '<a class="btn" href="' + studio + '" data-studio>Choose ' + esc(p.name) + '</a></div>';

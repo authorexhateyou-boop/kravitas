@@ -353,7 +353,7 @@ function renderIdeas(box) {
   box.innerHTML = `
     <div class="id-wrap">
       <div class="id-in">
-        <label class="l" for="id-dump">Dump your ideas</label>
+        <div class="fl-head"><h1>What do you want to make?</h1><p>Tell Kravitas about your product or idea. It writes the prompts and a storyboard, so you can check everything before you spend on video.</p></div>
         <div class="id-chat" id="id-chat">
           ${refChips()}
           <textarea id="id-dump" rows="4" maxlength="4000" placeholder="Messy is fine. Type, paste, or drop files here: product sheets, screenshots, PDF, Word. Kravitas reads them and writes the prompts.">${esc(IDEAS.dump)}</textarea>
@@ -662,15 +662,17 @@ function renderMain() {
     <div class="fl-gal" id="fl-gal">${galleryHTML()}</div>
     <div class="composer inline" id="composer"></div>
     <div class="id-ex fl-ex"><small>Try:</small>${(FL_EX[S.mode] || []).map((x, i) => `<button data-flex="${i}">${esc(x)}</button>`).join('')}</div>`;
+  if (REFS_OK.has(S.mode)) { box.ondragover = (e) => { e.preventDefault(); box.classList.add('drop'); }; box.ondragleave = () => box.classList.remove('drop'); box.ondrop = (e) => { e.preventDefault(); box.classList.remove('drop'); attachRefs([...(e.dataTransfer?.files || [])], () => renderComposer()); }; } else box.ondragover = box.ondrop = null;
   box.querySelectorAll('[data-flex]').forEach((b) => (b.onclick = () => { F().prompt = FL_EX[S.mode][+b.dataset.flex]; renderComposer(true); }));
   renderComposer();
 }
 let studioPreview = () => {};
 // ---------- workspace shell: tool rail · work area · settings panel ----------
 const RAIL = [
-  ['Create', [['ideas', '✨', 'Ideas'], ['ad', '🛍', 'Ad'], ['video', '🎬', 'Video'], ['image', '🖼', 'Image'], ['voice', '🎙', 'Voice']]],
-  ['Finish', [['edit', '✂', 'Edit'], ['schedule', '📅', 'Schedule']]],
+  ['Create', [['ideas', '✨', 'Ideas'], ['ad', '🛍', 'Ad'], ['image', '🖼', 'Image'], ['video', '🎬', 'Video'], ['voice', '🎙', 'Voice'], ['edit', '✂', 'Edit'], ['schedule', '📅', 'Schedule']]],
+  ['Library', [['media', '▦', 'All media'], ['chars', '☺', 'Characters'], ['products', '▣', 'Products']]],
 ];
+const LIB_MODES = new Set(['media', 'chars', 'products']);
 const COMPOSER_MODES = new Set(['ad', 'image', 'voice']);
 const FL_TITLE = { ad: 'Make an ad', image: 'Make an image', voice: 'Make a voice-over' };
 const FL_NOUN = { ad: 'ads', image: 'images', voice: 'voice-overs' };
@@ -694,6 +696,7 @@ function modelInfo() {
     return String(f.voice).startsWith('el:') ? { name: 'ElevenLabs voices', fal: 'fal-ai/elevenlabs/tts', note: 'Natural English voices.' } : { name: 'MiniMax Speech', fal: 'fal-ai/minimax/speech-02-hd', note: 'Best for Bahasa Melayu, and your cloned voice.' };
   }
   if (m === 'ideas') return { name: 'AI writer', fal: S.app.llmModel || 'openrouter/router', note: 'Writes ideas, prompts and storyboards.', extra: 'Sketches: FLUX Schnell · Keyframes: ' + (canUse('creator') ? 'Nano Banana 2' : 'Seedream 4 Edit') };
+  if (LIB_MODES.has(m)) return { name: 'Your library', fal: '', note: 'Characters and products are used as references by the image and video models.' };
   if (m === 'edit') return { name: 'No AI needed to join clips', fal: '', note: 'New voice-overs use ElevenLabs or MiniMax. New music uses ElevenLabs Music.' };
   return { name: 'No AI model', fal: '', note: 'Scheduling and posting do not use credits.' };
 }
@@ -706,20 +709,34 @@ function modelCard() {
 function galleryHTML() {
   const want = TOOL_JOBS[S.mode] || [];
   const list = S.jobs.filter((j) => want.includes(j.tool)).slice(0, 8);
-  if (!list.length) return `<div class="fl-empty"><span>${RAIL.flatMap((g) => g[1]).find((x) => x[0] === S.mode)?.[1] || '✨'}</span><b>Your ${FL_NOUN[S.mode] || 'work'} will appear here</b><small>Type below, or tap an example to start.</small></div>`;
+  if (!list.length) return `<div class="fl-empty"><span>${'✿'}</span><b>Start creating or drop media</b><small>Your ${FL_NOUN[S.mode] || 'work'} will appear here. Type below, or tap an example.</small></div>`;
   return list.map((j) => {
     const t = thumbOf(j), step = j.steps?.find((x) => x.status === 'running'), audio = j.outputs.some((o) => o.type === 'audio');
     return `<button class="hs-card" data-job="${j.id}"><div class="hs-th">${j.status === 'running' ? `<div class="hs-run"><i></i><small>${esc(step?.label || 'Starting')}…</small></div>` : t ? (t.type === 'video' ? `<video src="${t.url}#t=0.3" muted preload="metadata"></video>` : `<img src="${t.url}" alt="">`) : `<div class="hs-run"><small>${j.status === 'error' ? 'Failed' : audio ? '🎙 Audio' : j.status === 'review' ? 'Check the script' : '…'}</small></div>`}</div><p>${esc(j.title || '')}</p></button>`;
   }).join('');
 }
+function libraryPage() {
+  if (S.mode === 'media') return `<div class="fl-head"><h1>All media</h1><p>Everything you have made. Tap one to open, post or edit it.</p></div>`;
+  const chars = S.mode === 'chars';
+  const list = chars ? S.friends : S.products;
+  return `<div class="fl-head"><h1>${chars ? 'Characters' : 'Products'}</h1><p>${chars ? 'The faces Kravitas keeps the same in every image and video.' : 'What you sell. Add each product once, then pick it in any tool.'}</p></div>
+    <div class="lib-grid">${list.map((x) => `<div class="lib-it"><span class="lib-ph" style="background-image:url('${chars ? x.photos?.[0] || '' : x.image}')"></span><b>${esc(x.name)}</b><small>${esc(chars ? x.note || '' : x.price || '')}</small></div>`).join('')}
+      <button class="lib-it new" data-new="${chars ? 'friend' : 'product'}"><span class="lib-ph">＋</span><b>${chars ? 'Add character' : 'Add product'}</b><small>${chars ? '1–3 clear photos' : 'One clear photo'}</small></button>
+      ${chars ? '<button class="lib-it new" data-act="avatars"><span class="lib-ph">🎭</span><b>AI avatars</b><small>Ready-made creators</small></button>' : ''}</div>`;
+}
 function renderStudio() {
-  const comp = COMPOSER_MODES.has(S.mode);
+  const comp = COMPOSER_MODES.has(S.mode), lib = LIB_MODES.has(S.mode);
+  document.body.dataset.tool = S.mode;
+  document.body.classList.toggle('is-lib', lib);
   $('#presets').innerHTML = `
+    <nav class="ws-rail" aria-label="Tools">
+      ${RAIL.map(([g, items], gi) => `${gi ? '<hr>' : ''}<small>${g}</small>${items.map(([k, ic, l]) => `<button data-mode="${k}" class="${k === S.mode ? 'on' : ''}" aria-current="${k === S.mode}" title="${l}"><i>${ic}</i><span>${l}</span></button>`).join('')}`).join('')}
+      <div class="ws-rail-foot"><button data-open="models" title="Models"><i>◆</i><span>Models</span></button><button data-collapse title="Collapse"><i>◧</i><span>Collapse</span></button></div>
+    </nav>
     <section class="bento zz ws">
-      <nav class="ws-rail" aria-label="Tools">${RAIL.map(([g, items]) => `<small>${g}</small>${items.map(([k, ic, l]) => `<button data-mode="${k}" class="${k === S.mode ? 'on' : ''}" aria-current="${k === S.mode}"><i>${ic}</i><span>${l}</span></button>`).join('')}`).join('')}</nav>
       <div class="ws-center">
         <div class="bx zz-shot"><div id="zz-main"></div></div>
-        ${comp ? '' : `<div class="bx zz-strip"><div class="zz-top"><h2>Recent</h2><span>Tap to open</span></div><div class="zz-row2" id="hs-strip">${stripHTML()}</div></div>`}
+        ${comp || lib ? '' : `<div class="bx zz-strip"><div class="zz-top"><h2>Recent</h2><span>Tap to open</span></div><div class="zz-row2" id="hs-strip">${stripHTML()}</div></div>`}
       </div>
       <aside class="ws-side">
         <div class="bx ws-model" id="zz-model"></div>
@@ -728,6 +745,7 @@ function renderStudio() {
         <div class="bx" id="zz-s3"></div>
       </aside>
     </section>`;
+  if (lib) { $('#zz-main').innerHTML = libraryPage(); $('#zz-model').innerHTML = modelCard(); ['#zz-s1', '#zz-s2', '#zz-s3'].forEach((id) => { $(id).hidden = true; }); return; }
   fillSides();
   renderMain();
 }
@@ -1049,3 +1067,10 @@ function creditsModal(a, ledger) {
   m.querySelectorAll('[data-plan]').forEach((b) => (b.onclick = go({ plan: b.dataset.plan })));
   m.querySelectorAll('[data-pack]').forEach((b) => (b.onclick = go({ pack: b.dataset.pack })));
 }
+
+// header search: filter visible media cards by title
+document.addEventListener('input', (e) => {
+  if (e.target.id !== 'fl-q') return;
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll('#fl-gal .hs-card, #hs-strip .hs-card, #feed .grid > *').forEach((el) => { el.style.display = !q || el.textContent.toLowerCase().includes(q) ? '' : 'none'; });
+});

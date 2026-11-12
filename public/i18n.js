@@ -9,6 +9,13 @@
     'Kravitas home': 'Laman utama Kravitas', 'See every model and what your plan unlocks': 'Lihat semua model dan apa yang pelan anda buka',
     'Show the step-by-step guide': 'Tunjuk panduan langkah demi langkah', 'Settings': 'Tetapan', 'Tools': 'Alat', 'Delete': 'Padam',
     'What you make shows up here.': 'Hasil anda akan muncul di sini.',
+    'What do you want to make?': 'Apa yang anda mahu buat?', 'Tell Kravitas about your product or idea. It writes the prompts and a storyboard, so you can check everything before you spend on video.': 'Beritahu Kravitas tentang produk atau idea anda. Ia menulis prompt dan papan cerita, supaya anda boleh semak semuanya sebelum belanja untuk video.',
+    'Library': 'Pustaka', 'All media': 'Semua media', 'Characters': 'Watak', 'Collapse': 'Kecilkan', 'Search your media': 'Cari media anda', 'tokens': 'token', 'Start something new': 'Mula yang baharu',
+    'Start creating or drop media': 'Mula mencipta atau lepaskan media', 'Everything you have made. Tap one to open, post or edit it.': 'Semua yang anda telah buat. Tekan satu untuk buka, siar atau sunting.',
+    'The faces Kravitas keeps the same in every image and video.': 'Wajah yang Kravitas kekalkan sama dalam setiap gambar dan video.', 'What you sell. Add each product once, then pick it in any tool.': 'Apa yang anda jual. Tambah setiap produk sekali, kemudian pilih dalam mana-mana alat.',
+    '1–3 clear photos': '1–3 gambar jelas', 'One clear photo': 'Satu gambar jelas', 'Ready-made creators': 'Pencipta sedia ada', 'Your library': 'Pustaka anda', 'Your account': 'Akaun anda',
+    'Your tokens. Tap to top up.': 'Token anda. Tekan untuk tambah nilai.', 'Options panel: model, product, character, style': 'Panel pilihan: model, produk, watak, gaya', 'Add a product, character, photo or file': 'Tambah produk, watak, gambar atau fail',
+    'Reference file · image, PDF, Word, text': 'Fail rujukan · gambar, PDF, Word, teks', 'Characters and products are used as references by the image and video models.': 'Watak dan produk digunakan sebagai rujukan oleh model gambar dan video.',
     // model card
     'Model': 'Model', 'All models': 'Semua model', 'AI writer': 'Penulis AI', 'Writes ideas, prompts and storyboards.': 'Menulis idea, prompt dan papan cerita.',
     'everything unlocked on your PC': 'semua dibuka di PC anda', 'Free trial': 'Percubaan percuma', 'No AI model': 'Tiada model AI',
@@ -153,6 +160,8 @@
     [/^(\d+) of (\d+) panels are real keyframes\. Panels left as sketches are painted as real images when you make the video, so you only pay for them once\.$/, function (m) { return m[1] + ' daripada ' + m[2] + ' panel sudah jadi gambar sebenar. Panel yang kekal lakaran akan dilukis sebagai gambar sebenar bila video dibuat, jadi anda bayar sekali sahaja.'; }],
     [/^Credits$/, function () { return 'Kredit'; }],
   ];
+  // The product word is "tokens". Code and server messages still say credits, so swap it at display time.
+  function tok(s) { return s.replace(/\bcredits\b/g, 'tokens').replace(/\bCredits\b/g, 'Tokens').replace(/\bcredit\b/g, 'token').replace(/\bCredit\b/g, 'Token').replace(/\b(\d+) cr\b/g, '$1 tokens').replace(/\bKredit\b/g, 'Token').replace(/\bkredit\b/g, 'token').replace(/\b(\d+) kr\b/g, '$1 token'); }
   function tr(s) {
     if (D[s] != null) return D[s];
     for (var i = 0; i < RX.length; i++) { var m = s.match(RX[i][0]); if (m) return RX[i][1](m); }
@@ -174,9 +183,9 @@
   function doText(n) {
     var pe = n.parentElement; if (!pe || pe.closest(SKIP)) return;
     var rec = orig.get(n), cur = n.nodeValue;
-    if (!rec || (cur !== rec.en && cur !== rec.bm)) { rec = { en: cur, bm: null }; orig.set(n, rec); }
+    if (!rec || (cur !== rec.en && cur !== rec.bm)) { rec = { raw: cur, en: tok(cur), bm: null }; orig.set(n, rec); }
     if (lang === 'bm') {
-      if (rec.bm == null) { var core = rec.en.trim(); var t = core.length > 1 ? tr(core) : null; rec.bm = t == null ? rec.en : rec.en.replace(core, t); }
+      if (rec.bm == null) { var core = rec.raw.trim(); var t = core.length > 1 ? tr(core) : null; rec.bm = tok(t == null ? rec.raw : rec.raw.replace(core, t)); }
       if (cur !== rec.bm) n.nodeValue = rec.bm;
     } else if (cur !== rec.en) n.nodeValue = rec.en;
   }
@@ -186,8 +195,8 @@
       var a = ATTRS[i]; if (!el.hasAttribute(a)) continue;
       var key = 'i18n' + a.replace('-', ''), cur = el.getAttribute(a);
       var en = el.dataset[key]; var bmWas = el.dataset[key + 'bm'];
-      if (en == null || (cur !== en && cur !== bmWas)) { en = cur; el.dataset[key] = en; delete el.dataset[key + 'bm']; }
-      if (lang === 'bm') { var t = tr(en.trim()); if (t != null && cur !== t) { el.dataset[key + 'bm'] = t; el.setAttribute(a, t); } }
+      if (en == null || (cur !== en && cur !== bmWas)) { el.dataset[key + 'raw'] = cur; en = tok(cur); el.dataset[key] = en; delete el.dataset[key + 'bm']; }
+      if (lang === 'bm') { var t = tr((el.dataset[key + 'raw'] || en).trim()); if (t != null) t = tok(t); if (t != null && cur !== t) { el.dataset[key + 'bm'] = t; el.setAttribute(a, t); } }
       else if (cur !== en) el.setAttribute(a, en);
     }
   }
