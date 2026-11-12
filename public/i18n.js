@@ -74,7 +74,7 @@
     // video
     'Scene prompt': 'Prompt babak', 'Camera': 'Kamera', 'Static': 'Statik', 'Dolly in': 'Dolly masuk', 'Dolly out': 'Dolly keluar', 'Pan': 'Pan', 'Orbit': 'Orbit', 'Crane up': 'Kren naik',
     'Handheld': 'Pegang tangan', 'Crash zoom': 'Zum mengejut', 'FPV drone': 'Dron FPV', 'Quick (good value)': 'Pantas (berbaloi)', 'With sound': 'Dengan bunyi', 'Best quality': 'Kualiti terbaik',
-    'Format': 'Format', 'Portrait (TikTok, Reels)': 'Menegak (TikTok, Reels)', 'Landscape (YouTube)': 'Melintang (YouTube)', 'Square': 'Segi empat sama', 'Generate shot': 'Jana babak',
+    'Soon': 'Tidak lama lagi', 'Format': 'Format', 'Portrait (TikTok, Reels)': 'Menegak (TikTok, Reels)', 'Landscape (YouTube)': 'Melintang (YouTube)', 'Square': 'Segi empat sama', 'Generate shot': 'Jana babak',
     'Your photo is the reference. Kravitas keeps this face.': 'Gambar anda jadi rujukan. Kravitas kekalkan wajah ini.', 'Start from a template': 'Mula dengan templat',
     'Fills the prompt, camera and style for you.': 'Mengisi prompt, kamera dan gaya untuk anda.', 'Raya greeting': 'Ucapan Raya', 'Café promo': 'Promosi kafe', 'Product reveal': 'Pendedahan produk',
     'Street food ad': 'Iklan makanan jalanan', 'Hero walk': 'Jalan hero', 'Travel vlog': 'Vlog melancong', 'Visual style': 'Gaya visual', 'Realistic': 'Realistik', 'Cinematic': 'Sinematik',

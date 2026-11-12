@@ -677,7 +677,7 @@ function renderMain() {
 let studioPreview = () => {};
 // ---------- workspace shell: tool rail · work area · settings panel ----------
 const RAIL = [
-  ['Create', [['ideas', '✨', 'Ideas'], ['ad', '🛍', 'Ad'], ['image', '🖼', 'Image'], ['video', '🎬', 'Video'], ['voice', '🎙', 'Voice'], ['edit', '✂', 'Edit'], ['schedule', '📅', 'Schedule']]],
+  ['Create', [['ideas', '✨', 'Ideas'], ['ad', '🛍', 'Ad'], ['image', '🖼', 'Image'], ['video', '🎬', 'Video'], ['voice', '🎙', 'Voice'], ['edit', '✂', 'Edit'], ['schedule', '📅', 'Schedule'], ['soon3d', '🧊', '3D', 'Coming soon']]],
   ['Library', [['media', '▦', 'All media'], ['chars', '☺', 'Characters'], ['products', '▣', 'Products']]],
 ];
 const LIB_MODES = new Set(['media', 'chars', 'products']);
@@ -748,7 +748,7 @@ function renderStudio() {
   document.body.classList.toggle('is-lib', lib);
   $('#presets').innerHTML = `
     <nav class="ws-rail" aria-label="Tools">
-      ${RAIL.map(([g, items], gi) => `${gi ? '<hr>' : ''}<small>${g}</small>${items.map(([k, ic, l]) => `<button data-mode="${k}" class="${k === S.mode ? 'on' : ''}" aria-current="${k === S.mode}" title="${l}"><i>${ic}</i><span>${l}</span></button>`).join('')}`).join('')}
+      ${RAIL.map(([g, items], gi) => `${gi ? '<hr>' : ''}<small>${g}</small>${items.map(([k, ic, l, soon]) => soon ? `<button class="soon" data-soon="${l}" title="${l} is coming soon"><i>${ic}</i><span>${l}</span><em>Soon</em></button>` : `<button data-mode="${k}" class="${k === S.mode ? 'on' : ''}" aria-current="${k === S.mode}" title="${l}"><i>${ic}</i><span>${l}</span></button>`).join('')}`).join('')}
       <div class="ws-rail-foot"><button data-open="models" title="Models"><i>◆</i><span>Models</span></button><button data-collapse title="Collapse"><i>◧</i><span>Collapse</span></button></div>
     </nav>
     <section class="bento zz ws">
@@ -1092,3 +1092,5 @@ document.addEventListener('input', (e) => {
   const q = e.target.value.trim().toLowerCase();
   document.querySelectorAll('#fl-gal .hs-card, #hs-strip .hs-card, #feed .grid > *').forEach((el) => { el.style.display = !q || el.textContent.toLowerCase().includes(q) ? '' : 'none'; });
 });
+
+document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-soon]'); if (b) toast(b.dataset.soon + ' is coming soon: turn a product photo into a spinning 3D shot.'); });

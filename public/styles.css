@@ -825,3 +825,4 @@ label.add.plus{cursor:pointer}label.add.plus.off{opacity:.4;pointer-events:none}
 #go.send.low{background:#7a3b3b}
 @media (max-width:560px){.cap{display:none}}
 .mdl{position:relative;display:inline-flex;align-items:center}.mdl select{position:absolute;inset:0;width:100%;opacity:0;cursor:pointer}
+.ws-rail .soon{opacity:.65}.ws-rail .soon em{margin-left:auto;font-style:normal;font-size:10.5px;border:1px solid #444;border-radius:999px;padding:1px 7px;color:#aaa}
