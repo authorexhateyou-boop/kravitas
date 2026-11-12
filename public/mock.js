@@ -602,6 +602,7 @@
   ];
   async function brainstorm(b) {
     const r = await baseBrainstorm(b);
+    r.ideas.forEach((i) => { if (!i.panels || !i.panels.length) i.panels = ['Hook: grab attention in 2 seconds', 'Show the product or the problem', 'Proof: result or reaction', 'Call to action: tap the basket']; });
     const asks = (b.chat || []).filter((c) => c.role === 'user').map((c) => c.text);
     if (!asks.length) return r;
     const all = asks.join(' ');

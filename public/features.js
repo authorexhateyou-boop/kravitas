@@ -283,7 +283,7 @@ document.addEventListener('click', (e) => {
 });
 
 // ----- ideas: dump messy notes → ready prompts, saved to the library -----
-const IDEAS = { writer: 'flash', dump: '', productId: null, friendId: null, lang: 'ms', result: null, chat: [], busy: false, savedIds: new Set(), refs: [], uploading: 0 };
+const IDEAS = { msg: '', writer: 'flash', dump: '', productId: null, friendId: null, lang: 'ms', result: null, chat: [], busy: false, savedIds: new Set(), refs: [], uploading: 0 };
 const REF_ACCEPT = '.png,.jpg,.jpeg,.webp,.pdf,.docx,.txt,.md,.csv,image/png,image/jpeg,image/webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain';
 const IDEA_MODE = { ad: 'Ad', video: 'Video', image: 'Image' };
 const IDEA_EX = ['serum vit c rm29, flash sale weekend, target mak-mak 30-45, kawan cakap kulit cerah dlm seminggu, vibe santai, free shipping', 'new kopi brand, kopitiam vibes but modern, students + office workers, launch next month, nak content yg relatable', 'tudung bawal satin 15 colours, raya collection, price RM35, ready stock, before/after styling'];
@@ -311,7 +311,7 @@ async function ideasRefine(box, text) {
   } catch (e) { IDEAS.chat.pop(); toast(e.message, true); }
   IDEAS.busy = false; renderIdeas(box);
 }
-function useIdea(x) {
+function useIdea(x, quiet) {
   const mode = IDEA_MODE[x.mode] ? x.mode : 'ad';
   const f = { ...DEFAULTS[mode](), ...(x.settings || {}), prompt: x.prompt || '' };
   if (x.productId || IDEAS.productId) f.productId = x.productId || IDEAS.productId;
@@ -321,8 +321,26 @@ function useIdea(x) {
   if (refImg && (mode === 'image' || mode === 'video')) f.startImage = refImg; // the reference picture goes with the idea
   if (f.productId && !productById(f.productId)) f.productId = null;
   if (f.friendId && !friendById(f.friendId)) f.friendId = null;
+  if (mode === 'video') { const st = x.settings || {}; Object.assign(SHOT, { prompt: x.prompt || SHOT.prompt, camera: st.camera || SHOT.camera, style: st.style || SHOT.style, aspect: st.aspect || SHOT.aspect, friendId: f.friendId || undefined, job: null }); }
   S.forms[mode] = f; setMode(mode); renderAll(); window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (quiet) return mode;
   toast(`Idea loaded into ${IDEA_MODE[mode]}. ${mode === 'ad' && !f.productId ? 'Add your product, then Generate.' : 'Hit Generate when ready.'}`);
+}
+// One click: open the idea in its tool, show the exact cost on the button, run it on the second click.
+async function genIdea(x, btn) {
+  if (btn.dataset.arm) { clearTimeout(+btn.dataset.arm); delete btn.dataset.arm; btn.textContent = 'Starting…'; btn.disabled = true;
+    const mode = useIdea(x, true);
+    if (mode === 'video') await shotGo($('#hs-go')); else { await new Promise((r) => setTimeout(r, 80)); if (mode === 'ad' && !F().productId) return toast('Add your product first, then press Generate', true); await generate(); }
+    return; }
+  try {
+    const mode = IDEA_MODE[x.mode] ? x.mode : 'ad';
+    const input = mode === 'video' ? { ...DEFAULTS.video(), prompt: x.prompt, ...(x.settings || {}) } : { ...DEFAULTS[mode](), ...(x.settings || {}), prompt: x.prompt };
+    if (IDEAS.productId) input.productId = IDEAS.productId; if (IDEAS.friendId) input.friendId = IDEAS.friendId;
+    const refImg = (IDEAS.refs.find((r) => r.kind === 'image') || {}).url; if (refImg && (mode === 'image' || mode === 'video')) input.startImage = refImg;
+    const { credits } = await api('/api/estimate', { tool: mode === 'video' ? 'shot' : MODES[mode].tool, input });
+    const old = btn.textContent; btn.textContent = `Confirm ✦ ${credits}`; btn.classList.add('pri');
+    btn.dataset.arm = setTimeout(() => { delete btn.dataset.arm; btn.textContent = old; btn.classList.remove('pri'); }, 5000);
+  } catch (e) { toast(e.message, true); }
 }
 async function saveIdea(x, hook) {
   try {
@@ -362,36 +380,39 @@ function renderIdeas(box) {
           <div><h3>Hooks</h3><ul class="hooks">${r.hooks.map((x, i) => `<li><span>${esc(x)}</span><button class="link" data-hook="${i}">Copy</button></li>`).join('')}</ul></div>
         </div>
         <h3>Ready-to-use prompts</h3>
-        <div class="id-ideas">${r.ideas.map((x, i) => `<div class="id-idea"><div class="id-top"><span class="mtag">${IDEA_MODE[x.mode] || x.mode}</span><b>${esc(x.title)}</b></div><p class="why">${esc(x.why)}</p><p class="pr">${esc(x.prompt)}</p>${Object.keys(x.settings || {}).length ? `<div class="chips">${Object.entries(x.settings).map(([k, v]) => `<span class="chip">${esc(k)}: ${esc(v)}</span>`).join('')}</div>` : ''}<div class="id-acts"><button class="btn pri" data-sb="${i}">🎞 Storyboard <small>✦ ${sbPlanCost()}</small></button><button class="btn" data-use="${i}">Use it →</button><button class="btn" data-save="${i}" ${IDEAS.savedIds.has(ideaKey(x)) ? 'disabled' : ''}>${IDEAS.savedIds.has(ideaKey(x)) ? '✓ Saved' : 'Save'}</button></div></div>`).join('')}</div>
+        <div class="id-ideas">${r.ideas.map((x, i) => `<div class="id-idea"><div class="id-top"><span class="mtag">${IDEA_MODE[x.mode] || x.mode}</span><b>${esc(x.title)}</b></div><p class="why">${esc(x.why)}</p>${(x.panels || []).length ? `<ol class="id-panels">${x.panels.map((t, n) => `<li><b>${n + 1}</b><span>${esc(t)}</span></li>`).join('')}</ol>` : ''}<p class="pr">${esc(x.prompt)}</p>${Object.keys(x.settings || {}).length ? `<div class="chips">${Object.entries(x.settings).map(([k, v]) => `<span class="chip">${esc(k)}: ${esc(v)}</span>`).join('')}</div>` : ''}<div class="id-acts"><button class="btn pri" data-sb="${i}">🎞 Storyboard <small>✦ ${sbPlanCost()}</small></button><button class="btn" data-gen="${i}" title="Open it ready and start making it. You confirm the cost first.">Generate now</button><button class="btn ghost" data-use="${i}" title="Open it in ${IDEA_MODE[x.mode] || 'the tool'} to adjust first">Edit →</button><button class="btn" data-save="${i}" ${IDEAS.savedIds.has(ideaKey(x)) ? 'disabled' : ''}>${IDEAS.savedIds.has(ideaKey(x)) ? '✓ Saved' : 'Save'}</button></div></div>`).join('')}</div>
         <div class="id-acts" style="margin-top:8px"><button class="btn" id="id-saveall">Save all ${r.ideas.length}</button></div>
         <div class="b-chat">
-          <h3>Tell Kravitas more</h3>
+          <h3>Refine with Kravitas</h3>
           <div class="b-thread">${IDEAS.chat.map((c) => `<div class="msg ${c.role}">${esc(c.text)}</div>`).join('')}${IDEAS.busy ? '<div class="msg ai typing"><i></i><i></i><i></i></div>' : ''}</div>
           <div class="b-sugg">${BRAIN_SUGGEST.map((x) => `<button class="chip" data-sugg="${esc(x)}">${esc(x)}</button>`).join('')}</div>
-          <form class="b-input" id="id-form"><label class="id-clip sm ${IDEAS.refs.length >= 8 ? 'off' : ''}" title="Attach more files">📎<input type="file" id="id-file2" accept="${REF_ACCEPT}" multiple hidden></label><input id="id-msg" class="in" maxlength="500" autocomplete="off" placeholder="e.g. buyers are mums 30–45, 20% off this week, keep it in BM"><button class="btn pri" type="submit" ${IDEAS.busy ? 'disabled' : ''}>Send ✦ 1</button></form>
+
         </div>
       </div>` : IDEAS.busy ? '<div class="id-think"><i></i><b>Kravitas is reading your notes…</b><small>Making sense of them, then writing prompts you can run right away.</small></div>' : `<div class="fl-empty id-empty"><span>✿</span><b>What do you want to make?</b><small>Tell Kravitas about your product or idea. It writes the prompts and a storyboard, so you can check everything before you spend on video.</small></div>`}
       <div class="id-in id-dock">
         <div class="id-chat" id="id-chat">
           ${refChips()}
-          <textarea id="id-dump" rows="2" maxlength="4000" placeholder="Create your prompts here… e.g. serum vit C RM29, flash sale this weekend, buyers are women 20 to 35">${esc(IDEAS.dump)}</textarea>
+          <textarea id="id-dump" rows="2" maxlength="4000" placeholder="${r ? 'Tell Kravitas what to change… e.g. make it funnier, target busy mums' : 'Create your prompts here… e.g. serum vit C RM29, flash sale this weekend, buyers are women 20 to 35'}">${r ? esc(IDEAS.msg || '') : esc(IDEAS.dump)}</textarea>
           <div class="id-bar">
             <label class="ib plus ${IDEAS.refs.length >= 8 ? 'off' : ''}" title="Attach images, PDF, Word or text" aria-label="Attach files"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><input type="file" id="id-file" accept="${REF_ACCEPT}" multiple hidden></label>
             <label class="ib ${IDEAS.productId ? 'on' : ''}" title="Product" aria-label="Product"><svg viewBox="0 0 24 24"><path d="M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8"/></svg>${IDEAS.productId ? `<span class="v">${esc((S.products.find((p) => p.id === IDEAS.productId) || {}).name || '')}</span>` : ''}<select id="id-prod" aria-label="Product"><option value="">Product: none</option>${S.products.map((p) => `<option value="${p.id}" ${p.id === IDEAS.productId ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}<option value="__new">＋ Add product…</option></select></label>
             <label class="ib ${IDEAS.friendId ? 'on' : ''}" title="Character" aria-label="Character"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4-6 7-6s6 2 7 6"/></svg>${IDEAS.friendId ? `<span class="v">${esc((S.friends.find((f) => f.id === IDEAS.friendId) || {}).name || '')}</span>` : ''}<select id="id-face" aria-label="Character"><option value="">Character: none</option>${S.friends.map((f) => `<option value="${f.id}" ${f.id === IDEAS.friendId ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}<option value="__new">＋ Add character…</option></select></label>
             <label class="ib lg" title="Language" aria-label="Language"><span class="v">${LANG_SHORT[IDEAS.lang] || 'BM'}</span><select id="id-lang" aria-label="Language">${Object.entries(LANG).map(([k, l]) => `<option value="${k}" ${k === IDEAS.lang ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
+            ${r ? '<button type="button" class="ib" id="id-new" title="Start a new idea" aria-label="New idea"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4"/></svg></button>' : ''}
             <span class="sp"></span>
             ${(S.app.mock || !S.app.keySet) ? '<span class="demo-dot" title="Demo mode: the AI cannot read your images or really follow your text until a fal.ai key is added in Settings.">Demo</span>' : ''}
             <label class="mdl" title="The AI that writes your ideas. Better ones unlock with your plan."><span class="v">${esc(llmName())} ▾</span><select id="id-writer" aria-label="AI writer">${Object.entries(S.app.catalog?.writers || { flash: { name: llmName(), plan: 'free' } }).map(([k, w]) => `<option value="${k}" ${k === IDEAS.writer ? 'selected' : ''}>${esc(w.name)}${w.note ? ' · ' + esc(w.note) : ''}${(w.plan !== 'free' && !canUse(w.plan)) ? ' 🔒 ' + (PLAN_LABEL[w.plan] || w.plan) : ''}</option>`).join('')}</select></label>
-            <button class="send" id="id-go" ${IDEAS.busy ? 'disabled' : ''} title="${r ? 'Think again' : 'Turn into prompts'} (✦ 2)" aria-label="${r ? 'Think again' : 'Turn into prompts'}">${IDEAS.busy && !r ? '<i class="spin"></i>' : '<svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>'}</button>
+            <button class="send" id="id-go" ${IDEAS.busy ? 'disabled' : ''} title="${r ? 'Send (✦ 1)' : 'Turn into prompts (✦ 2)'}" aria-label="${r ? 'Send' : 'Turn into prompts'}">${IDEAS.busy && !r ? '<i class="spin"></i>' : '<svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>'}</button>
           </div>
         </div>
       </div>
     </div>`;
   const on = (id, ev, fn) => { const el = $(id); if (el) el[ev] = fn; };
   const grow = (t) => { t.style.height = 'auto'; t.style.height = Math.min(220, t.scrollHeight) + 'px'; };
-  on('#id-dump', 'oninput', (e) => { IDEAS.dump = e.target.value; grow(e.target); });
-  on('#id-dump', 'onkeydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); if (!IDEAS.busy) ideasRun(box); } });
+  const send = () => { if (IDEAS.busy) return; if (IDEAS.result) { const v = (IDEAS.msg || '').trim(); if (!v) return toast('Tell Kravitas what to change first', true); IDEAS.msg = ''; ideasRefine(box, v); } else ideasRun(box); };
+  on('#id-dump', 'oninput', (e) => { if (IDEAS.result) IDEAS.msg = e.target.value; else IDEAS.dump = e.target.value; grow(e.target); });
+  on('#id-dump', 'onkeydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
+  on('#id-new', 'onclick', () => { IDEAS.result = null; IDEAS.chat = []; IDEAS.msg = ''; IDEAS.dump = ''; renderIdeas(box); });
   if ($('#id-dump')) grow($('#id-dump'));
   on('#id-prod', 'onchange', (e) => { if (e.target.value === '__new') { e.target.value = IDEAS.productId || ''; return productModal(); } IDEAS.productId = e.target.value || null; });
   on('#id-face', 'onchange', (e) => { if (e.target.value === '__new') { e.target.value = IDEAS.friendId || ''; return friendModal(); } IDEAS.friendId = e.target.value || null; });
@@ -401,7 +422,7 @@ function renderIdeas(box) {
     IDEAS.writer = e.target.value; const v = e.target.parentElement.querySelector('.v'); if (v) v.textContent = llmName() + ' ▾';
   });
   on('#id-lang', 'onchange', (e) => { IDEAS.lang = e.target.value; const v = e.target.parentElement.querySelector('.v'); if (v) v.textContent = LANG_SHORT[IDEAS.lang] || 'BM'; });
-  on('#id-go', 'onclick', () => ideasRun(box));
+  on('#id-go', 'onclick', send);
   if (IDEAS.autorun) { IDEAS.autorun = false; setTimeout(() => ideasRun(box), 0); }
   const again = () => renderIdeas(box);
   on('#id-file', 'onchange', (e) => attachRefs([...e.target.files], again));
@@ -419,12 +440,12 @@ function renderIdeas(box) {
   box.querySelectorAll('[data-unref]').forEach((b) => (b.onclick = () => { IDEAS.refs.splice(+b.dataset.unref, 1); renderIdeas(box); }));
   box.querySelectorAll('[data-idex]').forEach((b) => (b.onclick = () => { IDEAS.dump = IDEA_EX[+b.dataset.idex]; $('#id-dump').value = IDEAS.dump; $('#id-dump').focus(); }));
   box.querySelectorAll('[data-sb]').forEach((b) => (b.onclick = () => sbStart(box, r.ideas[+b.dataset.sb])));
+  box.querySelectorAll('[data-gen]').forEach((b) => (b.onclick = () => genIdea(r.ideas[+b.dataset.gen], b)));
   box.querySelectorAll('[data-use]').forEach((b) => (b.onclick = () => useIdea(r.ideas[+b.dataset.use])));
   box.querySelectorAll('[data-save]').forEach((b) => (b.onclick = () => { saveIdea(r.ideas[+b.dataset.save], r.hooks?.[0]); b.disabled = true; b.textContent = '✓ Saved'; }));
   box.querySelectorAll('[data-hook]').forEach((b) => (b.onclick = () => { navigator.clipboard?.writeText(r.hooks[+b.dataset.hook]).then(() => toast('Hook copied')).catch(() => {}); }));
   on('#id-saveall', 'onclick', async (e) => { e.target.disabled = true; for (const x of r.ideas) if (!IDEAS.savedIds.has(ideaKey(x))) await saveIdea(x, r.hooks?.[0]); renderIdeas(box); });
   box.querySelectorAll('[data-sugg]').forEach((b) => (b.onclick = () => ideasRefine(box, b.dataset.sugg)));
-  on('#id-form', 'onsubmit', (e) => { e.preventDefault(); const v = $('#id-msg').value.trim(); if (v) ideasRefine(box, v); });
 }
 
 // ---------- idea → storyboard (sketch panels → real keyframes → video) ----------
@@ -689,7 +710,7 @@ const FL_EX = {
   image: ['Product on a marble table, soft morning light', 'Flat lay with flowers, top view', 'A young woman holding the product in a cafe'],
   voice: ['Hai semua! Hari ni saya nak kongsi satu produk yang memang best.', 'Limited time offer. Tap the yellow basket now!', 'Jom cuba sekarang, stok terhad!'],
 };
-const TIER_MODEL = { motion: ['Motion (photo + voice)', 'ffmpeg, no AI video'], lite: ['MiniMax H3 Turbo', 'minimax/h3-max-turbo/image-to-video'], fast: ['MiniMax H3 Turbo HD', 'minimax/h3-max-turbo/image-to-video'], studio: ['VEED Fabric lip-sync', 'veed/fabric-1.0'], premium: ['OmniHuman 1.5', 'fal-ai/bytedance/omnihuman/v1.5'] };
+const TIER_MODEL = { motion: ['Motion style (animated photo + voice)', 'Not full AI video: your photo moves with voice and captions'], lite: ['MiniMax H3 Turbo', 'minimax/h3-max-turbo/image-to-video'], fast: ['MiniMax H3 Turbo HD', 'minimax/h3-max-turbo/image-to-video'], studio: ['VEED Fabric lip-sync', 'veed/fabric-1.0'], premium: ['OmniHuman 1.5', 'fal-ai/bytedance/omnihuman/v1.5'] };
 const VIDEO_FAL = { 'h3-turbo': 'minimax/h3-max-turbo/image-to-video', 'seedance-fast': 'bytedance/seedance-2.0/fast/image-to-video', 'kling-std': 'fal-ai/kling-video/v3/standard/image-to-video', 'kling-pro': 'fal-ai/kling-video/v3/pro/image-to-video' };
 // Which AI model the current tool will use (all run on fal.ai).
 const LANG_SHORT = { ms: 'BM', en: 'EN', manglish: 'BM+EN' };
