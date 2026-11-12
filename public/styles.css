@@ -780,3 +780,5 @@ label.add.plus{cursor:pointer}label.add.plus.off{opacity:.4;pointer-events:none}
 .pillsel{appearance:none;-webkit-appearance:none;background:#232326;border:1px solid #2f2f33;color:var(--fg);font:inherit;font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:999px !important;max-width:170px;cursor:pointer}
 .pillsel:hover{border-color:#fff}
 @media (max-width:820px){.id-wrap{min-height:calc(100vh - 170px)}.id-dock{bottom:8px}.pillsel{max-width:132px;padding:7px 10px}}
+
+.pill.demo-note{border-color:#b8860b;color:#e6c35c;cursor:help}

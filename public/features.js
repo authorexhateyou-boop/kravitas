@@ -378,6 +378,8 @@ function renderIdeas(box) {
             <select class="pillsel" id="id-prod" aria-label="Product"><option value="">Product: none</option>${S.products.map((p) => `<option value="${p.id}" ${p.id === IDEAS.productId ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}<option value="__new">＋ Add product…</option></select>
             <select class="pillsel" id="id-face" aria-label="Character"><option value="">Character: none</option>${S.friends.map((f) => `<option value="${f.id}" ${f.id === IDEAS.friendId ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}<option value="__new">＋ Add character…</option></select>
             <select class="pillsel" id="id-lang" aria-label="Language">${Object.entries(LANG).map(([k, l]) => `<option value="${k}" ${k === IDEAS.lang ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>
+            <button class="pill mchip" data-open="models" title="The AI model this uses. Tap to see all models."><span class="k">◆</span>${esc(llmName())}</button>
+            ${(S.app.mock || !S.app.keySet) ? '<span class="pill demo-note" title="Demo mode: the AI cannot read your images or really follow your text until a fal.ai key is added in Settings.">Demo mode</span>' : ''}
             <span class="sp"></span>
             <button class="go zz-go" id="id-go" ${IDEAS.busy ? 'disabled' : ''}>${IDEAS.busy && !r ? 'Thinking…' : r ? 'Think again' : 'Turn into prompts'} <span class="c">✦ 2</span></button>
           </div>
@@ -680,6 +682,14 @@ const FL_EX = {
 const TIER_MODEL = { motion: ['Motion (photo + voice)', 'ffmpeg, no AI video'], lite: ['MiniMax H3 Turbo', 'minimax/h3-max-turbo/image-to-video'], fast: ['MiniMax H3 Turbo HD', 'minimax/h3-max-turbo/image-to-video'], studio: ['VEED Fabric lip-sync', 'veed/fabric-1.0'], premium: ['OmniHuman 1.5', 'fal-ai/bytedance/omnihuman/v1.5'] };
 const VIDEO_FAL = { 'h3-turbo': 'minimax/h3-max-turbo/image-to-video', 'seedance-fast': 'bytedance/seedance-2.0/fast/image-to-video', 'kling-std': 'fal-ai/kling-video/v3/standard/image-to-video', 'kling-pro': 'fal-ai/kling-video/v3/pro/image-to-video' };
 // Which AI model the current tool will use (all run on fal.ai).
+function llmName() {
+  const m = String(S.app.llmModel || '').toLowerCase();
+  if (/gemini-2\.5-flash/.test(m)) return 'Gemini 2.5 Flash';
+  if (/gemini-2\.5-pro/.test(m)) return 'Gemini 2.5 Pro';
+  if (/gpt-?5/.test(m)) return 'GPT-5'; if (/gpt-?4o/.test(m)) return 'GPT-4o';
+  if (/claude/.test(m)) return 'Claude';
+  return m.split('/').pop() || 'AI writer';
+}
 function modelInfo() {
   const c = S.app.catalog, m = S.mode;
   if (m === 'ad') { const k = F().tier || 'lite'; return { name: TIER_MODEL[k]?.[0] || k, fal: TIER_MODEL[k]?.[1], note: `${TIER_NAME[k] || k} quality. ${TIER_DESC[k] || ''}`, extra: 'Script: AI writer · Picture: ' + (c.tiers?.[k] && ['fast', 'studio', 'premium'].includes(k) ? 'Nano Banana 2' : 'Seedream 4') + ' · Voice: ElevenLabs or MiniMax' }; }
@@ -691,7 +701,7 @@ function modelInfo() {
     if (f.kind === 'music') return { name: 'ElevenLabs Music', fal: 'fal-ai/elevenlabs/music', note: 'Background tracks from a description.' };
     return String(f.voice).startsWith('el:') ? { name: 'ElevenLabs voices', fal: 'fal-ai/elevenlabs/tts', note: 'Natural English voices.' } : { name: 'MiniMax Speech', fal: 'fal-ai/minimax/speech-02-hd', note: 'Best for Bahasa Melayu, and your cloned voice.' };
   }
-  if (m === 'ideas') return { name: 'AI writer', fal: S.app.llmModel || 'openrouter/router', note: 'Writes ideas, prompts and storyboards.', extra: 'Sketches: FLUX Schnell · Keyframes: ' + (canUse('creator') ? 'Nano Banana 2' : 'Seedream 4 Edit') };
+  if (m === 'ideas') return { name: llmName(), writer: true, fal: S.app.llmModel || 'openrouter/router', note: 'Writes ideas, prompts and storyboards.', extra: 'Sketches: FLUX Schnell · Keyframes: ' + (canUse('creator') ? 'Nano Banana 2' : 'Seedream 4 Edit') };
   if (LIB_MODES.has(m)) return { name: 'Your library', fal: '', note: 'Characters and products are used as references by the image and video models.' };
   if (m === 'edit') return { name: 'No AI needed to join clips', fal: '', note: 'New voice-overs use ElevenLabs or MiniMax. New music uses ElevenLabs Music.' };
   return { name: 'No AI model', fal: '', note: 'Scheduling and posting do not use credits.' };

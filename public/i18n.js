@@ -141,6 +141,7 @@
     'Auto-posting switches on when POSTFORME_API_KEY is added on the server.': 'Siaran automatik dihidupkan bila POSTFORME_API_KEY ditambah pada pelayan.',
     'Your work will appear here': 'Hasil anda akan muncul di sini', 'Describe the scene first': 'Terangkan babak dahulu', 'Making your video. Watch it under Recent.': 'Video anda sedang dibuat. Lihat di bawah Terkini.',
   };
+  if (window.KV_DICT) for (var k in window.KV_DICT) if (D[k] == null) D[k] = window.KV_DICT[k];
   var RX = [
     [/^(\d+) of (\d+) done$/, function (m) { return m[1] + ' daripada ' + m[2] + ' siap'; }],
     [/^(\d+) of (\d+)$/, function (m) { return m[1] + ' daripada ' + m[2]; }],
@@ -160,6 +161,12 @@
     [/^TAP TO OPEN$/, function () { return 'TEKAN UNTUK BUKA'; }],
     [/^(Quick|Standard|Sharper|Lip-sync|Best) quality\. (.*)$/, function (m) { return 'Kualiti ' + (D[m[1]] || m[1]) + '. ' + (tr(m[2]) || m[2]); }],
     [/^(\d+) of (\d+) panels are real keyframes\. Panels left as sketches are painted as real images when you make the video, so you only pay for them once\.$/, function (m) { return m[1] + ' daripada ' + m[2] + ' panel sudah jadi gambar sebenar. Panel yang kekal lakaran akan dilukis sebagai gambar sebenar bila video dibuat, jadi anda bayar sekali sahaja.'; }],
+    [/^([\d,]+) tokens$/, function (m) { return m[1] + ' token'; }],
+    [/^Choose (.+)$/, function (m) { return 'Pilih ' + m[1]; }],
+    [/^≈ ([\d,]+) Motion ads or ([\d,]+) Lite ads$/, function (m) { return '≈ ' + m[1] + ' iklan Motion atau ' + m[2] + ' iklan Lite'; }],
+    [/^Save (\d+)%$/, function (m) { return 'Jimat ' + m[1] + '%'; }],
+    [/^Pricing -(\d+)%$/, function (m) { return 'Harga -' + m[1] + '%'; }],
+    [/^Launch offer: (\d+)% off every plan\. Prices shown are already discounted\.$/, function (m) { return 'Tawaran pelancaran: diskaun ' + m[1] + '% untuk setiap pelan. Harga yang ditunjuk sudah didiskaun.'; }],
     [/^Credits$/, function () { return 'Kredit'; }],
   ];
   // The product word is "tokens". Code and server messages still say credits, so swap it at display time.

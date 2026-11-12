@@ -121,6 +121,14 @@ footer{border-top:1px solid var(--line);padding:26px 0;font-size:13px;color:var(
 .f-chat .f-row .chip.ghost{display:none}@media (min-width:700px){.f-chat .f-row .chip.ghost{display:inline-block}}
 @media (max-width:560px){.plans{grid-template-columns:1fr}.tools{grid-template-columns:1fr 1fr}.week{grid-template-columns:repeat(4,1fr)}.wrap{padding:0 18px}.nav .wrap{padding:0 16px}.panels{gap:6px}}
 @media (prefers-reduced-motion:reduce){.film{animation:none}html{scroll-behavior:auto}}
+
+.promo-pill{margin-left:auto;display:inline-flex;gap:6px;align-items:center;background:#d9ff3f;color:#111;font-weight:700;font-size:13px;border-radius:999px;padding:7px 14px}
+.nav nav+.promo-pill{margin-left:auto}
+.uil{background:transparent;border:1px solid #3a3a3e;color:#fff;border-radius:999px;padding:7px 12px;font:inherit;font-size:13px;cursor:pointer;margin:0 10px}.uil b{color:#d9ff3f}.uil span{opacity:.55}
+.promo-bar{margin:28px auto 0;max-width:720px;border:1px solid #d9ff3f;border-radius:999px;padding:10px 20px;color:#d9ff3f;font-weight:600;font-size:14px}
+.plan .save{display:inline-block;align-self:flex-start;background:#d9ff3f;color:#111;font-weight:700;font-size:12px;border-radius:999px;padding:3px 10px;margin-top:10px}
+.price s{font-size:20px;font-weight:400;opacity:.45;letter-spacing:0;margin-right:8px}
+@media (max-width:900px){.nav .promo-pill{margin-left:auto}.nav .btn{margin-left:0}}
 </style>
 </head>
 <body>
@@ -129,6 +137,8 @@ footer{border-top:1px solid var(--line);padding:26px 0;font-size:13px;color:var(
   <div class="wrap">
     <a class="logo" href="#top">Kravitas</a>
     <nav aria-label="Sections"><a href="#how">How it works</a><a href="#models">Models</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></nav>
+    <a class="promo-pill" href="#pricing" id="promo-pill"><span aria-hidden="true">♛</span> <span id="promo-pill-t">Pricing -40%</span></a>
+    <button class="uil" type="button" data-uilang aria-label="Language">EN · BM</button>
     <a class="btn sm" href="/studio" data-studio>Open studio</a>
   </div>
 </header>
@@ -203,6 +213,7 @@ footer{border-top:1px solid var(--line);padding:26px 0;font-size:13px;color:var(
       <span class="kicker">Pricing</span>
       <h2 class="big">Simple monthly plans.</h2>
       <p class="sub">Tokens refill every month. A Motion ad costs about 9 tokens and a Lite AI-video ad about 32.</p>
+      <div class="promo-bar" id="promo-bar"></div>
       <div class="plans" id="plans"></div>
       <p class="fine">Prices in Malaysian ringgit. Cancel anytime; unused tokens stay on your account. Secure checkout by Stripe. One-off top-ups from RM25.</p>
     </div>
@@ -234,6 +245,8 @@ footer{border-top:1px solid var(--line);padding:26px 0;font-size:13px;color:var(
   <div class="wrap"><span>© Kravitas</span><span><a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></span></div>
 </footer>
 
+<script src="landing-i18n.js"></script>
+<script src="i18n.js"></script>
 <script src="modeldata.js"></script>
 <script src="landing.js"></script>
 <script>(function(){var n=document.getElementById('nav');function f(){n.classList.toggle('solid',scrollY>40)}addEventListener('scroll',f,{passive:true});f()})();</script>

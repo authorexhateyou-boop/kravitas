@@ -6,13 +6,16 @@
     { id: 'creator', name: 'Creator', credits: 2500, price: 129, tag: 'Popular', features: ['Everything in Starter', 'Studio lip-sync + Kling', '5 variations per ad', 'Voice cloning & auto-post'] },
     { id: 'pro', name: 'Pro', credits: 6500, price: 299, tag: 'Best value', features: ['Everything in Creator', 'Premium lip-sync (OmniHuman)', 'Kling Pro video'] }
   ];
+  // Launch offer: shown prices are the discounted ones; the struck-through list price = price / (1 - off). Set off:0 to hide it.
+  var PROMO = { off: 40 };
+  var listPrice = function (p) { return Math.round(p / (1 - PROMO.off / 100)); };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   function draw(plans) {
     var el = document.getElementById('plans');
     el.innerHTML = plans.map(function (p) {
       var pop = p.tag === 'Popular';
       return '<div class="plan' + (pop ? ' pop' : '') + '">' + (p.tag ? '<span class="badge">' + esc(p.tag) + '</span>' : '') +
-        '<h3>' + esc(p.name) + '</h3><div class="price">RM' + p.price + '<small>/month</small></div>' +
+        '<h3>' + esc(p.name) + '</h3><div class="price">' + (PROMO.off ? '<s>RM' + listPrice(p.price) + '</s>' : '') + 'RM' + p.price + '<small>/month</small></div>' + (PROMO.off ? '<span class="save">Save ' + PROMO.off + '%</span>' : '') +
         '<div class="cred">' + Number(p.credits).toLocaleString('en-MY') + ' tokens</div>' +
         '<div class="est">≈ ' + Math.floor(p.credits / 9) + ' Motion ads or ' + Math.floor(p.credits / 32) + ' Lite ads</div>' +
         '<ul>' + (p.features || []).map(function (f) { return '<li>' + esc(f) + '</li>'; }).join('') + '</ul>' +
@@ -29,6 +32,12 @@
     });
     t.innerHTML = h + '</tbody>';
   }
+  (function () {
+    var t = document.getElementById('promo-pill-t'), bar = document.getElementById('promo-bar'), pill = document.getElementById('promo-pill');
+    if (!PROMO.off) { if (pill) pill.style.display = 'none'; return; }
+    if (t) t.textContent = 'Pricing -' + PROMO.off + '%';
+    if (bar) bar.textContent = 'Launch offer: ' + PROMO.off + '% off every plan. Prices shown are already discounted.';
+  })();
   models();
   var studio = document.querySelector('[data-studio]').getAttribute('href');
   var form = document.getElementById('try');
