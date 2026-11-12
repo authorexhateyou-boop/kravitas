@@ -352,24 +352,6 @@ function renderIdeas(box) {
   const pr = productById(IDEAS.productId), fr = friendById(IDEAS.friendId);
   box.innerHTML = `
     <div class="id-wrap">
-      <div class="id-in">
-        <div class="fl-head"><h1>What do you want to make?</h1><p>Tell Kravitas about your product or idea. It writes the prompts and a storyboard, so you can check everything before you spend on video.</p></div>
-        <div class="id-chat" id="id-chat">
-          ${refChips()}
-          <textarea id="id-dump" rows="4" maxlength="4000" placeholder="Messy is fine. Type, paste, or drop files here: product sheets, screenshots, PDF, Word. Kravitas reads them and writes the prompts.">${esc(IDEAS.dump)}</textarea>
-          <div class="id-bar">
-            <label class="id-clip ${IDEAS.refs.length >= 8 ? 'off' : ''}" title="Attach images, PDF, Word or text">📎 Attach<input type="file" id="id-file" accept="${REF_ACCEPT}" multiple hidden></label>
-            <span class="id-n">${IDEAS.refs.length ? `${IDEAS.refs.length}/8 files` : 'images · PDF · Word · text'}</span>
-            <button class="go zz-go" id="id-go" ${IDEAS.busy ? 'disabled' : ''}>${IDEAS.busy && !r ? 'Thinking…' : r ? 'Think again' : 'Turn into prompts'} <span class="c">✦ 2</span></button>
-          </div>
-        </div>
-        <div class="id-ex"><small>Try:</small>${IDEA_EX.map((x, i) => `<button data-idex="${i}">${esc(x.slice(0, 38))}…</button>`).join('')}</div>
-        <div class="zz-row">
-          <div><label class="l" for="id-prod">Product (optional)</label><div class="id-selrow"><select class="in" id="id-prod"><option value="">None</option>${S.products.map((p) => `<option value="${p.id}" ${p.id === IDEAS.productId ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select><button class="id-plus" data-newprod title="Add a product photo">＋</button></div></div>
-          <div><label class="l" for="id-face">Character (optional)</label><div class="id-selrow"><select class="in" id="id-face"><option value="">None</option>${S.friends.map((f) => `<option value="${f.id}" ${f.id === IDEAS.friendId ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}</select><button class="id-plus" data-newface title="Add a character">＋</button></div></div>
-          <div><label class="l" for="id-lang">Language</label><select class="in" id="id-lang">${Object.entries(LANG).map(([k, l]) => `<option value="${k}" ${k === IDEAS.lang ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
-        </div>
-      </div>
       ${r ? `<div class="id-out ${IDEAS.busy ? 'dim' : ''}">
         <p class="b-sum">${esc(r.summary)}</p>
         <div class="id-cols">
@@ -386,12 +368,26 @@ function renderIdeas(box) {
           <div class="b-sugg">${BRAIN_SUGGEST.map((x) => `<button class="chip" data-sugg="${esc(x)}">${esc(x)}</button>`).join('')}</div>
           <form class="b-input" id="id-form"><label class="id-clip sm ${IDEAS.refs.length >= 8 ? 'off' : ''}" title="Attach more files">📎<input type="file" id="id-file2" accept="${REF_ACCEPT}" multiple hidden></label><input id="id-msg" class="in" maxlength="500" autocomplete="off" placeholder="e.g. buyers are mums 30–45, 20% off this week, keep it in BM"><button class="btn pri" type="submit" ${IDEAS.busy ? 'disabled' : ''}>Send ✦ 1</button></form>
         </div>
-      </div>` : IDEAS.busy ? '<div class="id-think"><i></i><b>Kravitas is reading your notes…</b><small>Making sense of them, then writing prompts you can run right away.</small></div>' : ''}
+      </div>` : IDEAS.busy ? '<div class="id-think"><i></i><b>Kravitas is reading your notes…</b><small>Making sense of them, then writing prompts you can run right away.</small></div>' : `<div class="fl-empty id-empty"><span>✿</span><b>What do you want to make?</b><small>Tell Kravitas about your product or idea. It writes the prompts and a storyboard, so you can check everything before you spend on video.</small></div>`}
+      <div class="id-in id-dock">
+        <div class="id-chat" id="id-chat">
+          ${refChips()}
+          <textarea id="id-dump" rows="2" maxlength="4000" placeholder="Create your prompts here… e.g. serum vit C RM29, flash sale this weekend, buyers are women 20 to 35">${esc(IDEAS.dump)}</textarea>
+          <div class="id-bar">
+            <label class="add plus ${IDEAS.refs.length >= 8 ? 'off' : ''}" title="Attach images, PDF, Word or text">＋<input type="file" id="id-file" accept="${REF_ACCEPT}" multiple hidden></label>
+            <select class="pillsel" id="id-prod" aria-label="Product"><option value="">Product: none</option>${S.products.map((p) => `<option value="${p.id}" ${p.id === IDEAS.productId ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}<option value="__new">＋ Add product…</option></select>
+            <select class="pillsel" id="id-face" aria-label="Character"><option value="">Character: none</option>${S.friends.map((f) => `<option value="${f.id}" ${f.id === IDEAS.friendId ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}<option value="__new">＋ Add character…</option></select>
+            <select class="pillsel" id="id-lang" aria-label="Language">${Object.entries(LANG).map(([k, l]) => `<option value="${k}" ${k === IDEAS.lang ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>
+            <span class="sp"></span>
+            <button class="go zz-go" id="id-go" ${IDEAS.busy ? 'disabled' : ''}>${IDEAS.busy && !r ? 'Thinking…' : r ? 'Think again' : 'Turn into prompts'} <span class="c">✦ 2</span></button>
+          </div>
+        </div>
+      </div>
     </div>`;
   const on = (id, ev, fn) => { const el = $(id); if (el) el[ev] = fn; };
   on('#id-dump', 'oninput', (e) => { IDEAS.dump = e.target.value; });
-  on('#id-prod', 'onchange', (e) => { IDEAS.productId = e.target.value || null; });
-  on('#id-face', 'onchange', (e) => { IDEAS.friendId = e.target.value || null; });
+  on('#id-prod', 'onchange', (e) => { if (e.target.value === '__new') { e.target.value = IDEAS.productId || ''; return productModal(); } IDEAS.productId = e.target.value || null; });
+  on('#id-face', 'onchange', (e) => { if (e.target.value === '__new') { e.target.value = IDEAS.friendId || ''; return friendModal(); } IDEAS.friendId = e.target.value || null; });
   on('#id-lang', 'onchange', (e) => { IDEAS.lang = e.target.value; });
   on('#id-go', 'onclick', () => ideasRun(box));
   if (IDEAS.autorun) { IDEAS.autorun = false; setTimeout(() => ideasRun(box), 0); }
@@ -736,7 +732,7 @@ function renderStudio() {
     <section class="bento zz ws">
       <div class="ws-center">
         <div class="bx zz-shot"><div id="zz-main"></div></div>
-        ${comp || lib ? '' : `<div class="bx zz-strip"><div class="zz-top"><h2>Recent</h2><span>Tap to open</span></div><div class="zz-row2" id="hs-strip">${stripHTML()}</div></div>`}
+        ${comp || lib || S.mode === 'ideas' ? '' : `<div class="bx zz-strip"><div class="zz-top"><h2>Recent</h2><span>Tap to open</span></div><div class="zz-row2" id="hs-strip">${stripHTML()}</div></div>`}
       </div>
       <aside class="ws-side">
         <div class="bx ws-model" id="zz-model"></div>

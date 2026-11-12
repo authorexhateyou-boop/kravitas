@@ -16,6 +16,8 @@
     '1–3 clear photos': '1–3 gambar jelas', 'One clear photo': 'Satu gambar jelas', 'Ready-made creators': 'Pencipta sedia ada', 'Your library': 'Pustaka anda', 'Your account': 'Akaun anda',
     'Your tokens. Tap to top up.': 'Token anda. Tekan untuk tambah nilai.', 'Options panel: model, product, character, style': 'Panel pilihan: model, produk, watak, gaya', 'Add a product, character, photo or file': 'Tambah produk, watak, gambar atau fail',
     'Reference file · image, PDF, Word, text': 'Fail rujukan · gambar, PDF, Word, teks', 'Characters and products are used as references by the image and video models.': 'Watak dan produk digunakan sebagai rujukan oleh model gambar dan video.',
+    'Create your prompts here… e.g. serum vit C RM29, flash sale this weekend, buyers are women 20 to 35': 'Cipta prompt anda di sini… cth. serum vit C RM29, jualan kilat hujung minggu ini, pembeli wanita 20 hingga 35',
+    'Product: none': 'Produk: tiada', 'Character: none': 'Watak: tiada', 'Add product…': 'Tambah produk…', 'Add character…': 'Tambah watak…',
     // model card
     'Model': 'Model', 'All models': 'Semua model', 'AI writer': 'Penulis AI', 'Writes ideas, prompts and storyboards.': 'Menulis idea, prompt dan papan cerita.',
     'everything unlocked on your PC': 'semua dibuka di PC anda', 'Free trial': 'Percubaan percuma', 'No AI model': 'Tiada model AI',
