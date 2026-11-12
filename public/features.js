@@ -374,23 +374,26 @@ function renderIdeas(box) {
           ${refChips()}
           <textarea id="id-dump" rows="2" maxlength="4000" placeholder="Create your prompts here… e.g. serum vit C RM29, flash sale this weekend, buyers are women 20 to 35">${esc(IDEAS.dump)}</textarea>
           <div class="id-bar">
-            <label class="add plus ${IDEAS.refs.length >= 8 ? 'off' : ''}" title="Attach images, PDF, Word or text">＋<input type="file" id="id-file" accept="${REF_ACCEPT}" multiple hidden></label>
-            <select class="pillsel" id="id-prod" aria-label="Product"><option value="">Product: none</option>${S.products.map((p) => `<option value="${p.id}" ${p.id === IDEAS.productId ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}<option value="__new">＋ Add product…</option></select>
-            <select class="pillsel" id="id-face" aria-label="Character"><option value="">Character: none</option>${S.friends.map((f) => `<option value="${f.id}" ${f.id === IDEAS.friendId ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}<option value="__new">＋ Add character…</option></select>
-            <select class="pillsel" id="id-lang" aria-label="Language">${Object.entries(LANG).map(([k, l]) => `<option value="${k}" ${k === IDEAS.lang ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>
-            <button class="pill mchip" data-open="models" title="The AI model this uses. Tap to see all models."><span class="k">◆</span>${esc(llmName())}</button>
-            ${(S.app.mock || !S.app.keySet) ? '<span class="pill demo-note" title="Demo mode: the AI cannot read your images or really follow your text until a fal.ai key is added in Settings.">Demo mode</span>' : ''}
+            <label class="ib plus ${IDEAS.refs.length >= 8 ? 'off' : ''}" title="Attach images, PDF, Word or text" aria-label="Attach files"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><input type="file" id="id-file" accept="${REF_ACCEPT}" multiple hidden></label>
+            <label class="ib ${IDEAS.productId ? 'on' : ''}" title="Product" aria-label="Product"><svg viewBox="0 0 24 24"><path d="M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8"/></svg>${IDEAS.productId ? `<span class="v">${esc((S.products.find((p) => p.id === IDEAS.productId) || {}).name || '')}</span>` : ''}<select id="id-prod" aria-label="Product"><option value="">Product: none</option>${S.products.map((p) => `<option value="${p.id}" ${p.id === IDEAS.productId ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}<option value="__new">＋ Add product…</option></select></label>
+            <label class="ib ${IDEAS.friendId ? 'on' : ''}" title="Character" aria-label="Character"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4-6 7-6s6 2 7 6"/></svg>${IDEAS.friendId ? `<span class="v">${esc((S.friends.find((f) => f.id === IDEAS.friendId) || {}).name || '')}</span>` : ''}<select id="id-face" aria-label="Character"><option value="">Character: none</option>${S.friends.map((f) => `<option value="${f.id}" ${f.id === IDEAS.friendId ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}<option value="__new">＋ Add character…</option></select></label>
+            <label class="ib lg" title="Language" aria-label="Language"><span class="v">${LANG_SHORT[IDEAS.lang] || 'BM'}</span><select id="id-lang" aria-label="Language">${Object.entries(LANG).map(([k, l]) => `<option value="${k}" ${k === IDEAS.lang ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
             <span class="sp"></span>
-            <button class="go zz-go" id="id-go" ${IDEAS.busy ? 'disabled' : ''}>${IDEAS.busy && !r ? 'Thinking…' : r ? 'Think again' : 'Turn into prompts'} <span class="c">✦ 2</span></button>
+            ${(S.app.mock || !S.app.keySet) ? '<span class="demo-dot" title="Demo mode: the AI cannot read your images or really follow your text until a fal.ai key is added in Settings.">Demo</span>' : ''}
+            <button type="button" class="mdl" data-open="models" title="The AI model this uses. Tap to see all models.">${esc(llmName())}</button>
+            <button class="send" id="id-go" ${IDEAS.busy ? 'disabled' : ''} title="${r ? 'Think again' : 'Turn into prompts'} (✦ 2)" aria-label="${r ? 'Think again' : 'Turn into prompts'}">${IDEAS.busy && !r ? '<i class="spin"></i>' : '<svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>'}</button>
           </div>
         </div>
       </div>
     </div>`;
   const on = (id, ev, fn) => { const el = $(id); if (el) el[ev] = fn; };
-  on('#id-dump', 'oninput', (e) => { IDEAS.dump = e.target.value; });
+  const grow = (t) => { t.style.height = 'auto'; t.style.height = Math.min(220, t.scrollHeight) + 'px'; };
+  on('#id-dump', 'oninput', (e) => { IDEAS.dump = e.target.value; grow(e.target); });
+  on('#id-dump', 'onkeydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); if (!IDEAS.busy) ideasRun(box); } });
+  if ($('#id-dump')) grow($('#id-dump'));
   on('#id-prod', 'onchange', (e) => { if (e.target.value === '__new') { e.target.value = IDEAS.productId || ''; return productModal(); } IDEAS.productId = e.target.value || null; });
   on('#id-face', 'onchange', (e) => { if (e.target.value === '__new') { e.target.value = IDEAS.friendId || ''; return friendModal(); } IDEAS.friendId = e.target.value || null; });
-  on('#id-lang', 'onchange', (e) => { IDEAS.lang = e.target.value; });
+  on('#id-lang', 'onchange', (e) => { IDEAS.lang = e.target.value; const v = e.target.parentElement.querySelector('.v'); if (v) v.textContent = LANG_SHORT[IDEAS.lang] || 'BM'; });
   on('#id-go', 'onclick', () => ideasRun(box));
   if (IDEAS.autorun) { IDEAS.autorun = false; setTimeout(() => ideasRun(box), 0); }
   const again = () => renderIdeas(box);
@@ -682,6 +685,7 @@ const FL_EX = {
 const TIER_MODEL = { motion: ['Motion (photo + voice)', 'ffmpeg, no AI video'], lite: ['MiniMax H3 Turbo', 'minimax/h3-max-turbo/image-to-video'], fast: ['MiniMax H3 Turbo HD', 'minimax/h3-max-turbo/image-to-video'], studio: ['VEED Fabric lip-sync', 'veed/fabric-1.0'], premium: ['OmniHuman 1.5', 'fal-ai/bytedance/omnihuman/v1.5'] };
 const VIDEO_FAL = { 'h3-turbo': 'minimax/h3-max-turbo/image-to-video', 'seedance-fast': 'bytedance/seedance-2.0/fast/image-to-video', 'kling-std': 'fal-ai/kling-video/v3/standard/image-to-video', 'kling-pro': 'fal-ai/kling-video/v3/pro/image-to-video' };
 // Which AI model the current tool will use (all run on fal.ai).
+const LANG_SHORT = { ms: 'BM', en: 'EN', manglish: 'BM+EN' };
 function llmName() {
   const m = String(S.app.llmModel || '').toLowerCase();
   if (/gemini-2\.5-flash/.test(m)) return 'Gemini 2.5 Flash';
