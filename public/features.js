@@ -121,7 +121,6 @@ async function shotGo(btn) {
 }
 // called by the job poller
 function studioTick() {
-  const gal = $('#fl-gal'); if (gal) gal.innerHTML = galleryHTML();
   const strip = $('#hs-strip'); if (!strip) return;
   strip.innerHTML = stripHTML();
   if (S.mode === 'edit') return editTick();
@@ -317,8 +316,6 @@ function useIdea(x) {
   if (x.productId || IDEAS.productId) f.productId = x.productId || IDEAS.productId;
   if (x.friendId || IDEAS.friendId) f.friendId = x.friendId || IDEAS.friendId;
   if (mode === 'ad') { f.lang = x.lang || IDEAS.lang; f.approve = true; }
-  const refImg = (IDEAS.refs.find((r) => r.kind === 'image') || {}).url;
-  if (refImg && (mode === 'image' || mode === 'video')) f.startImage = refImg; // the reference picture goes with the idea
   if (f.productId && !productById(f.productId)) f.productId = null;
   if (f.friendId && !friendById(f.friendId)) f.friendId = null;
   S.forms[mode] = f; setMode(mode); renderAll(); window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -354,7 +351,25 @@ function renderIdeas(box) {
   const pr = productById(IDEAS.productId), fr = friendById(IDEAS.friendId);
   box.innerHTML = `
     <div class="id-wrap">
-      ${r ? `<div class="id-out ${IDEAS.busy ? 'dim' : ''}">${(S.app.mock || !S.app.keySet) ? '<div class="id-demo-banner">Demo mode: these ideas are placeholders. The AI is not reading your image or following your text yet. Add your fal.ai key (Settings ⚙) or start Kravitas with start.bat to get real results.</div>' : ''}
+      <div class="id-in">
+        <label class="l" for="id-dump">Dump your ideas</label>
+        <div class="id-chat" id="id-chat">
+          ${refChips()}
+          <textarea id="id-dump" rows="4" maxlength="4000" placeholder="Messy is fine. Type, paste, or drop files here: product sheets, screenshots, PDF, Word. Kravitas reads them and writes the prompts.">${esc(IDEAS.dump)}</textarea>
+          <div class="id-bar">
+            <label class="id-clip ${IDEAS.refs.length >= 8 ? 'off' : ''}" title="Attach images, PDF, Word or text">📎 Attach<input type="file" id="id-file" accept="${REF_ACCEPT}" multiple hidden></label>
+            <span class="id-n">${IDEAS.refs.length ? `${IDEAS.refs.length}/8 files` : 'images · PDF · Word · text'}</span>
+            <button class="go zz-go" id="id-go" ${IDEAS.busy ? 'disabled' : ''}>${IDEAS.busy && !r ? 'Thinking…' : r ? 'Think again' : 'Turn into prompts'} <span class="c">✦ 2</span></button>
+          </div>
+        </div>
+        <div class="id-ex"><small>Try:</small>${IDEA_EX.map((x, i) => `<button data-idex="${i}">${esc(x.slice(0, 38))}…</button>`).join('')}</div>
+        <div class="zz-row">
+          <div><label class="l" for="id-prod">Product (optional)</label><div class="id-selrow"><select class="in" id="id-prod"><option value="">None</option>${S.products.map((p) => `<option value="${p.id}" ${p.id === IDEAS.productId ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select><button class="id-plus" data-newprod title="Add a product photo">＋</button></div></div>
+          <div><label class="l" for="id-face">Character (optional)</label><div class="id-selrow"><select class="in" id="id-face"><option value="">None</option>${S.friends.map((f) => `<option value="${f.id}" ${f.id === IDEAS.friendId ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}</select><button class="id-plus" data-newface title="Add a character">＋</button></div></div>
+          <div><label class="l" for="id-lang">Language</label><select class="in" id="id-lang">${Object.entries(LANG).map(([k, l]) => `<option value="${k}" ${k === IDEAS.lang ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
+        </div>
+      </div>
+      ${r ? `<div class="id-out ${IDEAS.busy ? 'dim' : ''}">
         <p class="b-sum">${esc(r.summary)}</p>
         <div class="id-cols">
           <div><h3>Who it's for</h3><p>${esc(r.audience)}</p></div>
@@ -370,32 +385,13 @@ function renderIdeas(box) {
           <div class="b-sugg">${BRAIN_SUGGEST.map((x) => `<button class="chip" data-sugg="${esc(x)}">${esc(x)}</button>`).join('')}</div>
           <form class="b-input" id="id-form"><label class="id-clip sm ${IDEAS.refs.length >= 8 ? 'off' : ''}" title="Attach more files">📎<input type="file" id="id-file2" accept="${REF_ACCEPT}" multiple hidden></label><input id="id-msg" class="in" maxlength="500" autocomplete="off" placeholder="e.g. buyers are mums 30–45, 20% off this week, keep it in BM"><button class="btn pri" type="submit" ${IDEAS.busy ? 'disabled' : ''}>Send ✦ 1</button></form>
         </div>
-      </div>` : IDEAS.busy ? '<div class="id-think"><i></i><b>Kravitas is reading your notes…</b><small>Making sense of them, then writing prompts you can run right away.</small></div>' : `<div class="fl-empty id-empty"><span>✿</span><b>What do you want to make?</b><small>Tell Kravitas about your product or idea. It writes the prompts and a storyboard, so you can check everything before you spend on video.</small></div>`}
-      <div class="id-in id-dock">
-        <div class="id-chat" id="id-chat">
-          ${refChips()}
-          <textarea id="id-dump" rows="2" maxlength="4000" placeholder="Create your prompts here… e.g. serum vit C RM29, flash sale this weekend, buyers are women 20 to 35">${esc(IDEAS.dump)}</textarea>
-          <div class="id-bar">
-            <label class="ib plus ${IDEAS.refs.length >= 8 ? 'off' : ''}" title="Attach images, PDF, Word or text" aria-label="Attach files"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><input type="file" id="id-file" accept="${REF_ACCEPT}" multiple hidden></label>
-            <label class="ib ${IDEAS.productId ? 'on' : ''}" title="Product" aria-label="Product"><svg viewBox="0 0 24 24"><path d="M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8"/></svg>${IDEAS.productId ? `<span class="v">${esc((S.products.find((p) => p.id === IDEAS.productId) || {}).name || '')}</span>` : ''}<select id="id-prod" aria-label="Product"><option value="">Product: none</option>${S.products.map((p) => `<option value="${p.id}" ${p.id === IDEAS.productId ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}<option value="__new">＋ Add product…</option></select></label>
-            <label class="ib ${IDEAS.friendId ? 'on' : ''}" title="Character" aria-label="Character"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4-6 7-6s6 2 7 6"/></svg>${IDEAS.friendId ? `<span class="v">${esc((S.friends.find((f) => f.id === IDEAS.friendId) || {}).name || '')}</span>` : ''}<select id="id-face" aria-label="Character"><option value="">Character: none</option>${S.friends.map((f) => `<option value="${f.id}" ${f.id === IDEAS.friendId ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}<option value="__new">＋ Add character…</option></select></label>
-            <label class="ib lg" title="Language" aria-label="Language"><span class="v">${LANG_SHORT[IDEAS.lang] || 'BM'}</span><select id="id-lang" aria-label="Language">${Object.entries(LANG).map(([k, l]) => `<option value="${k}" ${k === IDEAS.lang ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
-            <span class="sp"></span>
-            ${(S.app.mock || !S.app.keySet) ? '<span class="demo-dot" title="Demo mode: the AI cannot read your images or really follow your text until a fal.ai key is added in Settings.">Demo</span>' : ''}
-            <button type="button" class="mdl" data-open="models" title="The AI model this uses. Tap to see all models.">${esc(llmName())}</button>
-            <button class="send" id="id-go" ${IDEAS.busy ? 'disabled' : ''} title="${r ? 'Think again' : 'Turn into prompts'} (✦ 2)" aria-label="${r ? 'Think again' : 'Turn into prompts'}">${IDEAS.busy && !r ? '<i class="spin"></i>' : '<svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>'}</button>
-          </div>
-        </div>
-      </div>
+      </div>` : IDEAS.busy ? '<div class="id-think"><i></i><b>Kravitas is reading your notes…</b><small>Making sense of them, then writing prompts you can run right away.</small></div>' : ''}
     </div>`;
   const on = (id, ev, fn) => { const el = $(id); if (el) el[ev] = fn; };
-  const grow = (t) => { t.style.height = 'auto'; t.style.height = Math.min(220, t.scrollHeight) + 'px'; };
-  on('#id-dump', 'oninput', (e) => { IDEAS.dump = e.target.value; grow(e.target); });
-  on('#id-dump', 'onkeydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); if (!IDEAS.busy) ideasRun(box); } });
-  if ($('#id-dump')) grow($('#id-dump'));
-  on('#id-prod', 'onchange', (e) => { if (e.target.value === '__new') { e.target.value = IDEAS.productId || ''; return productModal(); } IDEAS.productId = e.target.value || null; });
-  on('#id-face', 'onchange', (e) => { if (e.target.value === '__new') { e.target.value = IDEAS.friendId || ''; return friendModal(); } IDEAS.friendId = e.target.value || null; });
-  on('#id-lang', 'onchange', (e) => { IDEAS.lang = e.target.value; const v = e.target.parentElement.querySelector('.v'); if (v) v.textContent = LANG_SHORT[IDEAS.lang] || 'BM'; });
+  on('#id-dump', 'oninput', (e) => { IDEAS.dump = e.target.value; });
+  on('#id-prod', 'onchange', (e) => { IDEAS.productId = e.target.value || null; });
+  on('#id-face', 'onchange', (e) => { IDEAS.friendId = e.target.value || null; });
+  on('#id-lang', 'onchange', (e) => { IDEAS.lang = e.target.value; });
   on('#id-go', 'onclick', () => ideasRun(box));
   if (IDEAS.autorun) { IDEAS.autorun = false; setTimeout(() => ideasRun(box), 0); }
   const again = () => renderIdeas(box);
@@ -604,7 +600,7 @@ const SIDES = {
 function fillSides() {
   const [a, b, c] = SIDES[S.mode] || SIDES.ad;
   const set = (id, fn) => { const el = $(id); if (el) el.innerHTML = fn(); };
-  set('#zz-s1', a); set('#zz-s2', b); set('#zz-s3', c); set('#zz-model', modelCard);
+  set('#zz-s1', a); set('#zz-s2', b); set('#zz-s3', c);
 }
 // app.js calls renderPresets() after composer changes: keep the side cards in sync
 function refreshSides() { if ($('#zz-s1')) fillSides(); }
@@ -650,7 +646,7 @@ function renderMain() {
     $('#hs-md').onchange = (e) => {
       const v = e.target.value, need = mp[v];
       if (need && !canUse(need)) { e.target.value = SHOT.model; toast(`${models[v]?.label || 'That model'} is on the ${PLAN_LABEL[need]} plan`); return accountModal(); }
-      SHOT.model = v; shotEstimate(); $('#zz-model').innerHTML = modelCard();
+      SHOT.model = v; shotEstimate();
     };
     $('#hs-ar').onchange = (e) => { SHOT.aspect = e.target.value; $('#hs-stage').style.aspectRatio = SHOT.aspect.replace(':', '/'); preview(); };
     $('#hs-go').onclick = (e) => shotGo(e.currentTarget);
@@ -661,103 +657,24 @@ function renderMain() {
   if (S.mode === 'schedule') { box.innerHTML = '<div id="sched"></div>'; renderSchedule(); return; }
   if (S.mode === 'edit') return renderEditor(box);
   if (S.mode === 'ideas') return renderIdeas(box);
-  box.innerHTML = `<div class="fl-head"><h1>${FL_TITLE[S.mode] || ''}</h1><p>${HERO[S.mode]?.[1] || ''}</p></div>
-    <div class="fl-gal" id="fl-gal">${galleryHTML()}</div>
-    <div class="composer inline" id="composer"></div>
-    <div class="id-ex fl-ex"><small>Try:</small>${(FL_EX[S.mode] || []).map((x, i) => `<button data-flex="${i}">${esc(x)}</button>`).join('')}</div>`;
-  if (REFS_OK.has(S.mode)) { box.ondragover = (e) => { e.preventDefault(); box.classList.add('drop'); }; box.ondragleave = () => box.classList.remove('drop'); box.ondrop = (e) => { e.preventDefault(); box.classList.remove('drop'); attachRefs([...(e.dataTransfer?.files || [])], () => renderComposer()); }; } else box.ondragover = box.ondrop = null;
-  box.querySelectorAll('[data-flex]').forEach((b) => (b.onclick = () => { F().prompt = FL_EX[S.mode][+b.dataset.flex]; renderComposer(true); }));
+  box.innerHTML = `${mainStage()}<p class="zz-lead">${HERO[S.mode]?.[1] || ''}</p><div class="composer inline" id="composer"></div>`;
   renderComposer();
 }
 let studioPreview = () => {};
-// ---------- workspace shell: tool rail · work area · settings panel ----------
-const RAIL = [
-  ['Create', [['ideas', '✨', 'Ideas'], ['ad', '🛍', 'Ad'], ['image', '🖼', 'Image'], ['video', '🎬', 'Video'], ['voice', '🎙', 'Voice'], ['edit', '✂', 'Edit'], ['schedule', '📅', 'Schedule']]],
-  ['Library', [['media', '▦', 'All media'], ['chars', '☺', 'Characters'], ['products', '▣', 'Products']]],
-];
-const LIB_MODES = new Set(['media', 'chars', 'products']);
-const COMPOSER_MODES = new Set(['ad', 'image', 'voice']);
-const FL_TITLE = { ad: 'Make an ad', image: 'Make an image', voice: 'Make a voice-over' };
-const FL_NOUN = { ad: 'ads', image: 'images', voice: 'voice-overs' };
-const FL_EX = {
-  ad: ['50% off today only, free shipping', 'Halal and safe for sensitive skin', 'New arrival, limited stock'],
-  image: ['Product on a marble table, soft morning light', 'Flat lay with flowers, top view', 'A young woman holding the product in a cafe'],
-  voice: ['Hai semua! Hari ni saya nak kongsi satu produk yang memang best.', 'Limited time offer. Tap the yellow basket now!', 'Jom cuba sekarang, stok terhad!'],
-};
-const TIER_MODEL = { motion: ['Motion (photo + voice)', 'ffmpeg, no AI video'], lite: ['MiniMax H3 Turbo', 'minimax/h3-max-turbo/image-to-video'], fast: ['MiniMax H3 Turbo HD', 'minimax/h3-max-turbo/image-to-video'], studio: ['VEED Fabric lip-sync', 'veed/fabric-1.0'], premium: ['OmniHuman 1.5', 'fal-ai/bytedance/omnihuman/v1.5'] };
-const VIDEO_FAL = { 'h3-turbo': 'minimax/h3-max-turbo/image-to-video', 'seedance-fast': 'bytedance/seedance-2.0/fast/image-to-video', 'kling-std': 'fal-ai/kling-video/v3/standard/image-to-video', 'kling-pro': 'fal-ai/kling-video/v3/pro/image-to-video' };
-// Which AI model the current tool will use (all run on fal.ai).
-const LANG_SHORT = { ms: 'BM', en: 'EN', manglish: 'BM+EN' };
-function llmName() {
-  const m = String(S.app.llmModel || '').toLowerCase();
-  if (/gemini-2\.5-flash/.test(m)) return 'Gemini 2.5 Flash';
-  if (/gemini-2\.5-pro/.test(m)) return 'Gemini 2.5 Pro';
-  if (/gpt-?5/.test(m)) return 'GPT-5'; if (/gpt-?4o/.test(m)) return 'GPT-4o';
-  if (/claude/.test(m)) return 'Claude';
-  return m.split('/').pop() || 'AI writer';
-}
-function modelInfo() {
-  const c = S.app.catalog, m = S.mode;
-  if (m === 'ad') { const k = F().tier || 'lite'; return { name: TIER_MODEL[k]?.[0] || k, fal: TIER_MODEL[k]?.[1], note: `${TIER_NAME[k] || k} quality. ${TIER_DESC[k] || ''}`, extra: 'Script: AI writer · Picture: ' + (c.tiers?.[k] && ['fast', 'studio', 'premium'].includes(k) ? 'Nano Banana 2' : 'Seedream 4') + ' · Voice: ElevenLabs or MiniMax' }; }
-  if (m === 'video') { const k = SHOT.model; return { name: c.videoModels?.[k]?.label || k, fal: VIDEO_FAL[k], note: c.videoModels?.[k]?.tag || '', extra: 'Start picture: Nano Banana 2' }; }
-  if (m === 'image') return { name: 'Nano Banana 2', fal: 'fal-ai/nano-banana-2', note: 'Sharpest images. Keeps your character and product when you add them.' };
-  if (m === 'voice') {
-    const f = F();
-    if (f.kind === 'sfx') return { name: 'ElevenLabs Sound Effects', fal: 'fal-ai/elevenlabs/sound-effects/v2', note: 'Short sounds from a description.' };
-    if (f.kind === 'music') return { name: 'ElevenLabs Music', fal: 'fal-ai/elevenlabs/music', note: 'Background tracks from a description.' };
-    return String(f.voice).startsWith('el:') ? { name: 'ElevenLabs voices', fal: 'fal-ai/elevenlabs/tts', note: 'Natural English voices.' } : { name: 'MiniMax Speech', fal: 'fal-ai/minimax/speech-02-hd', note: 'Best for Bahasa Melayu, and your cloned voice.' };
-  }
-  if (m === 'ideas') return { name: llmName(), writer: true, fal: S.app.llmModel || 'openrouter/router', note: 'Writes ideas, prompts and storyboards.', extra: 'Sketches: FLUX Schnell · Keyframes: ' + (canUse('creator') ? 'Nano Banana 2' : 'Seedream 4 Edit') };
-  if (LIB_MODES.has(m)) return { name: 'Your library', fal: '', note: 'Characters and products are used as references by the image and video models.' };
-  if (m === 'edit') return { name: 'No AI needed to join clips', fal: '', note: 'New voice-overs use ElevenLabs or MiniMax. New music uses ElevenLabs Music.' };
-  return { name: 'No AI model', fal: '', note: 'Scheduling and posting do not use credits.' };
-}
-function modelCard() {
-  const i = modelInfo();
-  return `<div class="zz-top"><h2>Model</h2><button class="link" data-open="models">All models</button></div>
-    <div class="mdl"><b>${esc(i.name)}</b>${i.fal ? `<code>${esc(i.fal)}</code>` : ''}<small>${esc(i.note)}</small>${i.extra ? `<small>${esc(i.extra)}</small>` : ''}</div>
-    <p class="mdl-foot">Runs on fal.ai · ${S.app.mode === 'local' ? 'everything unlocked on your PC' : `your plan: ${access() === 'free' ? 'Free trial' : PLAN_LABEL[access()]}`}</p>`;
-}
-function galleryHTML() {
-  const want = TOOL_JOBS[S.mode] || [];
-  const list = S.jobs.filter((j) => want.includes(j.tool)).slice(0, 8);
-  if (!list.length) return `<div class="fl-empty"><span>${'✿'}</span><b>Start creating or drop media</b><small>Your ${FL_NOUN[S.mode] || 'work'} will appear here. Type below, or tap an example.</small></div>`;
-  return list.map((j) => {
-    const t = thumbOf(j), step = j.steps?.find((x) => x.status === 'running'), audio = j.outputs.some((o) => o.type === 'audio');
-    return `<button class="hs-card" data-job="${j.id}"><div class="hs-th">${j.status === 'running' ? `<div class="hs-run"><i></i><small>${esc(step?.label || 'Starting')}…</small></div>` : t ? (t.type === 'video' ? `<video src="${t.url}#t=0.3" muted preload="metadata"></video>` : `<img src="${t.url}" alt="">`) : `<div class="hs-run"><small>${j.status === 'error' ? 'Failed' : audio ? '🎙 Audio' : j.status === 'review' ? 'Check the script' : '…'}</small></div>`}</div><p>${esc(j.title || '')}</p></button>`;
-  }).join('');
-}
-function libraryPage() {
-  if (S.mode === 'media') return `<div class="fl-head"><h1>All media</h1><p>Everything you have made. Tap one to open, post or edit it.</p></div>`;
-  const chars = S.mode === 'chars';
-  const list = chars ? S.friends : S.products;
-  return `<div class="fl-head"><h1>${chars ? 'Characters' : 'Products'}</h1><p>${chars ? 'The faces Kravitas keeps the same in every image and video.' : 'What you sell. Add each product once, then pick it in any tool.'}</p></div>
-    <div class="lib-grid">${list.map((x) => `<div class="lib-it"><span class="lib-ph" style="background-image:url('${chars ? x.photos?.[0] || '' : x.image}')"></span><b>${esc(x.name)}</b><small>${esc(chars ? x.note || '' : x.price || '')}</small></div>`).join('')}
-      <button class="lib-it new" data-new="${chars ? 'friend' : 'product'}"><span class="lib-ph">＋</span><b>${chars ? 'Add character' : 'Add product'}</b><small>${chars ? '1–3 clear photos' : 'One clear photo'}</small></button>
-      ${chars ? '<button class="lib-it new" data-act="avatars"><span class="lib-ph">🎭</span><b>AI avatars</b><small>Ready-made creators</small></button>' : ''}</div>`;
-}
 function renderStudio() {
-  const comp = COMPOSER_MODES.has(S.mode), lib = LIB_MODES.has(S.mode);
-  document.body.dataset.tool = S.mode;
-  document.body.classList.toggle('is-lib', lib);
+  const shots = S.jobs.filter((j) => (TOOL_JOBS[S.mode] || []).includes(j.tool));
   $('#presets').innerHTML = `
-    <nav class="ws-rail" aria-label="Tools">
-      ${RAIL.map(([g, items], gi) => `${gi ? '<hr>' : ''}<small>${g}</small>${items.map(([k, ic, l]) => `<button data-mode="${k}" class="${k === S.mode ? 'on' : ''}" aria-current="${k === S.mode}" title="${l}"><i>${ic}</i><span>${l}</span></button>`).join('')}`).join('')}
-      <div class="ws-rail-foot"><button data-open="models" title="Models"><i>◆</i><span>Models</span></button><button data-collapse title="Collapse"><i>◧</i><span>Collapse</span></button></div>
-    </nav>
-    <section class="bento zz ws">
-      <div class="ws-center">
-        <div class="bx zz-shot"><div id="zz-main"></div></div>
-        ${comp || lib || S.mode === 'ideas' ? '' : `<div class="bx zz-strip"><div class="zz-top"><h2>Recent</h2><span>Tap to open</span></div><div class="zz-row2" id="hs-strip">${stripHTML()}</div></div>`}
+    <section class="bento zz">
+      <div class="bx zz-shot">
+        <div class="zz-tools" role="tablist">${TOOLS.map(([k, l]) => `<button role="tab" data-mode="${k}" class="${k === S.mode ? 'on' : ''}" aria-selected="${k === S.mode}">${l}</button>`).join('')}
+</div>
+        <div id="zz-main"></div>
       </div>
-      <aside class="ws-side">
-        <div class="bx ws-model" id="zz-model"></div>
-        <div class="bx" id="zz-s1"></div>
-        <div class="bx" id="zz-s2"></div>
-        <div class="bx" id="zz-s3"></div>
-      </aside>
+      <div class="bx zz-chars" id="zz-s1"></div>
+      <div class="bx zz-tpl" id="zz-s2"></div>
+      <div class="bx zz-strip"><div class="zz-top"><h2>Recent</h2><span>Tap to open</span></div><div class="zz-row2" id="hs-strip">${stripHTML()}</div></div>
+      <div class="bx zz-style" id="zz-s3"></div>
     </section>`;
-  if (lib) { $('#zz-main').innerHTML = libraryPage(); $('#zz-model').innerHTML = modelCard(); ['#zz-s1', '#zz-s2', '#zz-s3'].forEach((id) => { $(id).hidden = true; }); return; }
   fillSides();
   renderMain();
 }
@@ -1079,10 +996,3 @@ function creditsModal(a, ledger) {
   m.querySelectorAll('[data-plan]').forEach((b) => (b.onclick = go({ plan: b.dataset.plan })));
   m.querySelectorAll('[data-pack]').forEach((b) => (b.onclick = go({ pack: b.dataset.pack })));
 }
-
-// header search: filter visible media cards by title
-document.addEventListener('input', (e) => {
-  if (e.target.id !== 'fl-q') return;
-  const q = e.target.value.trim().toLowerCase();
-  document.querySelectorAll('#fl-gal .hs-card, #hs-strip .hs-card, #feed .grid > *').forEach((el) => { el.style.display = !q || el.textContent.toLowerCase().includes(q) ? '' : 'none'; });
-});
