@@ -387,8 +387,10 @@ function renderFeed() {
 
 // ---------- composer ----------
 function pill(key, label, options, cur) {
-  const shown = options[cur] ?? cur;
-  return `<button class="pill" data-pill="${key}"><span class="k">${label}</span>${esc(shown)} ▾</button>`;
+  let shown = options[cur] ?? cur;
+  if (key === 'lang') shown = { ms: 'BM', en: 'EN', manglish: 'BM+EN' }[cur] || shown;
+  if (key === 'format') shown = { talking: 'Talking', showcase: 'Showcase' }[cur] || shown;
+  return `<button class="pill" title="${esc(options[cur] ?? cur)}" data-pill="${key}"><span class="k">${label}</span>${esc(shown)} ▾</button>`;
 }
 const toggle = (key, label, on) => `<button class="pill tg ${on ? 'on' : ''}" data-toggle="${key}">${on ? '✓ ' : ''}${label}</button>`;
 function pillOptions(key) {

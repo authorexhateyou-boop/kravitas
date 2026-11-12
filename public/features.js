@@ -372,7 +372,7 @@ function renderIdeas(box) {
   const pr = productById(IDEAS.productId), fr = friendById(IDEAS.friendId);
   box.innerHTML = `
     <div class="id-wrap">
-      ${r ? `<div class="id-out ${IDEAS.busy ? 'dim' : ''}">${(S.app.mock || !S.app.keySet) ? '<div class="id-demo-banner">Demo mode: these ideas are placeholders. The AI is not reading your image or following your text yet. Add your fal.ai key (Settings ⚙) or start Kravitas with start.bat to get real results.</div>' : ''}
+      ${r ? `<div class="id-out ${IDEAS.busy ? 'dim' : ''}">${(S.app.mock || !S.app.keySet) ? '<div class="id-demo-banner">Demo mode: these ideas are placeholders. The AI is not reading your image or following your text yet. Connect the AI in Settings ⚙ (or start Kravitas with start.bat) to get real results.</div>' : ''}
         <p class="b-sum">${esc(r.summary)}</p>
         <div class="id-cols">
           <div><h3>Who it's for</h3><p>${esc(r.audience)}</p></div>
@@ -400,7 +400,7 @@ function renderIdeas(box) {
             <label class="ib lg" title="Language" aria-label="Language"><span class="v">${LANG_SHORT[IDEAS.lang] || 'BM'}</span><select id="id-lang" aria-label="Language">${Object.entries(LANG).map(([k, l]) => `<option value="${k}" ${k === IDEAS.lang ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
             ${r ? '<button type="button" class="ib" id="id-new" title="Start a new idea" aria-label="New idea"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4"/></svg></button>' : ''}
             <span class="sp"></span>
-            ${(S.app.mock || !S.app.keySet) ? '<span class="demo-dot" title="Demo mode: the AI cannot read your images or really follow your text until a fal.ai key is added in Settings.">Demo</span>' : ''}
+            ${(S.app.mock || !S.app.keySet) ? '<span class="demo-dot" title="Demo mode: the AI cannot read your images or really follow your text until the AI is connected in Settings.">Demo</span>' : ''}
             <label class="mdl" title="The AI that writes your ideas. Better ones unlock with your plan."><span class="v">${esc(llmName())} ▾</span><select id="id-writer" aria-label="AI writer">${Object.entries(S.app.catalog?.writers || { flash: { name: llmName(), plan: 'free' } }).map(([k, w]) => `<option value="${k}" ${k === IDEAS.writer ? 'selected' : ''}>${esc(w.name)}${w.note ? ' · ' + esc(w.note) : ''}${(w.plan !== 'free' && !canUse(w.plan)) ? ' 🔒 ' + (PLAN_LABEL[w.plan] || w.plan) : ''}</option>`).join('')}</select></label>
             <button class="send" id="id-go" ${IDEAS.busy ? 'disabled' : ''} title="${r ? 'Send (✦ 1)' : 'Turn into prompts (✦ 2)'}" aria-label="${r ? 'Send' : 'Turn into prompts'}">${IDEAS.busy && !r ? '<i class="spin"></i>' : '<svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>'}</button>
           </div>
@@ -714,12 +714,7 @@ function modelInfo() {
   if (m === 'edit') return { name: 'No AI needed to join clips', fal: '', note: 'New voice-overs use ElevenLabs or MiniMax. New music uses ElevenLabs Music.' };
   return { name: 'No AI model', fal: '', note: 'Scheduling and posting do not use credits.' };
 }
-function modelCard() {
-  const i = modelInfo();
-  return `<div class="zz-top"><h2>Model</h2><button class="link" data-open="models">All models</button></div>
-    <div class="mdl"><b>${esc(i.name)}</b>${i.fal ? `<code>${esc(i.fal)}</code>` : ''}<small>${esc(i.note)}</small>${i.extra ? `<small>${esc(i.extra)}</small>` : ''}</div>
-    <p class="mdl-foot">Runs on fal.ai · ${S.app.mode === 'local' ? 'everything unlocked on your PC' : `your plan: ${access() === 'free' ? 'Free trial' : PLAN_LABEL[access()]}`}</p>`;
-}
+function modelCard() { return ''; } // the right-hand Model card is gone; the model is named in each chatbox instead
 function galleryHTML() {
   const want = TOOL_JOBS[S.mode] || [];
   const list = S.jobs.filter((j) => want.includes(j.tool)).slice(0, 8);
