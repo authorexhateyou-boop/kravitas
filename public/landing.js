@@ -31,6 +31,20 @@
   }
   models();
   var studio = document.querySelector('[data-studio]').getAttribute('href');
+  var form = document.getElementById('try');
+  if (form) {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var idea = (document.getElementById('try-idea').value || '').trim();
+      var lang = form.querySelector('[name=lang]').value;
+      var base = studio.split('#')[0];
+      var url = base + (base.indexOf('?') > -1 ? '&' : '?') + 'idea=' + encodeURIComponent(idea) + '&lang=' + encodeURIComponent(lang) + (idea ? '&go=1' : '');
+      var a = document.querySelector('[data-studio]');
+      if (a.getAttribute('target') === '_blank') window.open(url, '_blank', 'noopener'); else location.href = url;
+    });
+    var ta = document.getElementById('try-idea');
+    ta.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); } });
+  }
   draw(FALLBACK);
   fetch('/api/config').then(function (r) { return r.ok ? r.json() : null; }).then(function (c) {
     if (c && Array.isArray(c.plans) && c.plans.length) draw(c.plans.slice().sort(function (a, b) { return a.price - b.price; }));

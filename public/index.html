@@ -61,10 +61,13 @@ a{color:inherit}
 .f-side small{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);padding:8px 12px 4px}
 .f-side span{padding:9px 12px;border-radius:12px;font-size:13.5px;font-weight:600;color:#e6e6ea}
 .f-side span.on{background:#3a3a3d}
-.f-main{position:relative;display:grid;place-items:center;padding:24px 24px 120px}
+.f-main{position:relative;display:grid;place-items:center;padding:24px 24px 150px}
 .f-empty{text-align:center;color:#c9c9c9}.f-empty i{font-style:normal;font-size:46px;display:block;color:#fff}.f-empty b{font-weight:500;font-size:20px}
 .f-chat{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);width:min(620px,calc(100% - 40px));background:var(--soft);border:1px solid #2a2a2e;border-radius:22px;padding:14px;text-align:left}
-.f-chat p{margin:0 0 14px;color:#8e8e93;font-size:14px}
+.f-chat textarea{display:block;width:100%;background:none;border:0;outline:0;color:#fff;font:inherit;font-size:15px;line-height:1.45;resize:none;margin:0 0 12px;padding:2px 4px}.f-chat textarea::placeholder{color:#8e8e93}
+.chip.sel{padding:0;overflow:hidden}.chip.sel select{appearance:none;-webkit-appearance:none;background:none;border:0;color:inherit;font:inherit;font-weight:600;padding:7px 12px;outline:0;cursor:pointer}
+.chip.ghost{color:#8e8e93;cursor:default}
+.f-go{border:0;cursor:pointer;font-family:inherit}.f-go:hover{transform:translateY(-1px)}
 .f-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .dot{width:32px;height:32px;border-radius:50%;background:#2a2a2e;display:grid;place-items:center;font-size:16px}
 .chip{border:1px solid #2f2f33;background:#232326;border-radius:999px;padding:7px 12px;font-size:12px;font-weight:600}
@@ -115,6 +118,7 @@ a{color:inherit}
 .final .btn{position:relative;z-index:2}
 footer{border-top:1px solid var(--line);padding:26px 0;font-size:13px;color:var(--mut)}footer .wrap{display:flex;justify-content:space-between}footer a{color:var(--mut)}
 @media (max-width:900px){.nav nav{display:none}.nav .btn{margin-left:auto}.row{grid-template-columns:1fr;gap:28px;padding:44px 0}.row:nth-of-type(even) .txt{order:0}.plans{grid-template-columns:1fr 1fr}.frame{grid-template-columns:1fr}.f-side{display:none}.block{padding:80px 0}.vis{min-height:0}}
+.f-chat .f-row .chip.ghost{display:none}@media (min-width:700px){.f-chat .f-row .chip.ghost{display:inline-block}}
 @media (max-width:560px){.plans{grid-template-columns:1fr}.tools{grid-template-columns:1fr 1fr}.week{grid-template-columns:repeat(4,1fr)}.wrap{padding:0 18px}.nav .wrap{padding:0 16px}.panels{gap:6px}}
 @media (prefers-reduced-motion:reduce){.film{animation:none}html{scroll-behavior:auto}}
 </style>
@@ -150,7 +154,14 @@ footer{border-top:1px solid var(--line);padding:26px 0;font-size:13px;color:var(
         <div class="f-side" aria-hidden="true"><small>Create</small><span class="on">Ideas</span><span>Ad</span><span>Image</span><span>Video</span><span>Voice</span><span>Edit</span><span>Schedule</span><small>Library</small><span>All media</span><span>Characters</span></div>
         <div class="f-main">
           <div class="f-empty"><i>✿</i><b>What do you want to make?</b></div>
-          <div class="f-chat" aria-hidden="true"><p>Serum vit C RM29, flash sale this weekend, buyers are women 20 to 35</p><div class="f-row"><span class="dot">＋</span><span class="chip">Product: Glow Serum</span><span class="chip">Bahasa Melayu</span><span class="f-go">Turn into prompts ✦ 2</span></div></div>
+          <form class="f-chat" id="try" action="/studio" method="get" data-studio-form>
+            <textarea name="idea" id="try-idea" rows="2" maxlength="2000" placeholder="Create your prompts here… e.g. serum vit C RM29, flash sale this weekend, buyers are women 20 to 35" aria-label="Your idea"></textarea>
+            <div class="f-row">
+              <label class="chip sel"><select name="lang" aria-label="Language"><option value="ms">Bahasa Melayu</option><option value="en">English</option><option value="manglish">Manglish</option></select></label>
+              <span class="chip ghost" title="Add your product and character in the studio">＋ Product · Character</span>
+              <button class="f-go" type="submit">Turn into prompts ✦ 2</button>
+            </div>
+          </form></div>
         </div>
       </div>
     </div>

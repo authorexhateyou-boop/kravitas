@@ -942,6 +942,13 @@ document.addEventListener('mouseout', (e) => { const v = e.target.closest('.card
         } catch (e) { toast(e.message, true); }
       } else toast('Checkout cancelled');
     }
+    if (q.has('idea')) {
+      IDEAS.dump = (q.get('idea') || '').slice(0, 4000);
+      if (LANG[q.get('lang')]) IDEAS.lang = q.get('lang');
+      IDEAS.autorun = q.get('go') === '1' && !!IDEAS.dump.trim();
+      S.mode = 'ideas';
+      history.replaceState(null, '', location.pathname);
+    }
     renderAll();
     if (S.jobs.some((j) => j.status === 'running')) poll();
   } catch (e) {
