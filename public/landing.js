@@ -35,7 +35,7 @@
   (function () {
     var t = document.getElementById('promo-pill-t'), bar = document.getElementById('promo-bar'), pill = document.getElementById('promo-pill');
     if (!PROMO.off) { if (pill) pill.style.display = 'none'; return; }
-    if (t) t.textContent = 'Pricing -' + PROMO.off + '%';
+    if (t) t.textContent = '-' + PROMO.off + '%';
     if (bar) bar.textContent = 'Launch offer: ' + PROMO.off + '% off every plan. Prices shown are already discounted.';
   })();
   models();

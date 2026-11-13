@@ -122,13 +122,31 @@ footer{border-top:1px solid var(--line);padding:26px 0;font-size:13px;color:var(
 @media (max-width:560px){.plans{grid-template-columns:1fr}.tools{grid-template-columns:1fr 1fr}.week{grid-template-columns:repeat(4,1fr)}.wrap{padding:0 18px}.nav .wrap{padding:0 16px}.panels{gap:6px}}
 @media (prefers-reduced-motion:reduce){.film{animation:none}html{scroll-behavior:auto}}
 
-.promo-pill{margin-left:auto;display:inline-flex;gap:6px;align-items:center;background:#d9ff3f;color:#111;font-weight:700;font-size:13px;border-radius:999px;padding:7px 14px}
+.promo-pill{text-decoration:none;margin-left:auto;display:inline-flex;gap:6px;align-items:center;background:#d9ff3f;color:#111;font-weight:700;font-size:13px;border-radius:999px;padding:7px 14px}
 .nav nav+.promo-pill{margin-left:auto}
 .uil{background:transparent;border:1px solid #3a3a3e;color:#fff;border-radius:999px;padding:7px 12px;font:inherit;font-size:13px;cursor:pointer;margin:0 10px}.uil b{color:#d9ff3f}.uil span{opacity:.55}
 .promo-bar{margin:28px auto 0;max-width:720px;border:1px solid #d9ff3f;border-radius:999px;padding:10px 20px;color:#d9ff3f;font-weight:600;font-size:14px}
 .plan .save{display:inline-block;align-self:flex-start;background:#d9ff3f;color:#111;font-weight:700;font-size:12px;border-radius:999px;padding:3px 10px;margin-top:10px}
 .price s{font-size:20px;font-weight:400;opacity:.45;letter-spacing:0;margin-right:8px}
 @media (max-width:900px){.nav .promo-pill{margin-left:auto}.nav .btn{margin-left:0}}
+
+.promo-pill,.uil,.nav .btn{white-space:nowrap;flex:none}.promo-pill .pp-l{margin:0 5px 0 6px}.cta-s{display:none}
+.promo-bar{border-radius:18px;line-height:1.4}
+@media (max-width:700px){
+  .promo-pill{text-decoration:none}
+  .frame{min-height:0;margin-top:36px;border-radius:22px}
+  .f-main{padding:26px 12px 12px;gap:22px}.f-empty i{font-size:34px}.f-empty b{font-size:17px}
+  .f-chat{position:static;transform:none;width:100%;padding:12px}
+  .nav{background:rgba(0,0,0,.82);backdrop-filter:blur(14px)}
+  .nav .wrap{gap:8px;height:60px;padding:0 14px}
+  .nav .logo{font-size:15px;letter-spacing:.22em;margin-right:auto}
+  .promo-pill{margin-left:0 !important;padding:6px 10px;font-size:12.5px}.promo-pill .pp-l{display:none}
+  .promo-pill span[aria-hidden]{margin-right:4px}
+  .uil{margin:0;padding:6px 10px;font-size:12px}
+  .nav .btn.sm{margin-left:0 !important;padding:8px 14px;font-size:13px}.cta-l{display:none}.cta-s{display:inline}
+  .promo-bar{padding:10px 14px;font-size:13px}
+}
+@media (max-width:380px){.nav .logo{font-size:13px;letter-spacing:.16em}.promo-pill{display:none}}
 </style>
 </head>
 <body>
@@ -137,9 +155,9 @@ footer{border-top:1px solid var(--line);padding:26px 0;font-size:13px;color:var(
   <div class="wrap">
     <a class="logo" href="#top">Kravitas</a>
     <nav aria-label="Sections"><a href="#how">How it works</a><a href="#models">Models</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></nav>
-    <a class="promo-pill" href="#pricing" id="promo-pill"><span aria-hidden="true">♛</span> <span id="promo-pill-t">Pricing -40%</span></a>
+    <a class="promo-pill" href="#pricing" id="promo-pill"><span aria-hidden="true">♛</span><span class="pp-l">Pricing</span><span id="promo-pill-t">-40%</span></a>
     <button class="uil" type="button" data-uilang aria-label="Language">EN · BM</button>
-    <a class="btn sm" href="/studio" data-studio>Create with Kravitas</a>
+    <a class="btn sm" href="/studio" data-studio><span class="cta-l">Create with Kravitas</span><span class="cta-s">Create</span></a>
   </div>
 </header>
 

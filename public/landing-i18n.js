@@ -2,7 +2,7 @@
 window.KV_DICT = {
   'How it works': 'Cara ia berfungsi', 'Pricing': 'Harga', 'Open studio': 'Buka studio', 'Sections': 'Bahagian',
   'Turn an idea into a ready-to-post ad. Prompts, storyboard, video, voice and scheduling in one studio, in Bahasa Melayu and English.': 'Tukar idea jadi iklan sedia siar. Prompt, papan cerita, video, suara dan jadual dalam satu studio, dalam Bahasa Melayu dan Inggeris.',
-  'Create with Kravitas': 'Cipta dengan Kravitas', 'See pricing': 'Lihat harga',
+  'Create with Kravitas': 'Cipta dengan Kravitas', 'Create': 'Cipta', 'See pricing': 'Lihat harga',
   '40 free tokens to try it. No sign-up needed. Plans from RM39 a month.': '40 token percuma untuk cuba. Tak perlu daftar. Pelan bermula RM39 sebulan.',
   'Scroll': 'Tatal', 'The studio': 'Studio', 'Start with an idea.': 'Mula dengan satu idea.', 'Kravitas does the rest.': 'Kravitas buat selebihnya.',
   'Type what you sell, or drop in a product sheet. You get prompts, a storyboard to check, then the finished video.': 'Taip apa yang anda jual, atau letak helaian produk. Anda dapat prompt, papan cerita untuk disemak, kemudian video siap.',
