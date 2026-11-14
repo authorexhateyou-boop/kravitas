@@ -899,3 +899,8 @@ button.ib{background:none;border:0;font:inherit}button.ib:hover{background:#2c2c
 .se-list{display:grid;gap:14px;max-width:760px}.se{border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:8px}
 .se-h{display:flex;justify-content:space-between;align-items:baseline}.se-h b{font-size:16px}.se-look{margin:0;color:var(--muted);font-size:12.5px}
 .se-eps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}.se-eps small{display:block;color:var(--muted);font-size:12px}
+
+.tpl-cover{position:relative;height:150px;overflow:hidden;background:#111;display:block}
+.tpl-cover svg,.tpl-cover .tpl-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.tpl-cover .tpl-img{z-index:1}
+.tpl-cover small{position:absolute;left:10px;bottom:8px;z-index:2;background:#000a;padding:2px 8px;border-radius:999px;color:#fff}
