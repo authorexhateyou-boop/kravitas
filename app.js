@@ -168,7 +168,7 @@ app.get('/api/state', wrap(async (req, res) => {
     userId: req.uid, mode: MODE, mock: isMock(), ffmpeg: hasFF(), credits: profile?.credits ?? 0,
     llmModel: llmModel(), keySet: !!falKey(), payments: !!stripe, plan: profile?.plan || null, brand: String(profile?.prefs?.brand || ''), access: await planOf(req.uid), social: social.socialEnabled(),
     catalog: {
-      videoModels: Object.fromEntries(Object.entries(VIDEO_MODELS).map(([k, m]) => [k, { label: m.label, tag: m.tag, perSec: m.perSec }])),
+      videoModels: Object.fromEntries(Object.entries(VIDEO_MODELS).map(([k, m]) => [k, { label: m.label, tag: m.tag, perSec: m.perSec, endFrame: !!m.endFrame }])),
       tiers: Object.fromEntries(Object.entries(TIERS).map(([k, t]) => [k, { label: t.label, tag: t.tag, maxSec: t.maxSec, plan: t.plan }])),
       writers: WRITERS, modelPlan: MODEL_PLAN, maxVariants: MAX_VARIANTS, voices: VOICES, emotions: EMOTIONS, markup: MARKUP,
       avatars: AVATAR_PRESETS.map(({ id, name, tagline, look }) => ({ id, name, tagline, look })),
@@ -460,7 +460,7 @@ async function lookups(uid) {
 const str = (v, n) => String(v ?? '').slice(0, n);
 function cleanInput(input) {
   const i = { ...input };
-  for (const k of ['startImage', 'image']) if (i[k] && !store.isOwnUrl(i[k])) delete i[k];
+  for (const k of ['startImage', 'endImage', 'image']) if (i[k] && !store.isOwnUrl(i[k])) delete i[k];
   delete i.refs;
   if (i.look != null) i.look = str(i.look, 800);
   for (const k of ['prompt', 'script', 'notes', 'topic', 'tone', 'text']) if (typeof i[k] === 'string') i[k] = i[k].slice(0, k === 'text' ? 5000 : 2000);

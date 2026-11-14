@@ -75,7 +75,7 @@ function toast(msg, bad) {
 
 // ---------- vocab ----------
 const LANG = { ms: 'Bahasa Melayu', en: 'English', manglish: 'Manglish' };
-const CAM = { static: 'Static', 'dolly-in': 'Dolly in', 'dolly-out': 'Dolly out', pan: 'Pan', orbit: 'Orbit', crane: 'Crane up', handheld: 'Handheld', crash: 'Crash zoom', fpv: 'FPV drone' };
+const CAM = { static: 'Static', 'dolly-in': 'Dolly in', 'dolly-out': 'Dolly out', pan: 'Pan', orbit: 'Orbit', crane: 'Crane up', handheld: 'Handheld', crash: 'Crash zoom', fpv: 'FPV drone', 'tilt-up': 'Tilt up', 'tilt-down': 'Tilt down', 'zoom-out': 'Zoom out', tracking: 'Tracking', 'low-angle': 'Low angle hero', 'top-down': 'Top-down', whip: 'Whip pan', rack: 'Rack focus', 'dolly-zoom': 'Dolly zoom' };
 const STYLE = { photo: 'Realistic', cinematic: 'Cinematic', ugc: 'Phone / UGC', studio: 'Studio', '3d': '3D animated', anime: 'Anime', clay: 'Clay', storybook: 'Storybook' };
 const PLATFORM = { tiktok: 'TikTok Shop', shopee: 'Shopee', lazada: 'Lazada', instagram: 'Reels' };
 
@@ -139,7 +139,7 @@ const PRESETS = {
 };
 
 const DEFAULTS = {
-  video: () => ({ prompt: '', friendId: null, productId: null, startImage: null, camera: 'dolly-in', style: 'cinematic', model: 'h3-turbo', duration: 5, aspect: '9:16', audio: false }),
+  video: () => ({ prompt: '', friendId: null, productId: null, startImage: null, endImage: null, camera: 'dolly-in', style: 'cinematic', model: 'h3-turbo', duration: 5, aspect: '9:16', audio: false }),
   image: () => ({ prompt: '', friendId: null, productId: null, style: 'photo', aspect: '9:16', count: 1, quality: canUse('creator') ? 'full' : 'lite' }),
   ad: () => ({ prompt: '', friendId: null, productId: null, format: 'talking', tier: startTier(), approve: true, variants: 1, angle: 'review', platform: 'tiktok', lang: 'ms', seconds: 8, voice: 'mm:Lively_Girl', captions: true }),
   talk: () => ({ prompt: '', friendId: null, image: null, textMode: 'script', tier: startTier(), lang: 'ms', voice: 'mm:Lively_Girl', captions: true, seconds: 8 }),
@@ -334,6 +334,8 @@ function bindBrain(m, b) {
   }));
 }
 
+const favSet = () => { try { return new Set(JSON.parse(localStorage.getItem('kv-favs') || '[]')); } catch { return new Set(); } };
+const toggleFav = (id) => { const f = favSet(); f.has(id) ? f.delete(id) : f.add(id); try { localStorage.setItem('kv-favs', JSON.stringify([...f])); } catch {} return f.has(id); };
 function thumbOf(j) {
   const v = [...j.outputs].reverse().find((o) => o.type === 'video');
   const i = j.outputs.find((o) => o.type === 'image');
@@ -354,7 +356,7 @@ function cardHTML(j) {
     return `<div class="card ${j.status === 'running' ? 'run' : j.status === 'error' ? 'err' : ''}" data-job="${j.id}"><div class="box" style="aspect-ratio:${ratio}"><span class="tag">${label}</span><b>${esc(j.title)}</b><span class="st">${esc(st)}</span>${j.status === 'running' ? `<div class="bar"><i style="width:${pct}%"></i></div>` : ''}</div></div>`;
   }
   const media = t.type === 'video' ? `<video src="${t.url}#t=0.3" muted loop playsinline preload="metadata"></video>` : `<img src="${t.url}" loading="lazy" alt="">`;
-  return `<div class="card" data-job="${j.id}">${media}<span class="tag">${label}</span>${j.mock ? '<span class="tag demo">demo</span>' : ''}<div class="ov">${esc(j.title)}</div></div>`;
+  return `<div class="card" data-job="${j.id}" data-t="${t.type}" data-fav="${favSet().has(j.id) ? 1 : 0}"><button class="fav ${favSet().has(j.id) ? 'on' : ''}" data-favbtn="${j.id}" aria-label="Save to favourites" title="Favourite">★</button>${media}<span class="tag">${label}</span>${j.mock ? '<span class="tag demo">demo</span>' : ''}<div class="ov">${esc(j.title)}</div></div>`;
 }
 const sigs = new Map();
 function renderFeed() {
@@ -383,6 +385,7 @@ function renderFeed() {
     if (prev ? prev.nextElementSibling !== el : grid.firstElementChild !== el) prev ? prev.after(el) : grid.prepend(el);
     prev = el;
   }
+  window.applyLibFilter && window.applyLibFilter();
 }
 
 // ---------- composer ----------
@@ -457,6 +460,7 @@ function renderComposer(keepFocus) {
   const refs = REFS_OK.has(m) ? IDEAS.refs.map((r, i) => `<span class="ref">${r.kind === 'image' ? `<img src="${r.url}">` : '📄 '}${esc((r.name || 'File').slice(0, 18))}<button data-cpun="${i}">×</button></span>`) : [];
   const fr = friendById(f.friendId), pr = productById(f.productId);
   if (f.startImage) refs.push(`<span class="ref"><img src="${f.startImage}">Start frame<button data-unref="startImage">×</button></span>`);
+  if (m === 'video' && f.endImage) refs.push(`<span class="ref"><img src="${f.endImage}">End frame<button data-unref="endImage">×</button></span>`);
   if (f.image) refs.push(`<span class="ref"><img src="${f.image}">Photo<button data-unref="image">×</button></span>`);
   if (fr) refs.push(`<span class="ref"><img src="${fr.photos[0]}">${esc(fr.name)}<button data-unref="friendId">×</button></span>`);
   if (pr) refs.push(`<span class="ref"><img src="${pr.image}">${esc(pr.name)}<button data-unref="productId">×</button></span>`);
@@ -540,7 +544,7 @@ function validate() {
 
 async function generate() {
   const bad = validate();
-  if (bad) return toast(bad, true);
+  if (bad) { toast(bad, true); if (/＋ button/.test(bad)) { const pl = $('#composer .plus'); pl && attachMenu(pl); } return; }
   const btn = $('#go');
   btn.disabled = true;
   try {
@@ -609,6 +613,7 @@ function attachMenu(anchor) {
     <button class="it" data-v="new:product">＋ New product</button>` : ''}
     ${REFS_OK.has(m) ? `<hr><button class="it" data-v="ref">📎 Reference file · image, PDF, Word, text</button>` : ''}
     ${showUpload ? `<hr><button class="it" data-v="upload">⬆ Upload ${m === 'talk' ? 'a photo' : 'a start frame'} from your computer</button>` : ''}
+    ${m === 'video' ? `<button class="it" data-v="upload-end">⬆ Upload an end frame · the shot lands on this picture (Kling)</button>` : ''}
     ${m === 'video' ? madeImages() : ''}`;
   openPop(anchor, html, async (v, e) => {
     const del = e.target.closest('[data-del]');
@@ -631,6 +636,12 @@ function attachMenu(anchor) {
     else if (v === 'new:avatars') return avatarLibraryModal();
     else if (v === 'new:create-avatar') return avatarBuilderModal();
     else if (v === 'new:product') return productModal();
+    else if (v === 'upload-end') return pickFile(async (file) => {
+      const { url } = await api('/api/upload', { dataUrl: await fileToDataUrl(file) });
+      f.endImage = url;
+      if (!S.app.catalog.videoModels?.[f.model]?.endFrame) { f.model = 'kling-std'; toast('End frames use Kling, so the model was switched'); }
+      renderComposer();
+    });
     else if (v === 'upload') return pickFile(async (file) => {
       const { url } = await api('/api/upload', { dataUrl: await fileToDataUrl(file) });
       if (m === 'talk') { f.image = url; f.friendId = null; } else f.startImage = url;
@@ -640,6 +651,16 @@ function attachMenu(anchor) {
   });
 }
 
+async function lastFrameOf(src) {
+  const v = document.createElement('video'); v.crossOrigin = 'anonymous'; v.muted = true; v.preload = 'auto'; v.src = src;
+  await new Promise((res, rej) => { v.onloadedmetadata = res; v.onerror = rej; setTimeout(rej, 15000); });
+  v.currentTime = Math.max(0, (isFinite(v.duration) ? v.duration : 1) - 0.08);
+  await new Promise((res, rej) => { v.onseeked = res; v.onerror = rej; setTimeout(rej, 15000); });
+  const c = document.createElement('canvas'); c.width = v.videoWidth; c.height = v.videoHeight;
+  c.getContext('2d').drawImage(v, 0, 0);
+  const { url } = await api('/api/upload', { dataUrl: c.toDataURL('image/jpeg', 0.92) });
+  return url;
+}
 function pickFile(cb, multiple) {
   const i = document.createElement('input');
   i.type = 'file'; i.accept = 'image/*'; i.multiple = !!multiple;
@@ -736,7 +757,7 @@ function jobModal(id) {
       <div class="acts">
         ${first ? `<a class="btn pri" id="dl" href="${dl(first.url)}" download>⬇ Download</a>` : ''}
         ${j.text ? '<button class="btn" id="cp">Copy text</button>' : ''}
-        ${first?.type === 'image' && j.tool !== 'avatarGen' ? '<button class="btn" id="anim">🎬 Animate</button>' : ''}
+        ${first?.type === 'image' && j.tool !== 'avatarGen' ? '<button class="btn" id="anim">🎬 Animate</button>' : ''}<button class="btn" id="favm">${favSet().has(j.id) ? '★ Saved' : '☆ Favourite'}</button>${first?.type === 'video' ? '<button class="btn" id="contin" title="Start the next shot where this one ended">⏭ Continue from last frame</button>' : ''}
         ${j.status === 'done' && media.some((o) => o.type === 'image' || o.type === 'video') ? '<button class="btn" id="toedit">✂ Edit & add sound</button>' : ''}
         ${j.tool === 'avatarGen' && !j.input?.preset && j.status === 'done' ? '<button class="btn pri" id="saveav">＋ Save as friend</button>' : ''}
         ${media.some((o) => o.type === 'video') && j.status === 'done' ? '<button class="btn" id="post">📤 Post / schedule</button>' : ''}
@@ -775,6 +796,15 @@ function jobModal(id) {
   $('#post', m) && ($('#post', m).onclick = () => postModal(j, cur?.type === 'video' ? cur : media.find((o) => o.type === 'video')));
   $('#board', m) && ($('#board', m).onclick = () => storyboardModal({ board: j.board, reuseFrom: j.id, input: j.input }));
   $('#cp', m) && ($('#cp', m).onclick = () => navigator.clipboard.writeText(j.text).then(() => toast('Copied'), () => toast('Select the text to copy it', true)));
+  $('#favm', m) && ($('#favm', m).onclick = (e) => { const on = toggleFav(j.id); e.currentTarget.textContent = on ? '★ Saved' : '☆ Favourite'; document.querySelectorAll(`[data-favbtn="${j.id}"]`).forEach((b) => { b.classList.toggle('on', on); b.closest('.card').dataset.fav = on ? 1 : 0; }); window.applyLibFilter && window.applyLibFilter(); });
+  $('#contin', m) && ($('#contin', m).onclick = async (e) => {
+    const b = e.currentTarget, v = (cur?.type === 'video' ? cur : media.find((o) => o.type === 'video'));
+    if (!v) return; b.disabled = true; b.textContent = 'Grabbing frame…';
+    try {
+      const url = await lastFrameOf(v.url);
+      setMode('video'); F().startImage = url; F().endImage = null; closeModal(); renderAll(); toast('Last frame is your next start frame');
+    } catch { toast('Could not grab the last frame. Download the video, take a screenshot of the end, and upload it as a start frame.', true); b.disabled = false; b.textContent = '⏭ Continue from last frame'; }
+  });
   $('#anim', m) && ($('#anim', m).onclick = () => { setMode('video'); F().startImage = cur.url; closeModal(); renderComposer(true); });
   $('#reuse', m).onclick = () => {
     const mode = TOOL_MODE[j.tool];
@@ -944,6 +974,8 @@ document.addEventListener('click', (e) => {
     renderPresets(); renderComposer(true);
     return;
   }
+  const fb = t.closest('[data-favbtn]');
+  if (fb) { const on = toggleFav(fb.dataset.favbtn); fb.classList.toggle('on', on); fb.closest('.card').dataset.fav = on ? 1 : 0; window.applyLibFilter && window.applyLibFilter(); toast(on ? 'Added to favourites' : 'Removed from favourites'); return; }
   const card = t.closest('[data-job]');
   if (card) return jobModal(card.dataset.job);
 });

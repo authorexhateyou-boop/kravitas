@@ -121,9 +121,9 @@ async function shotGo(btn) {
 }
 // called by the job poller
 function studioTick() {
-  const gal = $('#fl-gal'); if (gal) gal.innerHTML = galleryHTML();
+  const gal = $('#fl-gal'); if (gal) { const h = galleryHTML(); if (gal.dataset.h !== h) { gal.innerHTML = h; gal.dataset.h = h; } }
   const strip = $('#hs-strip'); if (!strip) return;
-  strip.innerHTML = stripHTML();
+  { const h = stripHTML(); if (strip.dataset.h !== h) { strip.innerHTML = h; strip.dataset.h = h; } }
   if (S.mode === 'edit') return editTick();
   if (S.mode !== 'video') return;
   const j = SHOT.job && S.jobs.find((x) => x.id === SHOT.job);
@@ -748,7 +748,8 @@ function galleryHTML() {
   }).join('');
 }
 function libraryPage() {
-  if (S.mode === 'media') return `<div class="fl-head"><h1>All media</h1><p>Everything you have made. Tap one to open, post or edit it.</p></div>`;
+  if (S.mode === 'media') return `<div class="fl-head"><h1>All media</h1><p>Everything you have made. Tap one to open, post or edit it. Star the keepers.</p></div>
+    <div class="lib-chips" id="lib-chips">${[['all', 'All'], ['video', 'Videos'], ['image', 'Images'], ['fav', '★ Favourites']].map(([k, l]) => `<button class="chip ${(S.lf || 'all') === k ? 'on' : ''}" data-lf="${k}">${l}</button>`).join('')}</div>`;
   const chars = S.mode === 'chars';
   const list = chars ? S.friends : S.products;
   return `<div class="fl-head"><h1>${chars ? 'Characters' : 'Products'}</h1><p>${chars ? 'The faces Kravitas keeps the same in every image and video.' : 'What you sell. Add each product once, then pick it in any tool.'}</p></div>
@@ -1100,11 +1101,22 @@ function creditsModal(a, ledger) {
   m.querySelectorAll('[data-pack]').forEach((b) => (b.onclick = go({ pack: b.dataset.pack })));
 }
 
-// header search: filter visible media cards by title
-document.addEventListener('input', (e) => {
-  if (e.target.id !== 'fl-q') return;
-  const q = e.target.value.trim().toLowerCase();
-  document.querySelectorAll('#fl-gal .hs-card, #hs-strip .hs-card, #feed .grid > *').forEach((el) => { el.style.display = !q || el.textContent.toLowerCase().includes(q) ? '' : 'none'; });
+// header search + library filters: filter visible media cards by title / type / favourite
+window.applyLibFilter = () => {
+  const q = ($('#fl-q')?.value || '').trim().toLowerCase(), f = S.mode === 'media' ? (S.lf || 'all') : 'all';
+  let n = 0;
+  document.querySelectorAll('#fl-gal .hs-card, #hs-strip .hs-card, #feed .grid > *').forEach((el) => {
+    const okT = f === 'all' || (f === 'fav' ? el.dataset.fav === '1' : el.dataset.t === f);
+    const ok = okT && (!q || el.textContent.toLowerCase().includes(q));
+    el.style.display = ok ? '' : 'none'; if (ok) n++;
+  });
+  let e = $('#lib-none');
+  if (S.mode === 'media' && !n && (q || f !== 'all')) { if (!e) { e = document.createElement('div'); e.id = 'lib-none'; e.className = 'empty'; $('#feed')?.append(e); } e.textContent = f === 'fav' && !q ? 'No favourites yet. Tap the star on anything you want to keep.' : 'Nothing matches that.'; } else e && e.remove();
+};
+document.addEventListener('input', (e) => { if (e.target.id === 'fl-q') window.applyLibFilter(); });
+document.addEventListener('click', (e) => {
+  const b = e.target.closest && e.target.closest('[data-lf]'); if (!b) return;
+  S.lf = b.dataset.lf; document.querySelectorAll('[data-lf]').forEach((x) => x.classList.toggle('on', x === b)); window.applyLibFilter();
 });
 
 document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-soon]'); if (b) toast(b.dataset.soon + ' is coming soon: turn a product photo into a spinning 3D shot.'); });

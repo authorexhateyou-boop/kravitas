@@ -15,7 +15,7 @@
   const VIDEO_MODELS = {
     'h3-turbo': { label: 'MiniMax H3 Turbo', tag: 'Best value', cps: 1.5 },
     'seedance-fast': { label: 'Seedance 2.0 Fast', tag: 'Native audio', cps: 10 },
-    'kling-std': { label: 'Kling 3.0 Standard', tag: 'Smooth motion', cps: 8 },
+    'kling-std': { label: 'Kling 3.0 Standard', tag: 'Smooth motion', cps: 8, endFrame: true },
     'kling-pro': { label: 'Kling 3.0 Pro', tag: 'Top quality', cps: 14 },
   };
   for (const m of Object.values(VIDEO_MODELS)) m.perSec = Math.ceil(m.cps * MARKUP * 10) / 10;
@@ -198,6 +198,15 @@
     handheld: (t) => ({ z: 1.1, dx: Math.sin(t * 23) * 0.008, dy: Math.cos(t * 17) * 0.008, r: Math.sin(t * 11) * 0.006 }),
     crash: (t) => ({ z: 1 + 0.9 * Math.pow(t, 3), dx: 0, dy: 0, r: 0 }),
     fpv: (t) => ({ z: 1 + 0.5 * t, dx: Math.sin(t * 5) * 0.03, dy: -0.05 * t, r: Math.sin(t * 4) * 0.05 }),
+    'tilt-up': (t) => ({ z: 1.2, dx: 0, dy: (0.5 - t) * 0.16, r: 0 }),
+    'tilt-down': (t) => ({ z: 1.2, dx: 0, dy: (t - 0.5) * 0.16, r: 0 }),
+    'zoom-out': (t) => ({ z: 1.3 - 0.3 * t, dx: 0, dy: 0, r: 0 }),
+    tracking: (t) => ({ z: 1.15, dx: (0.5 - t) * 0.12, dy: 0, r: 0.01 }),
+    'low-angle': (t) => ({ z: 1.12 + 0.1 * t, dx: 0, dy: -0.06 * t, r: -0.02 * t }),
+    'top-down': (t) => ({ z: 1.15, dx: 0, dy: 0, r: (t - 0.5) * 0.25 }),
+    whip: (t) => ({ z: 1.15, dx: t < 0.7 ? 0 : (t - 0.7) * -0.5, dy: 0, r: 0 }),
+    rack: (t) => ({ z: 1 + 0.08 * t, dx: 0, dy: 0, r: 0 }),
+    'dolly-zoom': (t) => ({ z: 1 + 0.35 * t, dx: 0, dy: 0, r: 0 }),
     talk: (t) => ({ z: 1.06 + 0.012 * Math.sin(t * 30), dx: 0, dy: 0.004 * Math.sin(t * 40), r: 0.006 * Math.sin(t * 9) }),
   };
 
