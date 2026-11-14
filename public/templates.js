@@ -52,29 +52,61 @@
     explain: wrap('#1d4a6b', '#08141d', `<g transform="translate(70 70)"><circle r="26" fill="#ffd60a"/><path d="M-10 -4 h20 M-8 8 h16 M-4 18 h8" stroke="#000" stroke-width="3" stroke-linecap="round"/><path d="M-6 -22 q6 -6 12 0" stroke="#000" stroke-width="3" fill="none"/></g><g fill="#fff"><rect x="124" y="46" width="130" height="12" rx="6" opacity=".9"/><rect x="124" y="70" width="104" height="12" rx="6" opacity=".6"/><rect x="124" y="94" width="116" height="12" rx="6" opacity=".4"/></g><g fill="#ffd60a"><circle cx="112" cy="52" r="5"/><circle cx="112" cy="76" r="5"/><circle cx="112" cy="100" r="5"/></g>`),
     bm: wrap('#2b2f6b', '#0c0d20', `<g fill="#fff">${[20,34,48,28,60,40,72,52,36,64,44,26,56,38,22].map((h, k) => `<rect x="${44 + k * 14}" y="${85 - h / 2}" width="7" height="${h}" rx="3.5" opacity="${.5 + (k % 3) * .2}"/>`).join('')}</g><g transform="translate(246 38)"><rect x="-7" y="-14" width="14" height="22" rx="7" fill="#ffd60a"/><path d="M-12 0 q12 18 24 0 M0 12 v8" stroke="#ffd60a" stroke-width="3" fill="none" stroke-linecap="round"/></g>`),
   };
+
+  // ---- language: the whole template page and what it fills in follows the interface language (EN or BM) ----
+  // en = English prompt / brief used when the interface is English; ms = Bahasa Melayu card text for the BM interface.
+  const TX = {
+    flash: { en: 'Half price today only, limited stock, free postage', ms: { title: 'Iklan jualan kilat', sub: 'Desakan gaya 11.11, 8s', gets: ['Hook dalam 2 saat pertama', 'Suara latar Bahasa Melayu', 'Sari kata terbakar', 'Kapsyen dan hashtag'] } },
+    review: { en: "Tried it for 2 weeks, here's what I honestly think", ms: { title: 'Ulasan jujur', sub: 'Kreator bercakap ke kamera', gets: ['Skrip santai dan meyakinkan', 'Kawan atau pengacara yang bercakap', 'Sesuai dengan gambar produk anda', 'Sedia untuk TikTok 9:16'] } },
+    unbox: { en: 'It just arrived! Let\'s open it together', ms: { title: 'Unboxing', sub: 'Kesan pertama', gets: ['Cerita membuka kotak', 'Syot dekat produk', 'Suara latar teruja', 'Sari kata'] } },
+    ba: { en: 'Before and after using it for 14 days', ms: { title: 'Sebelum dan selepas', sub: 'Perubahannya', gets: ['Babak sebelum dan selepas yang jelas', 'Suara latar gaya bukti', 'Sari kata', 'Kapsyen dan hashtag'] } },
+    pack: { ms: { title: 'Packshot bersih', sub: 'Penyenaraian Shopee dan TikTok Shop', gets: ['Segi empat 1:1 untuk penyenaraian', 'Cahaya studio lembut', 'Produk anda kekal tepat (tambah gambar produk)', 'Model murah secara lalai'] } },
+    life: { ms: { title: 'Babak gaya hidup', sub: 'Produk di rumah sebenar', gets: ['4:5 untuk Instagram dan Facebook', 'Cahaya semula jadi', 'Terasa seperti rumah sebenar', 'Tambah kawan memegangnya'] } },
+    raya: { ms: { title: 'Promosi perayaan', sub: 'Suasana Raya, CNY, Deepavali', gets: ['Cahaya perayaan yang hangat', 'Ruang untuk teks anda', 'Potret 4:5', 'Tukar suasana dalam prompt'] } },
+    orbit: { ms: { title: 'Syot orbit produk', sub: 'Kamera berputar lancar', gets: ['Klip menegak 5s', 'Model video paling murah', 'Perlukan gambar produk sebagai bingkai mula', 'Tukar kamera bila-bila masa'] } },
+    story: { en: 'Vitamin C serum RM29, dull and oily skin, I want a 15 second TikTok video with a strong hook and a call to buy at the end', ms: { title: 'Papan cerita Hook ke CTA', sub: 'Rancang sebelum berbelanja', gets: ['5 idea untuk dipilih', 'Papan cerita untuk idea pilihan anda', 'Kos ditunjuk sebelum video', 'Edit mana-mana panel dahulu'] } },
+    drama: { en: 'A TikTok micro drama, episode 1. A village girl who just started working in KL finds a secret letter in her employer\'s bag. Start with a strong hook, build tension, and end on a cliffhanger so people wait for episode 2. Same character in every scene.', ms: { title: 'Mikro drama, episod 1', sub: 'Cerita yang tamat dengan cliffhanger', gets: ['Hook, ketegangan naik, cliffhanger', 'Watak sama dalam setiap babak', 'Papan cerita boleh diedit melalui sembang', 'Kos ditunjuk sebelum video'] } },
+    trailer: { en: 'A 30 second short film trailer about a night market trader who inherits an old shop. Cinematic mood, dramatic music, short heavy lines. End with the film title.', ms: { title: 'Treler filem', sub: 'Suasana besar, potongan pantas', gets: ['Rupa sinematik', 'Ayat pendek dan berat', 'Tamat dengan idea kad tajuk', 'Tambah runut bunyi anda'] } },
+    explain: { en: 'A 30 second explainer: how compound interest works, explained simply for young Malaysians. Question hook at the start, three easy steps, ask to follow at the end.', ms: { title: 'Penerangan', sub: 'Ajar satu perkara dalam 30 saat', gets: ['Hook soalan', 'Tiga langkah mudah', 'Ajakan ikuti kami', 'Bahasa mudah'] } },
+    bm: { en: "Hi everyone! Today I want to share a product that is really worth it. Let's take a look together.", ms: { title: 'Suara latar jualan BM', sub: 'Bahasa Melayu yang semula jadi', gets: ['MiniMax speech dibuat untuk Bahasa Melayu', 'Nada ceria dan mesra', 'Edit perkataan sesuka hati', 'Muat turun atau guna dalam iklan'] } },
+  };
+  const CAT_MS = { All: 'Semua', Ads: 'Iklan', Photos: 'Foto', Video: 'Video', 'Micro drama': 'Mikro drama', Cinematic: 'Sinematik', Social: 'Sosial', Ideas: 'Idea', Voice: 'Suara' };
+  const HEAD_MS = ['Templat', 'Mula dengan sesuatu yang sudah berjaya. Pilih satu, tambah produk anda, tekan Buat. Tiada apa dibelanjakan sehingga anda berbuat demikian.', 'Guna templat ini', 'Templat siap. Tambah produk anda, kemudian tekan'];
+  const bm = () => window.UILang && UILang.get() === 'bm';
+  // returns the template as it should look and fill in for the current interface language
+  function view(t) {
+    const x = TX[t.id] || {};
+    if (bm()) return { ...t, ...(x.ms || {}), lang: 'ms' };
+    const set = t.set ? { ...t.set } : null;
+    if (set) { if (set.lang) set.lang = 'en'; if (x.en) set.prompt = x.en; }
+    return { ...t, set, dump: x.en || t.dump, lang: 'en' };
+  }
+  const art = (id, M) => { const a = ART[id]; return a && M ? a.replace('BEFORE', 'SEBELUM').replace('AFTER', 'SELEPAS').replace('COMING SOON', 'AKAN DATANG') : a; };
   const CATS = ['All', 'Ads', 'Photos', 'Video', 'Micro drama', 'Cinematic', 'Social', 'Ideas', 'Voice'];
   let cat = 'All';
 
-  function use(t) {
+  function use(t0) {
+    const t = view(t0);
     if (t.mode === 'ideas') {
-      IDEAS.dump = t.dump; IDEAS.result = null; IDEAS.chat = [];
-      setMode('ideas'); renderAll(); toast('Template ready. Add your product, then press send');
+      IDEAS.dump = t.dump; IDEAS.lang = t.lang; IDEAS.result = null; IDEAS.chat = [];
+      setMode('ideas'); renderAll(); toast(bm() ? 'Templat siap. Tambah produk anda, kemudian tekan hantar' : 'Template ready. Add your product, then press send');
       return;
     }
     S.forms[t.mode] = { ...DEFAULTS[t.mode](), ...t.set };
     setMode(t.mode); renderAll();
-    toast(`${t.title} template ready. Add your product, then press Make`);
+    toast(bm() ? `Templat ${t.title} siap. Tambah produk anda, kemudian tekan Buat` : `${t.title} template ready. Add your product, then press Make`);
   }
 
   window.renderTemplates = function (box) {
-    const list = T.filter((t) => cat === 'All' || t.cat === cat);
-    box.innerHTML = `<div class="fl-head"><h1>Templates</h1><p>Start from something that already works. Pick one, add your product, press Make. Nothing is spent until you do.</p></div>
-      <div class="lib-chips">${CATS.map((c) => `<button class="chip ${c === cat ? 'on' : ''}" data-tc="${c}">${c}</button>`).join('')}</div>
-      <div class="tpl-grid">${list.map((t) => `<article class="tpl" style="--h:${t.h}">
-        <div class="tpl-cover">${ART[t.id] || `<span class="tpl-e">${t.e}</span>`}<small>${esc(t.cat)}</small></div>
+    const M = bm();
+    const list = T.filter((t) => cat === 'All' || t.cat === cat).map(view);
+    box.innerHTML = `<div class="fl-head" data-noi18n><h1>${M ? HEAD_MS[0] : 'Templates'}</h1><p>${M ? HEAD_MS[1] : 'Start from something that already works. Pick one, add your product, press Make. Nothing is spent until you do.'}</p></div>
+      <div class="lib-chips" data-noi18n>${CATS.map((c) => `<button class="chip ${c === cat ? 'on' : ''}" data-tc="${c}">${M ? CAT_MS[c] : c}</button>`).join('')}</div>
+      <div class="tpl-grid" data-noi18n>${list.map((t) => `<article class="tpl" style="--h:${t.h}">
+        <div class="tpl-cover">${art(t.id, M) || `<span class="tpl-e">${t.e}</span>`}<small>${esc(M ? CAT_MS[t.cat] : t.cat)}</small></div>
         <div class="tpl-b"><b>${esc(t.title)}</b><p>${esc(t.sub)}</p>
           <ul>${t.gets.map((g) => `<li>${esc(g)}</li>`).join('')}</ul>
-          <button class="btn pri" data-tu="${t.id}">Use this template</button></div></article>`).join('')}</div>`;
+          <button class="btn pri" data-tu="${t.id}">${M ? HEAD_MS[2] : 'Use this template'}</button></div></article>`).join('')}</div>`;
     box.querySelectorAll('.tpl').forEach((el, k) => { // real sample photo, if public/tpl/<id>.jpg exists
       const im = new Image(); const t = list[k];
       im.onload = () => { im.className = 'tpl-img'; im.alt = ''; el.querySelector('.tpl-cover')?.prepend(im); };
@@ -83,4 +115,7 @@
     box.querySelectorAll('[data-tc]').forEach((b) => (b.onclick = () => { cat = b.dataset.tc; window.renderTemplates(box); }));
     box.querySelectorAll('[data-tu]').forEach((b) => (b.onclick = () => use(T.find((x) => x.id === b.dataset.tu))));
   };
+  document.addEventListener('click', (e) => {
+    if (e.target.closest && e.target.closest('[data-uilang]') && S.mode === 'templates') setTimeout(() => renderAll(), 30);
+  });
 })();
