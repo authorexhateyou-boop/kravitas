@@ -20,10 +20,16 @@
       gets: ['5s vertical clip', 'Cheapest video model', 'Needs your product photo as the start frame', 'Change the camera any time'] },
     { id: 'story', cat: 'Ideas', e: '🎞', h: 190, title: 'Hook to CTA storyboard', sub: 'Plan before you spend', mode: 'ideas', dump: 'Serum vit C RM29, kulit kusam dan berminyak, nak video TikTok 15 saat dengan hook kuat dan ajak beli di hujung',
       gets: ['5 ideas to choose from', 'A storyboard for the one you like', 'Cost shown before the video', 'Edit any panel first'] },
+    { id: 'drama', cat: 'Micro drama', e: '🎭', h: 350, title: 'Micro drama, episode 1', sub: 'A story that ends on a cliffhanger', mode: 'ideas', dump: 'Micro drama untuk TikTok, episod 1. Seorang gadis kampung baru bekerja di KL dan menemui surat rahsia di dalam beg majikannya. Mula dengan hook yang kuat, ketegangan naik, dan tamat dengan cliffhanger supaya orang tunggu episod 2. Watak sama dalam setiap babak.',
+      gets: ['A hook, rising tension, cliffhanger', 'Same character in every scene', 'Storyboard you can edit by chat', 'Cost shown before the video'] },
+    { id: 'trailer', cat: 'Cinematic', e: '🎬', h: 15, title: 'Film trailer', sub: 'Big mood, fast cuts', mode: 'ideas', dump: 'Trailer filem pendek 30 saat tentang seorang peniaga pasar malam yang mewarisi sebuah kedai lama. Suasana sinematik, muzik dramatik, ayat pendek yang berat. Tamat dengan tajuk filem.',
+      gets: ['Cinematic look', 'Short, heavy lines', 'Ends on a title card idea', 'Add your own soundtrack'] },
+    { id: 'explain', cat: 'Social', e: '🧠', h: 100, title: 'Explainer', sub: 'Teach one thing in 30 seconds', mode: 'ideas', dump: 'Video penerangan 30 saat: cara kerja faedah kompaun, dijelaskan mudah untuk orang muda Malaysia. Hook soalan di awal, tiga langkah mudah, ajak follow di hujung.',
+      gets: ['Question hook', 'Three simple steps', 'Follow-us call to action', 'Plain language'] },
     { id: 'bm', cat: 'Voice', e: '🇲🇾', h: 120, title: 'BM sales voice-over', sub: 'Natural Bahasa Melayu', mode: 'voice', set: { kind: 'tts', voice: 'mm:Lively_Girl', emotion: 'happy', lang: 'ms', prompt: 'Assalamualaikum semua! Hari ni saya nak kongsi satu produk yang betul-betul berbaloi. Jom tengok sama-sama.' },
       gets: ['MiniMax speech made for Malay', 'Happy, friendly tone', 'Edit the words freely', 'Download or use in an ad'] },
   ];
-  const CATS = ['All', 'Ads', 'Photos', 'Video', 'Ideas', 'Voice'];
+  const CATS = ['All', 'Ads', 'Photos', 'Video', 'Micro drama', 'Cinematic', 'Social', 'Ideas', 'Voice'];
   let cat = 'All';
 
   function use(t) {

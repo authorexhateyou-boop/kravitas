@@ -10,7 +10,7 @@ import { config, MODE, PACKS, PLANS, ROOT } from './lib/config.js';
 import { store } from './lib/store/index.js';
 import { saveDataUrl, saveAudioDataUrl, uid as newId } from './lib/media.js';
 import { isMock, falKey, llmModel, run as falRun, toRemote } from './lib/fal.js';
-import { TOOLS, STYLES, CAMERAS, createJob, expireStale, removeBg, live, planStory, planPanels, drawPanel } from './lib/pipelines.js';
+import { TOOLS, STYLES, CAMERAS, createJob, expireStale, removeBg, live, planStory, planPanels, editPanels, drawPanel } from './lib/pipelines.js';
 import { WRITERS, VIDEO_MODELS, VOICES, PRICE, TIERS, EMOTIONS, MODELS, MARKUP, MODEL_PLAN, MAX_VARIANTS, allowed, imageCost } from './lib/models.js';
 import { AVATAR_PRESETS } from './lib/avatars.js';
 import * as social from './lib/social.js';
@@ -251,6 +251,7 @@ app.post('/api/billing/portal', wrap(async (req, res) => {
 
 // ---------- uploads ----------
 app.post('/api/upload', limit('upload', 40, 60), wrap(async (req, res) => res.json({ url: await saveDataUrl(req.body.dataUrl) })));
+app.post('/api/upload-audio', limit('upload', 20, 60), wrap(async (req, res) => res.json({ url: await saveAudioDataUrl(req.body.dataUrl) })));
 
 // ---------- friends ----------
 app.get('/api/friends', wrap(async (req, res) => res.json(await store.list('friends', req.uid))));
@@ -407,6 +408,19 @@ app.post('/api/panels/plan', limit('plan', 30, 60), wrap(async (req, res) => {
     throw e;
   }
 }));
+app.post('/api/panels/edit', limit('plan', 40, 60), wrap(async (req, res) => {
+  const b = req.body || {};
+  const instruction = str(b.instruction, 600).trim();
+  if (!instruction) throw fail('Say what to change, for example "make scene 2 funnier"');
+  const panels = (Array.isArray(b.panels) ? b.panels : []).slice(0, 8).map((x) => ({ visual: str(x.visual, 600), motion: str(x.motion, 120), narration: str(x.narration, 300) }));
+  if (panels.length < 2) throw fail('There is no storyboard to edit yet');
+  const cost = PRICE.llm;
+  await store.adjust(req.uid, -cost, 'Storyboard edit', null);
+  try {
+    const ctx = { charge() {} };
+    res.json({ ...(await editPanels(ctx, { instruction, panels, look: str(b.look, 800), lang: b.lang })), cost });
+  } catch (e) { await store.adjust(req.uid, cost, 'Refund (edit failed)', null, true); throw e; }
+}));
 app.post('/api/panels/draw', limit('draw', 120, 60), wrap(async (req, res) => {
   const b = req.body || {};
   const kind = b.kind === 'keyframe' ? 'keyframe' : 'sketch';
@@ -461,10 +475,11 @@ async function lookups(uid) {
 const str = (v, n) => String(v ?? '').slice(0, n);
 function cleanInput(input) {
   const i = { ...input };
-  for (const k of ['startImage', 'endImage', 'image']) if (i[k] && !store.isOwnUrl(i[k])) delete i[k];
+  for (const k of ['startImage', 'endImage', 'image', 'musicUrl']) if (i[k] && !store.isOwnUrl(i[k])) delete i[k];
   delete i.refs;
   if (i.look != null) i.look = str(i.look, 800);
   for (const k of ['prompt', 'script', 'notes', 'topic', 'tone', 'text']) if (typeof i[k] === 'string') i[k] = i[k].slice(0, k === 'text' ? 5000 : 2000);
+  if (i.musicVol != null) i.musicVol = Math.min(100, Math.max(5, +i.musicVol || 25));
   if (i.quality != null) i.quality = i.quality === 'lite' ? 'lite' : 'full';
   if (i.variants != null) i.variants = [1, 3, 5].includes(+i.variants) ? +i.variants : 1;
   if (i.scripts != null) i.scripts = (Array.isArray(i.scripts) ? i.scripts : []).slice(0, 5).map((x) => str(x, 1200));

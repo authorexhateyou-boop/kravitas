@@ -288,10 +288,21 @@ const REF_ACCEPT = '.png,.jpg,.jpeg,.webp,.pdf,.docx,.txt,.md,.csv,image/png,ima
 const IDEA_MODE = { ad: 'Ad', video: 'Video', image: 'Image' };
 const IDEA_EX = ['serum vit c rm29, flash sale weekend, target mak-mak 30-45, kawan cakap kulit cerah dlm seminggu, vibe santai, free shipping', 'new kopi brand, kopitiam vibes but modern, students + office workers, launch next month, nak content yg relatable', 'tudung bawal satin 15 colours, raya collection, price RM35, ready stock, before/after styling'];
 function ideasInput(extra = {}) {
-  return { mode: 'any', writer: IDEAS.writer || 'flash', effort: IDEAS.effort || 'balanced', prompt: IDEAS.dump, productId: IDEAS.productId, friendId: IDEAS.friendId, lang: IDEAS.lang, refs: IDEAS.refs.map(({ kind, url, name, text }) => ({ kind, url, name, text })), ...extra };
+  return { mode: 'any', writer: IDEAS.writer || 'flash', effort: IDEAS.effort || 'balanced', prompt: IDEAS.dump + (IDEAS.result ? '' : briefText()), productId: IDEAS.productId, friendId: IDEAS.friendId, lang: IDEAS.lang, refs: IDEAS.refs.map(({ kind, url, name, text }) => ({ kind, url, name, text })), ...extra };
 }
 function ideaKey(x) { return `${x.mode}|${x.title}|${x.prompt}`; }
-async function ideasRun(box) {
+const ASK = { platform: [['tiktok', 'TikTok'], ['reels', 'Instagram Reels'], ['shorts', 'YouTube Shorts'], ['facebook', 'Facebook']], tone: [['funny', 'Funny'], ['emotional', 'Emotional'], ['hardsell', 'Hard sell'], ['chill', 'Chill'], ['dramatic', 'Dramatic']], length: [['15', '15 seconds'], ['30', '30 seconds'], ['60', '60 seconds']] };
+function askCard() {
+  const a = IDEAS.ask;
+  return `<div class="id-ask"><b>Three quick questions</b><small>So the ideas fit. Skip any you don't care about.</small>
+    ${Object.entries(ASK).map(([k, opts]) => `<div class="id-askrow"><span>${{ platform: 'Where will it be posted?', tone: 'What tone?', length: 'How long?' }[k]}</span><div>${opts.map(([v, l]) => `<button class="chip ${a[k] === v ? 'on' : ''}" data-ask="${k}:${v}">${l}</button>`).join('')}</div></div>`).join('')}
+    <div class="id-askgo"><button class="btn pri" id="ask-go">Make ideas</button><button class="link" id="ask-skip">Skip the questions</button></div></div>`;
+}
+const briefText = () => { const a = IDEAS.ask || {}; const n = (k) => (ASK[k].find((o) => o[0] === a[k]) || [])[1]; const parts = [n('platform') && `Platform: ${n('platform')}`, n('tone') && `Tone: ${n('tone')}`, n('length') && `Length: ${n('length')}`].filter(Boolean); return parts.length ? `\n\n[Brief] ${parts.join(' · ')}` : ''; };
+async function ideasRun(box, force) {
+  if (!IDEAS.dump.trim() && !IDEAS.productId && !IDEAS.friendId && !IDEAS.refs.length) { toast('Dump some ideas first, or add a product or a reference', true); return $('#id-dump')?.focus(); }
+  if (!force && !IDEAS.skipAsk && !IDEAS.result) { IDEAS.ask = IDEAS.ask || { platform: 'tiktok', tone: '', length: '30' }; IDEAS.asking = true; return renderIdeas(box); }
+  IDEAS.asking = false;
   if (!IDEAS.dump.trim() && !IDEAS.productId && !IDEAS.friendId && !IDEAS.refs.length) { toast('Dump some ideas first, or add a product or a reference', true); return $('#id-dump')?.focus(); }
   if (IDEAS.uploading) return toast('Still reading your files, one moment', true);
   IDEAS.busy = true; IDEAS.chat = []; renderIdeas(box);
@@ -389,7 +400,7 @@ function renderIdeas(box) {
           <div class="b-sugg">${BRAIN_SUGGEST.map((x) => `<button class="chip" data-sugg="${esc(x)}">${esc(x)}</button>`).join('')}</div>
 
         </div>
-      </div>` : IDEAS.busy ? '<div class="id-think"><i></i><b>Kravitas is reading your notes…</b><small>Making sense of them, then writing prompts you can run right away.</small></div>' : `<div class="fl-empty id-empty"><span>✿</span><b>What do you want to make?</b><small>Tell Kravitas about your product or idea. It writes the prompts and a storyboard, so you can check everything before you spend on video.</small></div>`}
+      </div>` : IDEAS.asking ? askCard() : IDEAS.busy ? '<div class="id-think"><i></i><b>Kravitas is reading your notes…</b><small>Making sense of them, then writing prompts you can run right away.</small></div>' : `<div class="fl-empty id-empty"><span>✿</span><b>What do you want to make?</b><small>Tell Kravitas about your product or idea. It writes the prompts and a storyboard, so you can check everything before you spend on video.</small></div>`}
       <div class="id-in id-dock">
         <div class="id-chat" id="id-chat">
           ${refChips()}
@@ -418,6 +429,9 @@ function renderIdeas(box) {
   on('#id-prod', 'onchange', (e) => { if (e.target.value === '__new') { e.target.value = IDEAS.productId || ''; return productModal(); } IDEAS.productId = e.target.value || null; });
   on('#id-face', 'onchange', (e) => { if (e.target.value === '__new') { e.target.value = IDEAS.friendId || ''; return friendModal(); } IDEAS.friendId = e.target.value || null; });
   on('#id-model', 'onclick', (e) => { e.stopPropagation(); window.openModelPicker(e.currentTarget, 'ideas'); });
+  box.querySelectorAll('[data-ask]').forEach((b) => (b.onclick = () => { const [k, v] = b.dataset.ask.split(':'); IDEAS.ask[k] = IDEAS.ask[k] === v ? '' : v; renderIdeas(box); }));
+  on('#ask-go', 'onclick', () => ideasRun(box, true));
+  on('#ask-skip', 'onclick', () => { IDEAS.skipAsk = true; ideasRun(box, true); });
   on('#id-lang', 'onchange', (e) => { IDEAS.lang = e.target.value; const v = e.target.parentElement.querySelector('.v'); if (v) v.textContent = LANG_SHORT[IDEAS.lang] || 'BM'; });
   on('#id-go', 'onclick', send);
   if (IDEAS.autorun) { IDEAS.autorun = false; setTimeout(() => ideasRun(box), 0); }
@@ -472,7 +486,7 @@ async function sbDraw(box, k, kind) {
   pn.busy = kind; renderSb(box);
   try {
     const r = await api('/api/panels/draw', { kind, quality: b.kq || 'lite', visual: pn.visual, look: b.look, aspect: b.aspect, productId: IDEAS.productId, friendId: IDEAS.friendId, style: 'cinematic' });
-    pn.image = r.image; pn.kind = r.kind;
+    pn.image = r.image; pn.kind = r.kind; pn.stale = false;
   } catch (e) { toast(e.message, true); if (e.code === 'credits' || e.code === 'plan') accountModal(); }
   pn.busy = null; if (IDEAS.sb === b) renderSb(box);
   sbRefresh();
@@ -483,7 +497,7 @@ function sbBoard() {
 }
 function sbJobInput() {
   const b = IDEAS.sb;
-  return { prompt: b.title, friendId: IDEAS.friendId, productId: IDEAS.productId, look: b.look, board: sbBoard(), tier: b.tier, model: SB_TIER_MODEL[b.tier], aspect: b.aspect, style: 'cinematic', lang: IDEAS.lang, voice: IDEAS.lang === 'ms' ? 'mm:Lively_Girl' : 'el:Aria', captions: true };
+  return { prompt: b.title, friendId: IDEAS.friendId, productId: IDEAS.productId, look: b.look, board: sbBoard(), ...(b.music ? { musicUrl: b.music.url, musicVol: b.music.vol } : {}), tier: b.tier, model: SB_TIER_MODEL[b.tier], aspect: b.aspect, style: 'cinematic', lang: IDEAS.lang, voice: IDEAS.lang === 'ms' ? 'mm:Lively_Girl' : 'el:Aria', captions: true };
 }
 let sbEstT;
 function sbEstimate() {
@@ -518,14 +532,19 @@ function renderSb(box) {
     <label class="l" for="sb-look">Same in every panel <small class="muted">· character, product, setting · edit it, then redraw</small></label>
     <textarea class="in" id="sb-look" rows="3" maxlength="800">${esc(b.look)}</textarea>
     <div class="sb2-strip">${b.panels.map((x, k) => `<div class="sb2-p ${x.busy ? 'busy' : ''}" draggable="true" data-pi="${k}">
-        <div class="sb2-img" style="aspect-ratio:${aw}/${ah}">${x.image ? `<img src="${x.image}" alt="Panel ${k + 1}">` : `<div class="sb2-empty">Empty panel<br><small>Upload or draw</small></div>`}<span class="sb2-n">⠿ ${k + 1}</span><span class="sb2-badge ${x.kind}">${x.kind === 'keyframe' ? 'Keyframe ✓' : 'Sketch'}</span>${x.busy ? `<div class="sb2-wait"><i class="spin"></i><small>${x.busy === 'keyframe' ? 'Drawing keyframe…' : 'Sketching…'}</small></div>` : ''}</div>
+        <div class="sb2-img" style="aspect-ratio:${aw}/${ah}">${x.image ? `<img src="${x.image}" alt="Panel ${k + 1}">` : `<div class="sb2-empty">Empty panel<br><small>Upload or draw</small></div>`}<span class="sb2-n">⠿ ${k + 1}</span>${x.stale ? '<span class="sb2-stale">Changed · redraw</span>' : ''}<span class="sb2-badge ${x.kind}">${x.kind === 'keyframe' ? 'Keyframe ✓' : 'Sketch'}</span>${x.busy ? `<div class="sb2-wait"><i class="spin"></i><small>${x.busy === 'keyframe' ? 'Drawing keyframe…' : 'Sketching…'}</small></div>` : ''}</div>
         <textarea class="in" data-vis="${k}" rows="3" maxlength="600" aria-label="What happens in panel ${k + 1}">${esc(x.visual)}</textarea>
         <input class="in" data-nar="${k}" maxlength="400" value="${esc(x.narration)}" aria-label="Line spoken in panel ${k + 1}" placeholder="What is said">
         <div class="sb2-pa">
           ${x.kind === 'keyframe' ? `<button class="btn" data-redraw="${k}">Redraw <small>✦ ${sbKeyCost()}</small></button>` : `<button class="btn" data-redraw="${k}">Redraw <small>✦ ${px().imageSchnell || 1}</small></button><button class="btn pri" data-key="${k}">Real keyframe <small>✦ ${sbKeyCost()}</small></button>`}
           <button class="btn" data-up="${k}" title="Use your own picture">Upload</button>${b.panels.length > 2 ? `<button class="btn" data-pdel="${k}" aria-label="Remove panel">✕</button>` : ''}
         </div></div>`).join('')}</div>
+    <div class="sb2-chat"><input class="in" id="sb-ed" maxlength="600" placeholder='Tell Kravitas what to change, e.g. "make scene 2 funnier"' ${b.busy ? 'disabled' : ''}><button class="btn pri" id="sb-edgo">Change <small>✦ ${px().llm || 1}</small></button></div>
+    <div class="sb2-chips">${['Stronger hook in scene 1', 'Make it funnier', 'Shorter spoken lines', 'Add a twist at the end', 'More urgent call to action'].map((x, i) => `<button class="chip" data-edchip="${i}">${x}</button>`).join('')}</div>
+    ${b.panels.some((x) => x.stale) ? `<button class="btn" id="sb-stale">Redraw the ${b.panels.filter((x) => x.stale).length} changed panel${b.panels.filter((x) => x.stale).length === 1 ? '' : 's'} <small>✦ ${b.panels.filter((x) => x.stale).reduce((n, x) => n + (x.kind === 'keyframe' ? sbKeyCost() : (px().imageSchnell || 1)), 0)}</small></button>` : ''}
     <div class="sb2-add"><button class="btn" id="sb-add">＋ Add panel</button><span class="sb2-help">Drag panels by the number to reorder them.</span><input type="file" id="sb-file" accept="image/*" hidden></div>
+    <div class="sb2-music"><button class="btn" id="sb-music">${b.music ? '♪ Change soundtrack' : '♪ Add a soundtrack'}</button><input type="file" id="sb-mfile" accept="audio/*" hidden>
+      ${b.music ? `<span class="sb2-help">${esc(b.music.name)}</span><label class="sb2-vol">Volume <input type="range" id="sb-mvol" min="5" max="60" value="${b.music.vol}"></label><button class="link" id="sb-mrm">Remove</button>` : '<span class="sb2-help">Optional. Your own track plays under the voice-over. MP3, WAV or M4A, up to 3 MB.</span>'}</div>
     <div class="sb2-bar">
       <div><label class="l" for="sb-kq">Image model</label><select class="in" id="sb-kq"><option value="lite" ${(b.kq || 'lite') === 'lite' ? 'selected' : ''}>Standard · Seedream 4 (cheaper)</option><option value="full" ${b.kq === 'full' ? 'selected' : ''} ${canUse('creator') ? '' : 'disabled'}>Best · Nano Banana 2${canUse('creator') ? '' : ' · 🔒 Creator'}</option></select>
         <label class="l" for="sb-tier">Video quality</label>
@@ -542,7 +561,7 @@ function renderSb(box) {
   $('#sb-back').onclick = () => { IDEAS.sb = null; renderIdeas(box); };
   $('#sb-title').oninput = (e) => { b.title = e.target.value; };
   $('#sb-look').oninput = (e) => { b.look = e.target.value; };
-  on('[data-vis]', (el) => (el.oninput = () => { b.panels[+el.dataset.vis].visual = el.value; }));
+  on('[data-vis]', (el) => (el.oninput = () => { const pn = b.panels[+el.dataset.vis]; pn.visual = el.value; if (pn.image && !pn.stale) { pn.stale = true; const t = el.closest('.sb2-p').querySelector('.sb2-img'); if (t && !t.querySelector('.sb2-stale')) t.insertAdjacentHTML('beforeend', '<span class="sb2-stale">Changed · redraw</span>'); } }));
   on('[data-nar]', (el) => (el.oninput = () => { b.panels[+el.dataset.nar].narration = el.value; sbEstimate(); }));
   on('[data-redraw]', (el) => (el.onclick = () => sbDraw(box, +el.dataset.redraw, b.panels[+el.dataset.redraw].kind || 'sketch')));
   on('[data-key]', (el) => (el.onclick = () => sbDraw(box, +el.dataset.key, 'keyframe')));
@@ -556,6 +575,33 @@ function renderSb(box) {
     catch (err) { toast(err.message, true); }
     pn.busy = null; renderSb(box); b.est = null; sbEstimate();
   };
+  const EDS = ['Stronger hook in scene 1', 'Make it funnier', 'Shorter spoken lines', 'Add a twist at the end', 'More urgent call to action'];
+  on('[data-edchip]', (el) => (el.onclick = () => { $('#sb-ed').value = EDS[+el.dataset.edchip]; $('#sb-ed').focus(); }));
+  const doEdit = async () => {
+    const instruction = $('#sb-ed').value.trim(); if (!instruction || b.busy) return toast('Say what to change first', true);
+    $('#sb-edgo').disabled = true; $('#sb-edgo').textContent = 'Changing…';
+    try {
+      const r = await api('/api/panels/edit', { instruction, look: b.look, lang: IDEAS.lang, panels: b.panels.map((x) => ({ visual: x.visual, motion: x.motion, narration: x.narration })) });
+      for (const c of r.changes) { const pn = b.panels[c.index]; if (!pn) continue; if (c.visual) pn.visual = c.visual; if (c.motion) pn.motion = c.motion; if (c.narration) pn.narration = c.narration; if (pn.image) pn.stale = true; }
+      b.est = null; renderSb(box); sbEstimate(); load().then(() => refreshSides && refreshSides());
+      toast(`${r.changes.length === b.panels.length ? 'Changed every panel' : `Changed panel ${r.changes.map((c) => c.index + 1).join(', ')}`}${r.note ? '. ' + r.note : ''}`);
+    } catch (e) { toast(e.message, true); if (e.code === 'credits' || e.code === 'plan') accountModal(); renderSb(box); }
+  };
+  $('#sb-edgo').onclick = doEdit;
+  $('#sb-ed').onkeydown = (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); doEdit(); } };
+  $('#sb-stale') && ($('#sb-stale').onclick = () => b.panels.slice().forEach((x) => x.stale && sbDraw(box, x, x.kind === 'keyframe' ? 'keyframe' : 'sketch')));
+  $('#sb-music').onclick = () => $('#sb-mfile').click();
+  $('#sb-mfile').onchange = async (e) => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    if (f.size > 3 * 1024 * 1024) return toast('That track is over 3 MB. Trim it or use a lower-bitrate MP3.', true);
+    $('#sb-music').textContent = 'Uploading…';
+    try { const dataUrl = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(new Error('Could not read that file')); r.readAsDataURL(f); });
+      const { url } = await api('/api/upload-audio', { dataUrl }); b.music = { url, name: f.name.slice(0, 40), vol: 25 }; toast('Soundtrack added'); }
+    catch (err) { toast(err.message, true); }
+    renderSb(box); sbEstimate();
+  };
+  $('#sb-mvol') && ($('#sb-mvol').oninput = (e) => { b.music.vol = +e.target.value; });
+  $('#sb-mrm') && ($('#sb-mrm').onclick = () => { b.music = null; renderSb(box); });
   $('#sb-kq').onchange = (e) => { b.kq = e.target.value; renderSb(box); };
   $('#sb-add').onclick = () => { b.panels.push({ visual: '', narration: '', motion: 'slow push-in', image: '', kind: 'sketch', busy: null }); b.est = null; renderSb(box); sbEstimate(); };
   let dragFrom = null;

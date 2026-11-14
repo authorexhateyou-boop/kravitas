@@ -653,7 +653,7 @@
       };
     }
     if (p === '/api/ledger') return st.ledger.slice(0, 100);
-    if (p === '/api/upload') return { url: body.dataUrl };
+    if (p === '/api/upload' || p === '/api/upload-audio') return { url: body.dataUrl };
     if (p === '/api/estimate') return { credits: Math.ceil((ESTIMATE[body.tool] || (() => 0))(body.input || {})) };
     if (p === '/api/checkout') {
       // Preview: simulate a successful subscription so plan limits can be tested. Packs stay off.
@@ -722,6 +722,14 @@
       if (st.credits < PRICE.llm) throw err('Not enough credits. Top up to continue.', 'credits');
       await sleep(1400); st.credits -= PRICE.llm; st.ledger.unshift({ at: Date.now(), what: 'Storyboard plan', credits: -PRICE.llm }); save();
       return planBoard(body.prompt, body.scenes);
+    }
+    if (p === '/api/panels/edit') {
+      const ins = String(body.instruction || '').trim(); if (!ins) throw err('Say what to change, for example "make scene 2 funnier"');
+      if (st.credits < PRICE.llm) throw err('Not enough credits. Top up to continue.', 'credits');
+      await sleep(900); st.credits -= PRICE.llm; st.ledger.unshift({ at: Date.now(), what: 'Storyboard edit', credits: -PRICE.llm }); save();
+      const nums = [...ins.matchAll(/(?:scene|panel|babak)\s*(\d)/gi)].map((m) => +m[1]); const ps = body.panels || [];
+      const hit = (nums.length ? nums : ps.map((_, k) => k + 1)).filter((n) => ps[n - 1]);
+      return { cost: PRICE.llm, note: 'Demo edit', changes: hit.map((n) => ({ index: n - 1, visual: `${ps[n - 1].visual} (${ins})`.slice(0, 280), motion: ps[n - 1].motion, narration: ps[n - 1].narration })) };
     }
     if (p === '/api/panels/plan' || p === '/api/panels/draw') {
       const plan = p.endsWith('plan');
