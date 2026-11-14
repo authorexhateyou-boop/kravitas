@@ -10,8 +10,8 @@ import { config, MODE, PACKS, PLANS, ROOT } from './lib/config.js';
 import { store } from './lib/store/index.js';
 import { saveDataUrl, saveAudioDataUrl, uid as newId } from './lib/media.js';
 import { isMock, falKey, llmModel, run as falRun, toRemote } from './lib/fal.js';
-import { TOOLS, STYLES, CAMERAS, createJob, expireStale, removeBg, live, planStory, planPanels, editPanels, drawPanel } from './lib/pipelines.js';
-import { WRITERS, VIDEO_MODELS, VOICES, PRICE, TIERS, EMOTIONS, MODELS, MARKUP, MODEL_PLAN, MAX_VARIANTS, allowed, imageCost } from './lib/models.js';
+import { TOOLS, STYLES, CAMERAS, createJob, expireStale, removeBg, live, planStory, planPanels, editPanels, drawPanel, tts } from './lib/pipelines.js';
+import { WRITERS, VIDEO_MODELS, VOICES, PRICE, TIERS, EMOTIONS, MODELS, MARKUP, MODEL_PLAN, MAX_VARIANTS, allowed, imageCost, ttsCost, tierOf } from './lib/models.js';
 import { AVATAR_PRESETS } from './lib/avatars.js';
 import * as social from './lib/social.js';
 import { PLATFORMS, ANGLES, LANGS } from './lib/prompts.js';
@@ -469,6 +469,26 @@ app.post('/api/panels/draw', limit('draw', 120, 60), wrap(async (req, res) => {
   }
 }));
 
+// One spoken line of a storyboard, recorded now so the user can hear it before any video is made.
+// The video job reuses this recording, so listening first costs nothing extra when the line is kept.
+app.post('/api/panels/voice', limit('draw', 150, 60), wrap(async (req, res) => {
+  const b = req.body || {};
+  const text = str(b.text, 400).trim();
+  if (!text) throw fail('Write what is said in this panel first');
+  const lang = ['ms', 'en', 'manglish'].includes(b.lang) ? b.lang : 'ms';
+  const q = tierOf(TIERS[b.tier] ? b.tier : 'motion').voice;
+  const voice = lang === 'ms' ? 'mm:Lively_Girl' : 'el:Aria';
+  const cost = ttsCost(text, q);
+  await store.adjust(req.uid, -cost, 'Storyboard voice preview', null);
+  try {
+    const r = await tts({ charge() {} }, { text, voice, lang, quality: q });
+    res.json({ url: r.url, dur: r.dur, cost });
+  } catch (e) {
+    await store.adjust(req.uid, cost, 'Refund (voice preview failed)', null, true);
+    throw e;
+  }
+}));
+
 // ---------- auto-posting ----------
 const needSocial = () => { if (!social.socialEnabled()) throw fail('Auto-posting is not switched on yet (add POSTFORME_API_KEY).', 501); };
 app.get('/api/social/accounts', wrap(async (req, res) => { needSocial(); res.json(await social.listAccounts(req.uid)); }));
@@ -516,7 +536,7 @@ function cleanInput(input) {
     const b = i.board;
     i.board = {
       title: str(b.title, 120), caption: str(b.caption, 600), hashtags: (Array.isArray(b.hashtags) ? b.hashtags : []).slice(0, 15).map((h) => str(h, 40)),
-      scenes: (Array.isArray(b.scenes) ? b.scenes : []).slice(0, 8).map((s) => ({ narration: str(s.narration, 400), visual: str(s.visual, 600), motion: str(s.motion, 200), ...(s.frame && store.isOwnUrl(s.frame) ? { frame: str(s.frame, 600) } : {}) })).filter((s) => s.narration.trim()),
+      scenes: (Array.isArray(b.scenes) ? b.scenes : []).slice(0, 8).map((s) => ({ narration: str(s.narration, 400), visual: str(s.visual, 600), motion: str(s.motion, 200), ...(s.frame && store.isOwnUrl(s.frame) ? { frame: str(s.frame, 600) } : {}), ...(s.voice?.url && store.isOwnUrl(s.voice.url) && +s.voice.dur > 0 ? { voice: { url: str(s.voice.url, 600), dur: Math.min(60, +s.voice.dur) } } : {}) })).filter((s) => s.narration.trim()),
     };
     if (!i.board.scenes.length) delete i.board;
   }

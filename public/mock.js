@@ -737,6 +737,14 @@
       await sleep(1400); st.credits -= PRICE.llm; st.ledger.unshift({ at: Date.now(), what: 'Storyboard plan', credits: -PRICE.llm }); save();
       return planBoard(body.prompt, body.scenes);
     }
+    if (p === '/api/panels/voice') {
+      const text = String(body.text || '').trim(); if (!text) throw err('Write what is said in this panel first');
+      const cost = credits((text.length / 1000) * (['motion', 'lite'].includes(body.tier) || !body.tier ? 6 : 10));
+      if (st.credits < cost) throw err('Not enough credits. Top up to continue.', 'credits');
+      await sleep(700); st.credits -= cost; st.ledger.unshift({ at: Date.now(), what: 'Storyboard voice preview', credits: -cost }); save();
+      const dur = Math.max(2, text.split(/\s+/).length / 2.6);
+      return { url: URL.createObjectURL(synthAudio('tts', dur, text)), dur, cost };
+    }
     if (p === '/api/panels/edit') {
       const ins = String(body.instruction || '').trim(); if (!ins) throw err('Say what to change, for example "make scene 2 funnier"');
       if (st.credits < PRICE.llm) throw err('Not enough credits. Top up to continue.', 'credits');

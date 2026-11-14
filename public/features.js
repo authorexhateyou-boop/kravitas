@@ -495,9 +495,35 @@ async function sbDraw(box, k, kind) {
   pn.busy = null; if (IDEAS.sb === b) renderSb(box);
   sbRefresh();
 }
+// Hear a panel's line before any video is made. A recording stays valid only while the words, quality and language are unchanged.
+const voiceOk = (x, b) => !!(x.voice && x.voice.nar === x.narration && x.voice.tier === b.tier && x.voice.lang === IDEAS.lang);
+async function sbHear(box, k) {
+  const b = IDEAS.sb, pn = b.panels[k];
+  if (!pn || pn.vbusy || !String(pn.narration || '').trim()) return;
+  pn.vbusy = true; renderSb(box);
+  try {
+    const r = await api('/api/panels/voice', { text: pn.narration, tier: b.tier, lang: IDEAS.lang });
+    pn.voice = { url: r.url, dur: r.dur, nar: pn.narration, tier: b.tier, lang: IDEAS.lang };
+  } catch (e) { toast(e.message, true); if (e.code === 'credits' || e.code === 'plan') accountModal(); }
+  pn.vbusy = false; if (IDEAS.sb === b) { renderSb(box); sbEstimate(); }
+  sbRefresh();
+}
+let sbPlaying = null;
+function sbPlayAll() {
+  const b = IDEAS.sb; if (sbPlaying) { sbPlaying.pause(); sbPlaying = null; return; }
+  const q = b.panels.map((x, k) => [x, k]).filter(([x]) => voiceOk(x, b)); let n = 0;
+  const next = () => {
+    if (n >= q.length) { sbPlaying = null; document.querySelectorAll('.sb2-p.say').forEach((e) => e.classList.remove('say')); return; }
+    const [x, k] = q[n++]; const el = document.querySelector(`.sb2-p[data-pi="${k}"]`);
+    document.querySelectorAll('.sb2-p.say').forEach((e) => e.classList.remove('say')); el?.classList.add('say'); el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    sbPlaying = new Audio(x.voice.url); sbPlaying.onended = next; sbPlaying.onerror = next; sbPlaying.play().catch(next);
+  };
+  if (!q.length) return toast('Record the voices first');
+  next();
+}
 function sbBoard() {
   const b = IDEAS.sb;
-  return { title: b.title, caption: b.caption, hashtags: b.hashtags, scenes: b.panels.map((x) => ({ narration: x.narration, visual: x.visual, motion: x.motion, ...(x.kind === 'keyframe' && x.image ? { frame: x.image } : {}) })) };
+  return { title: b.title, caption: b.caption, hashtags: b.hashtags, scenes: b.panels.map((x) => ({ narration: x.narration, visual: x.visual, motion: x.motion, ...(x.kind === 'keyframe' && x.image ? { frame: x.image } : {}), ...(voiceOk(x, b) ? { voice: { url: x.voice.url, dur: x.voice.dur } } : {}) })) };
 }
 function sbJobInput() {
   const b = IDEAS.sb;
@@ -540,6 +566,7 @@ function renderSb(box) {
         <div class="sb2-img" style="aspect-ratio:${aw}/${ah}">${x.image ? `<img src="${x.image}" alt="Panel ${k + 1}">` : `<div class="sb2-empty">Empty panel<br><small>Upload or draw</small></div>`}<span class="sb2-n">⠿ ${k + 1}</span>${x.stale ? '<span class="sb2-stale">Changed · redraw</span>' : ''}<span class="sb2-badge ${x.kind}">${x.kind === 'keyframe' ? 'Keyframe ✓' : 'Sketch'}</span>${x.busy ? `<div class="sb2-wait"><i class="spin"></i><small>${x.busy === 'keyframe' ? 'Drawing keyframe…' : 'Sketching…'}</small></div>` : ''}</div>
         <textarea class="in" data-vis="${k}" rows="3" maxlength="600" aria-label="What happens in panel ${k + 1}">${esc(x.visual)}</textarea>
         <input class="in" data-nar="${k}" maxlength="400" value="${esc(x.narration)}" aria-label="Line spoken in panel ${k + 1}" placeholder="What is said">
+        <div class="sb2-vo">${x.vbusy ? '<small><i class="spin"></i> Recording…</small>' : voiceOk(x, b) ? `<audio controls preload="none" src="${x.voice.url}"></audio><button class="btn ghost" data-hear="${k}" title="Record again">↻</button>` : `<button class="btn" data-hear="${k}">🔊 Hear it <small>✦ ~2</small></button>${x.voice ? '<small class="sb2-stale2">Words changed</small>' : ''}`}</div>
         <div class="sb2-pa">
           ${x.kind === 'keyframe' ? `<button class="btn" data-redraw="${k}">Redraw <small>✦ ${sbKeyCost()}</small></button>` : `<button class="btn" data-redraw="${k}">Redraw <small>✦ ${px().imageSchnell || 1}</small></button><button class="btn pri" data-key="${k}">Real keyframe <small>✦ ${sbKeyCost()}</small></button>`}
           <button class="btn" data-up="${k}" title="Use your own picture">Upload</button>${b.panels.length > 2 ? `<button class="btn" data-pdel="${k}" aria-label="Remove panel">✕</button>` : ''}
@@ -548,7 +575,7 @@ function renderSb(box) {
     <div class="sb2-chips">${['Stronger hook in scene 1', 'Make it funnier', 'Shorter spoken lines', 'Add a twist at the end', 'More urgent call to action'].map((x, i) => `<button class="chip" data-edchip="${i}">${x}</button>`).join('')}</div>
     ${b.panels.some((x) => x.stale) ? `<button class="btn" id="sb-stale">Redraw the ${b.panels.filter((x) => x.stale).length} changed panel${b.panels.filter((x) => x.stale).length === 1 ? '' : 's'} <small>✦ ${b.panels.filter((x) => x.stale).reduce((n, x) => n + (x.kind === 'keyframe' ? sbKeyCost() : (px().imageSchnell || 1)), 0)}</small></button>` : ''}
     <div class="sb2-series">${b.series ? `<span class="mtag">🎭 ${esc(b.series.name)} · Episode ${b.series.n}</span><button class="btn" id="sb-next">Next episode →</button>` : `<button class="btn" id="sb-series" title="Keep this character and look for the next episodes">🎭 Save as a series</button><span class="sb2-help">Keeps this character and look, so episode 2 stays consistent.</span>`}</div>
-    <div class="sb2-add"><button class="btn" id="sb-add">＋ Add panel</button><span class="sb2-help">Drag panels by the number to reorder them.</span><input type="file" id="sb-file" accept="image/*" hidden></div>
+    <div class="sb2-add"><button class="btn" id="sb-add">＋ Add panel</button><span class="sb2-help">Drag panels by the number to reorder them.</span><button class="btn" id="sb-hearall">🔊 Record all voices</button><button class="btn" id="sb-playall">▶ Play in order</button><input type="file" id="sb-file" accept="image/*" hidden></div>
     <div class="sb2-music"><button class="btn" id="sb-music">${b.music ? '♪ Change soundtrack' : '♪ Add a soundtrack'}</button><input type="file" id="sb-mfile" accept="audio/*" hidden>
       ${b.music ? `<span class="sb2-help">${esc(b.music.name)}</span><label class="sb2-vol">Volume <input type="range" id="sb-mvol" min="5" max="60" value="${b.music.vol}"></label><button class="link" id="sb-mrm">Remove</button>` : '<span class="sb2-help">Optional. Your own track plays under the voice-over. MP3, WAV or M4A, up to 3 MB.</span>'}</div>
     <div class="sb2-bar">
@@ -568,6 +595,7 @@ function renderSb(box) {
   $('#sb-title').oninput = (e) => { b.title = e.target.value; };
   $('#sb-look').oninput = (e) => { b.look = e.target.value; };
   on('[data-vis]', (el) => (el.oninput = () => { const pn = b.panels[+el.dataset.vis]; pn.visual = el.value; if (pn.image && !pn.stale) { pn.stale = true; const t = el.closest('.sb2-p').querySelector('.sb2-img'); if (t && !t.querySelector('.sb2-stale')) t.insertAdjacentHTML('beforeend', '<span class="sb2-stale">Changed · redraw</span>'); } }));
+  on('[data-hear]', (el) => (el.onclick = () => sbHear(box, +el.dataset.hear)));
   on('[data-nar]', (el) => (el.oninput = () => { b.panels[+el.dataset.nar].narration = el.value; sbEstimate(); }));
   on('[data-redraw]', (el) => (el.onclick = () => sbDraw(box, +el.dataset.redraw, b.panels[+el.dataset.redraw].kind || 'sketch')));
   on('[data-key]', (el) => (el.onclick = () => sbDraw(box, +el.dataset.key, 'keyframe')));
@@ -620,6 +648,8 @@ function renderSb(box) {
     try { const all = await api('/api/series'); const row = all.find((x) => x.id === b.series.id); if (row) nextEpisode(row); } catch (err) { toast(err.message, true); }
   });
   $('#sb-kq').onchange = (e) => { b.kq = e.target.value; renderSb(box); };
+  $('#sb-hearall').onclick = () => Promise.all(b.panels.map((x, k) => (voiceOk(x, b) || !String(x.narration || '').trim() ? null : sbHear(box, k))));
+  $('#sb-playall').onclick = sbPlayAll;
   $('#sb-add').onclick = () => { b.panels.push({ visual: '', narration: '', motion: 'slow push-in', image: '', kind: 'sketch', busy: null }); b.est = null; renderSb(box); sbEstimate(); };
   let dragFrom = null;
   on('.sb2-p', (el) => {

@@ -904,3 +904,8 @@ button.ib{background:none;border:0;font:inherit}button.ib:hover{background:#2c2c
 .tpl-cover svg,.tpl-cover .tpl-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .tpl-cover .tpl-img{z-index:1}
 .tpl-cover small{position:absolute;left:10px;bottom:8px;z-index:2;background:#000a;padding:2px 8px;border-radius:999px;color:#fff}
+
+.sb2-vo{display:flex;align-items:center;gap:8px;margin:6px 0 2px;min-height:34px;flex-wrap:wrap}
+.sb2-vo audio{height:32px;max-width:100%;flex:1 1 140px;min-width:0}
+.sb2-vo small{color:var(--mut,#9a9a9a)}.sb2-stale2{color:#ffd60a!important}
+.sb2-p.say{outline:2px solid #ffd60a;outline-offset:2px;border-radius:12px}
