@@ -414,7 +414,8 @@ app.post('/api/panels/draw', limit('draw', 120, 60), wrap(async (req, res) => {
   if (!visual) throw fail('Describe what happens in this panel first');
   const L = await lookups(req.uid);
   const aspect = ASPECTS.includes(b.aspect) ? b.aspect : '9:16';
-  const quality = kind === 'keyframe' && allowed(await planOf(req.uid), 'creator') ? 'full' : 'lite';
+  // Cheap by default for everyone; the expensive model only when the user picked it and the plan allows it.
+  const quality = kind === 'keyframe' && b.quality === 'full' && allowed(await planOf(req.uid), 'creator') ? 'full' : 'lite';
   const f = L.friend(b.friendId), p = L.product(b.productId);
   const cost = kind === 'sketch' ? imageCost('lite', false) : imageCost(quality, !!(f || p));
   await store.adjust(req.uid, -cost, kind === 'sketch' ? 'Storyboard sketch' : 'Storyboard keyframe', null);

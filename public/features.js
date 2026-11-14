@@ -451,7 +451,7 @@ const SB_TIER_MODEL = { motion: 'h3-turbo', lite: 'h3-turbo', fast: 'h3-turbo', 
 const SB_N = 4;
 const px = () => S.app.catalog.price || {};
 const sbPlanCost = () => (px().llm || 1) + SB_N * (px().imageSchnell || 1);
-const sbKeyCost = () => (canUse('creator') ? px().image : px().imageLite) || 6;
+const sbKeyCost = () => ((IDEAS.sb?.kq || 'lite') === 'full' ? px().image : px().imageLite) || 6;
 const sbRefresh = () => load().then(() => { const c = $('#credits'); if (c) c.textContent = `✦ ${S.app.credits.toLocaleString()}`; });
 async function sbStart(box, idea, real) {
   const aspect = ['9:16', '16:9', '1:1', '4:5'].includes(idea.settings?.aspect) ? idea.settings.aspect : '9:16';
@@ -471,7 +471,7 @@ async function sbDraw(box, k, kind) {
   if (!pn || pn.busy) return;
   pn.busy = kind; renderSb(box);
   try {
-    const r = await api('/api/panels/draw', { kind, visual: pn.visual, look: b.look, aspect: b.aspect, productId: IDEAS.productId, friendId: IDEAS.friendId, style: 'cinematic' });
+    const r = await api('/api/panels/draw', { kind, quality: b.kq || 'lite', visual: pn.visual, look: b.look, aspect: b.aspect, productId: IDEAS.productId, friendId: IDEAS.friendId, style: 'cinematic' });
     pn.image = r.image; pn.kind = r.kind;
   } catch (e) { toast(e.message, true); if (e.code === 'credits' || e.code === 'plan') accountModal(); }
   pn.busy = null; if (IDEAS.sb === b) renderSb(box);
@@ -527,7 +527,8 @@ function renderSb(box) {
         </div></div>`).join('')}</div>
     <div class="sb2-add"><button class="btn" id="sb-add">＋ Add panel</button><span class="sb2-help">Drag panels by the number to reorder them.</span><input type="file" id="sb-file" accept="image/*" hidden></div>
     <div class="sb2-bar">
-      <div><label class="l" for="sb-tier">Video quality</label>
+      <div><label class="l" for="sb-kq">Image model</label><select class="in" id="sb-kq"><option value="lite" ${(b.kq || 'lite') === 'lite' ? 'selected' : ''}>Standard · Seedream 4 (cheaper)</option><option value="full" ${b.kq === 'full' ? 'selected' : ''} ${canUse('creator') ? '' : 'disabled'}>Best · Nano Banana 2${canUse('creator') ? '' : ' · 🔒 Creator'}</option></select>
+        <label class="l" for="sb-tier">Video quality</label>
         <select class="in" id="sb-tier">${Object.keys(tiers).map((k) => { const need = tiers[k].plan, lock = need && !canUse(need); return `<option value="${k}" ${k === b.tier ? 'selected' : ''}>${esc(TIER_NAME[k] || tiers[k].label)} · ${esc(TIER_DESC[k] || '')}${lock ? ` · 🔒 ${PLAN_LABEL[need]}` : ''}</option>`; }).join('')}</select></div>
       <div class="sb2-go">
         ${keyed < b.panels.length ? `<button class="btn" id="sb-all">Real keyframes for all <small>✦ ${(b.panels.length - keyed) * sbKeyCost()}</small></button>` : ''}
@@ -555,6 +556,7 @@ function renderSb(box) {
     catch (err) { toast(err.message, true); }
     pn.busy = null; renderSb(box); b.est = null; sbEstimate();
   };
+  $('#sb-kq').onchange = (e) => { b.kq = e.target.value; renderSb(box); };
   $('#sb-add').onclick = () => { b.panels.push({ visual: '', narration: '', motion: 'slow push-in', image: '', kind: 'sketch', busy: null }); b.est = null; renderSb(box); sbEstimate(); };
   let dragFrom = null;
   on('.sb2-p', (el) => {
