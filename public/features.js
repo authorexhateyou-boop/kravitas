@@ -121,9 +121,9 @@ async function shotGo(btn) {
 }
 // called by the job poller
 function studioTick() {
-  const gal = $('#fl-gal'); if (gal) { const h = galleryHTML(); if (gal.dataset.h !== h) { gal.innerHTML = h; gal.dataset.h = h; } }
+  const gal = $('#fl-gal'); if (gal) gal.innerHTML = galleryHTML();
   const strip = $('#hs-strip'); if (!strip) return;
-  { const h = stripHTML(); if (strip.dataset.h !== h) { strip.innerHTML = h; strip.dataset.h = h; } }
+  strip.innerHTML = stripHTML();
   if (S.mode === 'edit') return editTick();
   if (S.mode !== 'video') return;
   const j = SHOT.job && S.jobs.find((x) => x.id === SHOT.job);
@@ -288,21 +288,10 @@ const REF_ACCEPT = '.png,.jpg,.jpeg,.webp,.pdf,.docx,.txt,.md,.csv,image/png,ima
 const IDEA_MODE = { ad: 'Ad', video: 'Video', image: 'Image' };
 const IDEA_EX = ['serum vit c rm29, flash sale weekend, target mak-mak 30-45, kawan cakap kulit cerah dlm seminggu, vibe santai, free shipping', 'new kopi brand, kopitiam vibes but modern, students + office workers, launch next month, nak content yg relatable', 'tudung bawal satin 15 colours, raya collection, price RM35, ready stock, before/after styling'];
 function ideasInput(extra = {}) {
-  return { mode: 'any', writer: IDEAS.writer || 'flash', effort: IDEAS.effort || 'balanced', prompt: IDEAS.dump + (IDEAS.result ? '' : briefText()), productId: IDEAS.productId, friendId: IDEAS.friendId, lang: IDEAS.lang, refs: IDEAS.refs.map(({ kind, url, name, text }) => ({ kind, url, name, text })), ...extra };
+  return { mode: 'any', writer: IDEAS.writer || 'flash', prompt: IDEAS.dump, productId: IDEAS.productId, friendId: IDEAS.friendId, lang: IDEAS.lang, refs: IDEAS.refs.map(({ kind, url, name, text }) => ({ kind, url, name, text })), ...extra };
 }
 function ideaKey(x) { return `${x.mode}|${x.title}|${x.prompt}`; }
-const ASK = { platform: [['tiktok', 'TikTok'], ['reels', 'Instagram Reels'], ['shorts', 'YouTube Shorts'], ['facebook', 'Facebook']], tone: [['funny', 'Funny'], ['emotional', 'Emotional'], ['hardsell', 'Hard sell'], ['chill', 'Chill'], ['dramatic', 'Dramatic']], length: [['15', '15 seconds'], ['30', '30 seconds'], ['60', '60 seconds']] };
-function askCard() {
-  const a = IDEAS.ask;
-  return `<div class="id-ask"><b>Three quick questions</b><small>So the ideas fit. Skip any you don't care about.</small>
-    ${Object.entries(ASK).map(([k, opts]) => `<div class="id-askrow"><span>${{ platform: 'Where will it be posted?', tone: 'What tone?', length: 'How long?' }[k]}</span><div>${opts.map(([v, l]) => `<button class="chip ${a[k] === v ? 'on' : ''}" data-ask="${k}:${v}">${l}</button>`).join('')}</div></div>`).join('')}
-    <div class="id-askgo"><button class="btn pri" id="ask-go">Make ideas</button><button class="link" id="ask-skip">Skip the questions</button></div></div>`;
-}
-const briefText = () => { const a = IDEAS.ask || {}; const n = (k) => (ASK[k].find((o) => o[0] === a[k]) || [])[1]; const parts = [n('platform') && `Platform: ${n('platform')}`, n('tone') && `Tone: ${n('tone')}`, n('length') && `Length: ${n('length')}`].filter(Boolean); return parts.length ? `\n\n[Brief] ${parts.join(' · ')}` : ''; };
-async function ideasRun(box, force) {
-  if (!IDEAS.dump.trim() && !IDEAS.productId && !IDEAS.friendId && !IDEAS.refs.length) { toast('Dump some ideas first, or add a product or a reference', true); return $('#id-dump')?.focus(); }
-  if (!force && !IDEAS.skipAsk && !IDEAS.result) { IDEAS.ask = IDEAS.ask || { platform: 'tiktok', tone: '', length: '30' }; IDEAS.asking = true; return renderIdeas(box); }
-  IDEAS.asking = false;
+async function ideasRun(box) {
   if (!IDEAS.dump.trim() && !IDEAS.productId && !IDEAS.friendId && !IDEAS.refs.length) { toast('Dump some ideas first, or add a product or a reference', true); return $('#id-dump')?.focus(); }
   if (IDEAS.uploading) return toast('Still reading your files, one moment', true);
   IDEAS.busy = true; IDEAS.chat = []; renderIdeas(box);
@@ -341,7 +330,7 @@ function useIdea(x, quiet) {
 async function genIdea(x, btn) {
   if (btn.dataset.arm) { clearTimeout(+btn.dataset.arm); delete btn.dataset.arm; btn.textContent = 'Starting…'; btn.disabled = true;
     const mode = useIdea(x, true);
-    { await new Promise((r) => setTimeout(r, 80)); if (mode === 'ad' && !F().productId) return toast('Add your product first, then press Generate', true); await generate(); }
+    if (mode === 'video') await shotGo($('#hs-go')); else { await new Promise((r) => setTimeout(r, 80)); if (mode === 'ad' && !F().productId) return toast('Add your product first, then press Generate', true); await generate(); }
     return; }
   try {
     const mode = IDEA_MODE[x.mode] ? x.mode : 'ad';
@@ -378,13 +367,12 @@ async function attachRefs(files, done) {
   }
 }
 function renderIdeas(box) {
-  { const w = (S.app.catalog?.writers || {})[IDEAS.writer]; if (w && w.plan !== 'free' && !canUse(w.plan)) IDEAS.writer = 'flash'; } // a plan change can lock the chosen writer
   if (IDEAS.sb) return renderSb(box);
   const r = IDEAS.result;
   const pr = productById(IDEAS.productId), fr = friendById(IDEAS.friendId);
   box.innerHTML = `
     <div class="id-wrap">
-      ${r ? `<div class="id-out ${IDEAS.busy ? 'dim' : ''}">${OWNER_LOCAL && (S.app.mock || !S.app.keySet) ? '<div class="id-demo-banner">Demo mode: these ideas are placeholders. The AI is not reading your image or following your text yet. Connect the AI in Settings ⚙ (or start Kravitas with start.bat) to get real results.</div>' : ''}
+      ${r ? `<div class="id-out ${IDEAS.busy ? 'dim' : ''}">${(S.app.mock || !S.app.keySet) ? '<div class="id-demo-banner">Demo mode: these ideas are placeholders. The AI is not reading your image or following your text yet. Add your fal.ai key (Settings ⚙) or start Kravitas with start.bat to get real results.</div>' : ''}
         <p class="b-sum">${esc(r.summary)}</p>
         <div class="id-cols">
           <div><h3>Who it's for</h3><p>${esc(r.audience)}</p></div>
@@ -392,7 +380,7 @@ function renderIdeas(box) {
           <div><h3>Hooks</h3><ul class="hooks">${r.hooks.map((x, i) => `<li><span>${esc(x)}</span><button class="link" data-hook="${i}">Copy</button></li>`).join('')}</ul></div>
         </div>
         <h3>Ready-to-use prompts</h3>
-        <div class="id-ideas">${r.ideas.map((x, i) => `<div class="id-idea"><div class="id-top"><span class="mtag">${IDEA_MODE[x.mode] || x.mode}</span><b>${esc(x.title)}</b></div><p class="why">${esc(x.why)}</p>${(x.panels || []).length ? `<ol class="id-panels">${x.panels.map((t, n) => `<li><b>${n + 1}</b><span>${esc(t)}</span></li>`).join('')}</ol>` : ''}<p class="pr">${esc(x.prompt)}</p>${Object.keys(x.settings || {}).length ? `<div class="chips">${Object.entries(x.settings).map(([k, v]) => `<span class="chip">${esc(k)}: ${esc(v)}</span>`).join('')}</div>` : ''}<div class="id-acts"><button class="btn pri" data-sb="${i}">🎞 Storyboard <small>✦ ${sbPlanCost()}</small></button><button class="btn" data-sbreal="${i}" title="Draw real images for every panel straight away">🎞 Real images <small>✦ ${sbPlanCost() + SB_N * sbKeyCost() - SB_N * (px().imageSchnell || 1)}</small></button><button class="btn" data-gen="${i}" title="Open it ready and start making it. You confirm the cost first.">Generate now</button><button class="btn ghost" data-use="${i}" title="Open it in ${IDEA_MODE[x.mode] || 'the tool'} to adjust first">Edit →</button><button class="btn" data-save="${i}" ${IDEAS.savedIds.has(ideaKey(x)) ? 'disabled' : ''}>${IDEAS.savedIds.has(ideaKey(x)) ? '✓ Saved' : 'Save'}</button></div></div>`).join('')}</div>
+        <div class="id-ideas">${r.ideas.map((x, i) => `<div class="id-idea"><div class="id-top"><span class="mtag">${IDEA_MODE[x.mode] || x.mode}</span><b>${esc(x.title)}</b></div><p class="why">${esc(x.why)}</p>${(x.panels || []).length ? `<ol class="id-panels">${x.panels.map((t, n) => `<li><b>${n + 1}</b><span>${esc(t)}</span></li>`).join('')}</ol>` : ''}<p class="pr">${esc(x.prompt)}</p>${Object.keys(x.settings || {}).length ? `<div class="chips">${Object.entries(x.settings).map(([k, v]) => `<span class="chip">${esc(k)}: ${esc(v)}</span>`).join('')}</div>` : ''}<div class="id-acts"><button class="btn pri" data-sb="${i}">🎞 Storyboard <small>✦ ${sbPlanCost()}</small></button><button class="btn" data-gen="${i}" title="Open it ready and start making it. You confirm the cost first.">Generate now</button><button class="btn ghost" data-use="${i}" title="Open it in ${IDEA_MODE[x.mode] || 'the tool'} to adjust first">Edit →</button><button class="btn" data-save="${i}" ${IDEAS.savedIds.has(ideaKey(x)) ? 'disabled' : ''}>${IDEAS.savedIds.has(ideaKey(x)) ? '✓ Saved' : 'Save'}</button></div></div>`).join('')}</div>
         <div class="id-acts" style="margin-top:8px"><button class="btn" id="id-saveall">Save all ${r.ideas.length}</button></div>
         <div class="b-chat">
           <h3>Refine with Kravitas</h3>
@@ -400,7 +388,7 @@ function renderIdeas(box) {
           <div class="b-sugg">${BRAIN_SUGGEST.map((x) => `<button class="chip" data-sugg="${esc(x)}">${esc(x)}</button>`).join('')}</div>
 
         </div>
-      </div>` : IDEAS.asking ? askCard() : IDEAS.busy ? '<div class="id-think"><i></i><b>Kravitas is reading your notes…</b><small>Making sense of them, then writing prompts you can run right away.</small></div>' : `<div class="fl-empty id-empty"><span>✿</span><b>What do you want to make?</b><small>Tell Kravitas about your product or idea. It writes the prompts and a storyboard, so you can check everything before you spend on video.</small></div>`}
+      </div>` : IDEAS.busy ? '<div class="id-think"><i></i><b>Kravitas is reading your notes…</b><small>Making sense of them, then writing prompts you can run right away.</small></div>' : `<div class="fl-empty id-empty"><span>✿</span><b>What do you want to make?</b><small>Tell Kravitas about your product or idea. It writes the prompts and a storyboard, so you can check everything before you spend on video.</small></div>`}
       <div class="id-in id-dock">
         <div class="id-chat" id="id-chat">
           ${refChips()}
@@ -412,8 +400,8 @@ function renderIdeas(box) {
             <label class="ib lg" title="Language" aria-label="Language"><span class="v">${LANG_SHORT[IDEAS.lang] || 'BM'}</span><select id="id-lang" aria-label="Language">${Object.entries(LANG).map(([k, l]) => `<option value="${k}" ${k === IDEAS.lang ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
             ${r ? '<button type="button" class="ib" id="id-new" title="Start a new idea" aria-label="New idea"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4"/></svg></button>' : ''}
             <span class="sp"></span>
-            ${OWNER_LOCAL && (S.app.mock || !S.app.keySet) ? '<span class="demo-dot" title="Demo mode: the AI cannot read your images or really follow your text until the AI is connected in Settings.">Demo</span>' : ''}
-            <button type="button" class="mdl" id="id-model" title="Choose the AI model and how hard it thinks" aria-label="AI model"><span class="v">${esc(llmName())} ▾</span></button>
+            ${(S.app.mock || !S.app.keySet) ? '<span class="demo-dot" title="Demo mode: the AI cannot read your images or really follow your text until a fal.ai key is added in Settings.">Demo</span>' : ''}
+            <label class="mdl" title="The AI that writes your ideas. Better ones unlock with your plan."><span class="v">${esc(llmName())} ▾</span><select id="id-writer" aria-label="AI writer">${Object.entries(S.app.catalog?.writers || { flash: { name: llmName(), plan: 'free' } }).map(([k, w]) => `<option value="${k}" ${k === IDEAS.writer ? 'selected' : ''}>${esc(w.name)}${w.note ? ' · ' + esc(w.note) : ''}${(w.plan !== 'free' && !canUse(w.plan)) ? ' 🔒 ' + (PLAN_LABEL[w.plan] || w.plan) : ''}</option>`).join('')}</select></label>
             <button class="send" id="id-go" ${IDEAS.busy ? 'disabled' : ''} title="${r ? 'Send (✦ 1)' : 'Turn into prompts (✦ 2)'}" aria-label="${r ? 'Send' : 'Turn into prompts'}">${IDEAS.busy && !r ? '<i class="spin"></i>' : '<svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>'}</button>
           </div>
         </div>
@@ -428,10 +416,11 @@ function renderIdeas(box) {
   if ($('#id-dump')) grow($('#id-dump'));
   on('#id-prod', 'onchange', (e) => { if (e.target.value === '__new') { e.target.value = IDEAS.productId || ''; return productModal(); } IDEAS.productId = e.target.value || null; });
   on('#id-face', 'onchange', (e) => { if (e.target.value === '__new') { e.target.value = IDEAS.friendId || ''; return friendModal(); } IDEAS.friendId = e.target.value || null; });
-  on('#id-model', 'onclick', (e) => { e.stopPropagation(); window.openModelPicker(e.currentTarget, 'ideas'); });
-  box.querySelectorAll('[data-ask]').forEach((b) => (b.onclick = () => { const [k, v] = b.dataset.ask.split(':'); IDEAS.ask[k] = IDEAS.ask[k] === v ? '' : v; renderIdeas(box); }));
-  on('#ask-go', 'onclick', () => ideasRun(box, true));
-  on('#ask-skip', 'onclick', () => { IDEAS.skipAsk = true; IDEAS.ask = {}; ideasRun(box, true); });
+  on('#id-writer', 'onchange', (e) => {
+    const w = (S.app.catalog?.writers || {})[e.target.value];
+    if (w && w.plan !== 'free' && !canUse(w.plan)) { toast(`${w.name} needs the ${PLAN_LABEL[w.plan] || w.plan} plan`, true); e.target.value = IDEAS.writer; return; }
+    IDEAS.writer = e.target.value; const v = e.target.parentElement.querySelector('.v'); if (v) v.textContent = llmName() + ' ▾';
+  });
   on('#id-lang', 'onchange', (e) => { IDEAS.lang = e.target.value; const v = e.target.parentElement.querySelector('.v'); if (v) v.textContent = LANG_SHORT[IDEAS.lang] || 'BM'; });
   on('#id-go', 'onclick', send);
   if (IDEAS.autorun) { IDEAS.autorun = false; setTimeout(() => ideasRun(box), 0); }
@@ -451,7 +440,6 @@ function renderIdeas(box) {
   box.querySelectorAll('[data-unref]').forEach((b) => (b.onclick = () => { IDEAS.refs.splice(+b.dataset.unref, 1); renderIdeas(box); }));
   box.querySelectorAll('[data-idex]').forEach((b) => (b.onclick = () => { IDEAS.dump = IDEA_EX[+b.dataset.idex]; $('#id-dump').value = IDEAS.dump; $('#id-dump').focus(); }));
   box.querySelectorAll('[data-sb]').forEach((b) => (b.onclick = () => sbStart(box, r.ideas[+b.dataset.sb])));
-  box.querySelectorAll('[data-sbreal]').forEach((b) => (b.onclick = () => sbStart(box, r.ideas[+b.dataset.sbreal], true)));
   box.querySelectorAll('[data-gen]').forEach((b) => (b.onclick = () => genIdea(r.ideas[+b.dataset.gen], b)));
   box.querySelectorAll('[data-use]').forEach((b) => (b.onclick = () => useIdea(r.ideas[+b.dataset.use])));
   box.querySelectorAll('[data-save]').forEach((b) => (b.onclick = () => { saveIdea(r.ideas[+b.dataset.save], r.hooks?.[0]); b.disabled = true; b.textContent = '✓ Saved'; }));
@@ -465,69 +453,38 @@ const SB_TIER_MODEL = { motion: 'h3-turbo', lite: 'h3-turbo', fast: 'h3-turbo', 
 const SB_N = 4;
 const px = () => S.app.catalog.price || {};
 const sbPlanCost = () => (px().llm || 1) + SB_N * (px().imageSchnell || 1);
-const sbKeyCost = () => ((IDEAS.sb?.kq || 'lite') === 'full' ? px().image : px().imageLite) || 6;
+const sbKeyCost = () => (canUse('creator') ? px().image : px().imageLite) || 6;
 const sbRefresh = () => load().then(() => { const c = $('#credits'); if (c) c.textContent = `✦ ${S.app.credits.toLocaleString()}`; });
-async function sbStart(box, idea, real, series) {
-  const aspect = series ? series.aspect : ['9:16', '16:9', '1:1', '4:5'].includes(idea.settings?.aspect) ? idea.settings.aspect : '9:16';
-  IDEAS.sb = { idea, title: idea.title, look: series ? series.look : '', caption: '', hashtags: [], aspect, panels: [], busy: 'plan', tier: 'motion', est: null, series: series ? { id: series.id, name: series.name, n: (series.episodes || []).length + 1 } : null };
+async function sbStart(box, idea) {
+  const aspect = ['9:16', '16:9', '1:1', '4:5'].includes(idea.settings?.aspect) ? idea.settings.aspect : '9:16';
+  IDEAS.sb = { idea, title: idea.title, look: '', caption: '', hashtags: [], aspect, panels: [], busy: 'plan', tier: 'motion', est: null };
   renderSb(box);
   try {
-    let notes = IDEAS.refs.filter((x) => x.kind === 'doc').map((x) => x.text).join('\n\n').slice(0, 3000);
-    if (series) notes = `This is episode ${IDEAS.sb.series.n} of the series "${series.name}". Keep exactly the same characters, setting and style. What happened so far:\n${(series.episodes || []).map((e) => `Episode ${e.n}: ${e.recap}`).join('\n')}\nEnd this episode on a hook that makes people want the next one.`.slice(0, 3000);
-    const r = await api('/api/panels/plan', { prompt: idea.prompt, productId: IDEAS.productId, friendId: IDEAS.friendId, lang: IDEAS.lang, panels: SB_N, aspect, notes, ...(series ? { look: series.look } : {}) });
+    const notes = IDEAS.refs.filter((x) => x.kind === 'doc').map((x) => x.text).join('\n\n').slice(0, 3000);
+    const r = await api('/api/panels/plan', { prompt: idea.prompt, productId: IDEAS.productId, friendId: IDEAS.friendId, lang: IDEAS.lang, panels: SB_N, aspect, notes });
     Object.assign(IDEAS.sb, { title: r.title || idea.title, look: r.look, caption: r.caption, hashtags: r.hashtags, panels: r.panels.map((x) => ({ ...x, busy: null })), busy: null });
     sbRefresh();
-    if (series) { const row = await api(`/api/series/${series.id}/episodes`, { title: IDEAS.sb.title, recap: recapOf(IDEAS.sb) }).catch(() => null); if (row) IDEAS.sb.seriesRow = row; }
-  } catch (e) { IDEAS.sb = null; toast(e.message, true); if (e.code === 'credits' || e.code === 'plan') accountModal(); return renderIdeas(box); }
+  } catch (e) { IDEAS.sb = null; toast(e.message, true); if (e.code === 'credits' || e.code === 'plan') accountModal(); }
   renderIdeas(box);
-  if (real && IDEAS.sb) IDEAS.sb.panels.forEach((x, k) => sbDraw(box, k, 'keyframe'));
 }
-const recapOf = (b) => b.panels.map((x) => x.narration).filter(Boolean).join(' / ').slice(0, 900);
-async function saveRecap(b) { if (b.series && b.seriesSaved !== false) api(`/api/series/${b.series.id}/episodes/${b.series.n}`, { title: b.title, recap: recapOf(b) }).catch(() => {}); }
 async function sbDraw(box, k, kind) {
-  const b = IDEAS.sb, pn = typeof k === 'object' ? k : b.panels[k];
-  if (!pn || pn.busy) return;
+  const b = IDEAS.sb, pn = b.panels[k];
+  if (pn.busy) return;
   pn.busy = kind; renderSb(box);
   try {
-    const r = await api('/api/panels/draw', { kind, quality: b.kq || 'lite', visual: pn.visual, look: b.look, aspect: b.aspect, productId: IDEAS.productId, friendId: IDEAS.friendId, style: 'cinematic' });
-    pn.image = r.image; pn.kind = r.kind; pn.stale = false;
+    const r = await api('/api/panels/draw', { kind, visual: pn.visual, look: b.look, aspect: b.aspect, productId: IDEAS.productId, friendId: IDEAS.friendId, style: 'cinematic' });
+    pn.image = r.image; pn.kind = r.kind;
   } catch (e) { toast(e.message, true); if (e.code === 'credits' || e.code === 'plan') accountModal(); }
   pn.busy = null; if (IDEAS.sb === b) renderSb(box);
   sbRefresh();
 }
-// Hear a panel's line before any video is made. A recording stays valid only while the words, quality and language are unchanged.
-const voiceOk = (x, b) => !!(x.voice && x.voice.nar === x.narration && x.voice.tier === b.tier && x.voice.lang === IDEAS.lang);
-async function sbHear(box, k) {
-  const b = IDEAS.sb, pn = b.panels[k];
-  if (!pn || pn.vbusy || !String(pn.narration || '').trim()) return;
-  pn.vbusy = true; renderSb(box);
-  try {
-    const r = await api('/api/panels/voice', { text: pn.narration, tier: b.tier, lang: IDEAS.lang });
-    pn.voice = { url: r.url, dur: r.dur, nar: pn.narration, tier: b.tier, lang: IDEAS.lang };
-  } catch (e) { toast(e.message, true); if (e.code === 'credits' || e.code === 'plan') accountModal(); }
-  pn.vbusy = false; if (IDEAS.sb === b) { renderSb(box); sbEstimate(); }
-  sbRefresh();
-}
-let sbPlaying = null;
-function sbPlayAll() {
-  const b = IDEAS.sb; if (sbPlaying) { sbPlaying.pause(); sbPlaying = null; return; }
-  const q = b.panels.map((x, k) => [x, k]).filter(([x]) => voiceOk(x, b)); let n = 0;
-  const next = () => {
-    if (n >= q.length) { sbPlaying = null; document.querySelectorAll('.sb2-p.say').forEach((e) => e.classList.remove('say')); return; }
-    const [x, k] = q[n++]; const el = document.querySelector(`.sb2-p[data-pi="${k}"]`);
-    document.querySelectorAll('.sb2-p.say').forEach((e) => e.classList.remove('say')); el?.classList.add('say'); el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    sbPlaying = new Audio(x.voice.url); sbPlaying.onended = next; sbPlaying.onerror = next; sbPlaying.play().catch(next);
-  };
-  if (!q.length) return toast('Record the voices first');
-  next();
-}
 function sbBoard() {
   const b = IDEAS.sb;
-  return { title: b.title, caption: b.caption, hashtags: b.hashtags, scenes: b.panels.map((x) => ({ narration: x.narration, visual: x.visual, motion: x.motion, ...(x.kind === 'keyframe' && x.image ? { frame: x.image } : {}), ...(voiceOk(x, b) ? { voice: { url: x.voice.url, dur: x.voice.dur } } : {}) })) };
+  return { title: b.title, caption: b.caption, hashtags: b.hashtags, scenes: b.panels.map((x) => ({ narration: x.narration, visual: x.visual, motion: x.motion, ...(x.kind === 'keyframe' && x.image ? { frame: x.image } : {}) })) };
 }
 function sbJobInput() {
   const b = IDEAS.sb;
-  return { prompt: b.title, friendId: IDEAS.friendId, productId: IDEAS.productId, look: b.look, board: sbBoard(), ...(b.music ? { musicUrl: b.music.url, musicVol: b.music.vol } : {}), tier: b.tier, model: SB_TIER_MODEL[b.tier], aspect: b.aspect, style: 'cinematic', lang: IDEAS.lang, voice: IDEAS.lang === 'ms' ? 'mm:Lively_Girl' : 'el:Aria', captions: true };
+  return { prompt: b.title, friendId: IDEAS.friendId, productId: IDEAS.productId, look: b.look, board: sbBoard(), tier: b.tier, model: SB_TIER_MODEL[b.tier], aspect: b.aspect, style: 'cinematic', lang: IDEAS.lang, voice: IDEAS.lang === 'ms' ? 'mm:Lively_Girl' : 'el:Aria', captions: true };
 }
 let sbEstT;
 function sbEstimate() {
@@ -541,7 +498,6 @@ async function sbMake(box) {
   const b = IDEAS.sb;
   if (b.panels.some((x) => x.busy)) return toast('Wait for the panels to finish drawing', true);
   if (b.panels.some((x) => !x.narration.trim())) return toast('Every panel needs a line to say', true);
-  saveRecap(b);
   try {
     const job = await api('/api/jobs', { tool: 'story', input: sbJobInput() });
     S.jobs.unshift(job); renderFeed(); poll();
@@ -562,25 +518,16 @@ function renderSb(box) {
     ${loading ? `<div class="id-think"><i></i><b>Planning your shots and sketching them…</b><small>This takes about 20 seconds.</small></div>` : `
     <label class="l" for="sb-look">Same in every panel <small class="muted">· character, product, setting · edit it, then redraw</small></label>
     <textarea class="in" id="sb-look" rows="3" maxlength="800">${esc(b.look)}</textarea>
-    <div class="sb2-strip">${b.panels.map((x, k) => `<div class="sb2-p ${x.busy ? 'busy' : ''}" draggable="true" data-pi="${k}">
-        <div class="sb2-img" style="aspect-ratio:${aw}/${ah}">${x.image ? `<img src="${x.image}" alt="Panel ${k + 1}">` : `<div class="sb2-empty">Empty panel<br><small>Upload or draw</small></div>`}<span class="sb2-n">⠿ ${k + 1}</span>${x.stale ? '<span class="sb2-stale">Changed · redraw</span>' : ''}<span class="sb2-badge ${x.kind}">${x.kind === 'keyframe' ? 'Keyframe ✓' : 'Sketch'}</span>${x.busy ? `<div class="sb2-wait"><i class="spin"></i><small>${x.busy === 'keyframe' ? 'Drawing keyframe…' : 'Sketching…'}</small></div>` : ''}</div>
+    <div class="sb2-strip">${b.panels.map((x, k) => `<div class="sb2-p ${x.busy ? 'busy' : ''}">
+        <div class="sb2-img" style="aspect-ratio:${aw}/${ah}"><img src="${x.image}" alt="Panel ${k + 1}"><span class="sb2-n">${k + 1}</span><span class="sb2-badge ${x.kind}">${x.kind === 'keyframe' ? 'Keyframe ✓' : 'Sketch'}</span>${x.busy ? `<div class="sb2-wait"><i class="spin"></i><small>${x.busy === 'keyframe' ? 'Drawing keyframe…' : 'Sketching…'}</small></div>` : ''}</div>
         <textarea class="in" data-vis="${k}" rows="3" maxlength="600" aria-label="What happens in panel ${k + 1}">${esc(x.visual)}</textarea>
         <input class="in" data-nar="${k}" maxlength="400" value="${esc(x.narration)}" aria-label="Line spoken in panel ${k + 1}" placeholder="What is said">
-        <div class="sb2-vo">${x.vbusy ? '<small><i class="spin"></i> Recording…</small>' : voiceOk(x, b) ? `<audio controls preload="none" src="${x.voice.url}"></audio><button class="btn ghost" data-hear="${k}" title="Record again">↻</button>` : `<button class="btn" data-hear="${k}">🔊 Hear it <small>✦ ~2</small></button>${x.voice ? '<small class="sb2-stale2">Words changed</small>' : ''}`}</div>
         <div class="sb2-pa">
           ${x.kind === 'keyframe' ? `<button class="btn" data-redraw="${k}">Redraw <small>✦ ${sbKeyCost()}</small></button>` : `<button class="btn" data-redraw="${k}">Redraw <small>✦ ${px().imageSchnell || 1}</small></button><button class="btn pri" data-key="${k}">Real keyframe <small>✦ ${sbKeyCost()}</small></button>`}
-          <button class="btn" data-up="${k}" title="Use your own picture">Upload</button>${b.panels.length > 2 ? `<button class="btn" data-pdel="${k}" aria-label="Remove panel">✕</button>` : ''}
+          ${b.panels.length > 2 ? `<button class="btn" data-pdel="${k}" aria-label="Remove panel">✕</button>` : ''}
         </div></div>`).join('')}</div>
-    <div class="sb2-chat"><input class="in" id="sb-ed" maxlength="600" placeholder='Tell Kravitas what to change, e.g. "make scene 2 funnier"' ${b.busy ? 'disabled' : ''}><button class="btn pri" id="sb-edgo">Change <small>✦ ${px().llm || 1}</small></button></div>
-    <div class="sb2-chips">${['Stronger hook in scene 1', 'Make it funnier', 'Shorter spoken lines', 'Add a twist at the end', 'More urgent call to action'].map((x, i) => `<button class="chip" data-edchip="${i}">${x}</button>`).join('')}</div>
-    ${b.panels.some((x) => x.stale) ? `<button class="btn" id="sb-stale">Redraw the ${b.panels.filter((x) => x.stale).length} changed panel${b.panels.filter((x) => x.stale).length === 1 ? '' : 's'} <small>✦ ${b.panels.filter((x) => x.stale).reduce((n, x) => n + (x.kind === 'keyframe' ? sbKeyCost() : (px().imageSchnell || 1)), 0)}</small></button>` : ''}
-    <div class="sb2-series">${b.series ? `<span class="mtag">🎭 ${esc(b.series.name)} · Episode ${b.series.n}</span><button class="btn" id="sb-next">Next episode →</button>` : `<button class="btn" id="sb-series" title="Keep this character and look for the next episodes">🎭 Save as a series</button><span class="sb2-help">Keeps this character and look, so episode 2 stays consistent.</span>`}</div>
-    <div class="sb2-add"><button class="btn" id="sb-add">＋ Add panel</button><span class="sb2-help">Drag panels by the number to reorder them.</span><button class="btn" id="sb-hearall">🔊 Record all voices</button><button class="btn" id="sb-playall">▶ Play in order</button><input type="file" id="sb-file" accept="image/*" hidden></div>
-    <div class="sb2-music"><button class="btn" id="sb-music">${b.music ? '♪ Change soundtrack' : '♪ Add a soundtrack'}</button><input type="file" id="sb-mfile" accept="audio/*" hidden>
-      ${b.music ? `<span class="sb2-help">${esc(b.music.name)}</span><label class="sb2-vol">Volume <input type="range" id="sb-mvol" min="5" max="60" value="${b.music.vol}"></label><button class="link" id="sb-mrm">Remove</button>` : '<span class="sb2-help">Optional. Your own track plays under the voice-over. MP3, WAV or M4A, up to 3 MB.</span>'}</div>
     <div class="sb2-bar">
-      <div><label class="l" for="sb-kq">Image model</label><select class="in" id="sb-kq"><option value="lite" ${(b.kq || 'lite') === 'lite' ? 'selected' : ''}>Standard · Seedream 4 (cheaper)</option><option value="full" ${b.kq === 'full' ? 'selected' : ''} ${canUse('creator') ? '' : 'disabled'}>Best · Nano Banana 2${canUse('creator') ? '' : ' · 🔒 Creator'}</option></select>
-        <label class="l" for="sb-tier">Video quality</label>
+      <div><label class="l" for="sb-tier">Video quality</label>
         <select class="in" id="sb-tier">${Object.keys(tiers).map((k) => { const need = tiers[k].plan, lock = need && !canUse(need); return `<option value="${k}" ${k === b.tier ? 'selected' : ''}>${esc(TIER_NAME[k] || tiers[k].label)} · ${esc(TIER_DESC[k] || '')}${lock ? ` · 🔒 ${PLAN_LABEL[need]}` : ''}</option>`; }).join('')}</select></div>
       <div class="sb2-go">
         ${keyed < b.panels.length ? `<button class="btn" id="sb-all">Real keyframes for all <small>✦ ${(b.panels.length - keyed) * sbKeyCost()}</small></button>` : ''}
@@ -594,72 +541,12 @@ function renderSb(box) {
   $('#sb-back').onclick = () => { IDEAS.sb = null; renderIdeas(box); };
   $('#sb-title').oninput = (e) => { b.title = e.target.value; };
   $('#sb-look').oninput = (e) => { b.look = e.target.value; };
-  on('[data-vis]', (el) => (el.oninput = () => { const pn = b.panels[+el.dataset.vis]; pn.visual = el.value; if (pn.image && !pn.stale) { pn.stale = true; const t = el.closest('.sb2-p').querySelector('.sb2-img'); if (t && !t.querySelector('.sb2-stale')) t.insertAdjacentHTML('beforeend', '<span class="sb2-stale">Changed · redraw</span>'); } }));
-  on('[data-hear]', (el) => (el.onclick = () => sbHear(box, +el.dataset.hear)));
+  on('[data-vis]', (el) => (el.oninput = () => { b.panels[+el.dataset.vis].visual = el.value; }));
   on('[data-nar]', (el) => (el.oninput = () => { b.panels[+el.dataset.nar].narration = el.value; sbEstimate(); }));
-  on('[data-redraw]', (el) => (el.onclick = () => sbDraw(box, +el.dataset.redraw, b.panels[+el.dataset.redraw].kind || 'sketch')));
+  on('[data-redraw]', (el) => (el.onclick = () => sbDraw(box, +el.dataset.redraw, b.panels[+el.dataset.redraw].kind)));
   on('[data-key]', (el) => (el.onclick = () => sbDraw(box, +el.dataset.key, 'keyframe')));
   on('[data-pdel]', (el) => (el.onclick = () => { b.panels.splice(+el.dataset.pdel, 1); b.est = null; renderSb(box); sbEstimate(); }));
-  on('[data-up]', (el) => (el.onclick = () => { b.upTo = b.panels[+el.dataset.up]; $('#sb-file').click(); }));
-  $('#sb-file').onchange = async (e) => {
-    const f = e.target.files[0], pn = b.upTo; e.target.value = '';
-    if (!f || !pn) return;
-    pn.busy = 'sketch'; renderSb(box);
-    try { const { url } = await api('/api/upload', { dataUrl: await fileToDataUrl(f) }); pn.image = url; pn.kind = 'keyframe'; }
-    catch (err) { toast(err.message, true); }
-    pn.busy = null; renderSb(box); b.est = null; sbEstimate();
-  };
-  const EDS = ['Stronger hook in scene 1', 'Make it funnier', 'Shorter spoken lines', 'Add a twist at the end', 'More urgent call to action'];
-  on('[data-edchip]', (el) => (el.onclick = () => { $('#sb-ed').value = EDS[+el.dataset.edchip]; $('#sb-ed').focus(); }));
-  const doEdit = async () => {
-    const instruction = $('#sb-ed').value.trim(); if (!instruction || b.busy) return toast('Say what to change first', true);
-    $('#sb-edgo').disabled = true; $('#sb-edgo').textContent = 'Changing…';
-    try {
-      const r = await api('/api/panels/edit', { instruction, look: b.look, lang: IDEAS.lang, panels: b.panels.map((x) => ({ visual: x.visual, motion: x.motion, narration: x.narration })) });
-      for (const c of r.changes) { const pn = b.panels[c.index]; if (!pn) continue; if (c.visual) pn.visual = c.visual; if (c.motion) pn.motion = c.motion; if (c.narration) pn.narration = c.narration; if (pn.image) pn.stale = true; }
-      b.est = null; renderSb(box); sbEstimate(); load().then(() => refreshSides && refreshSides());
-      toast(`${r.changes.length === b.panels.length ? 'Changed every panel' : `Changed panel ${r.changes.map((c) => c.index + 1).join(', ')}`}${r.note ? '. ' + r.note : ''}`);
-    } catch (e) { toast(e.message, true); if (e.code === 'credits' || e.code === 'plan') accountModal(); renderSb(box); }
-  };
-  $('#sb-edgo').onclick = doEdit;
-  $('#sb-ed').onkeydown = (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); doEdit(); } };
-  $('#sb-stale') && ($('#sb-stale').onclick = () => b.panels.slice().forEach((x) => x.stale && sbDraw(box, x, x.kind === 'keyframe' ? 'keyframe' : 'sketch')));
-  $('#sb-music').onclick = () => $('#sb-mfile').click();
-  $('#sb-mfile').onchange = async (e) => {
-    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
-    if (f.size > 3 * 1024 * 1024) return toast('That track is over 3 MB. Trim it or use a lower-bitrate MP3.', true);
-    $('#sb-music').textContent = 'Uploading…';
-    try { const dataUrl = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(new Error('Could not read that file')); r.readAsDataURL(f); });
-      const { url } = await api('/api/upload-audio', { dataUrl }); b.music = { url, name: f.name.slice(0, 40), vol: 25 }; toast('Soundtrack added'); }
-    catch (err) { toast(err.message, true); }
-    renderSb(box); sbEstimate();
-  };
-  $('#sb-mvol') && ($('#sb-mvol').oninput = (e) => { b.music.vol = +e.target.value; });
-  $('#sb-mrm') && ($('#sb-mrm').onclick = () => { b.music = null; renderSb(box); });
-  $('#sb-series') && ($('#sb-series').onclick = async (e) => {
-    e.currentTarget.disabled = true;
-    try {
-      const row = await api('/api/series', { name: b.title, look: b.look, friendId: IDEAS.friendId, productId: IDEAS.productId, aspect: b.aspect, lang: IDEAS.lang, episodes: [{ title: b.title, recap: recapOf(b) }] });
-      b.series = { id: row.id, name: row.name, n: 1 }; toast('Saved as a series. Find it under Series in the menu.'); renderSb(box);
-    } catch (err) { toast(err.message, true); e.currentTarget.disabled = false; }
-  });
-  $('#sb-next') && ($('#sb-next').onclick = async () => {
-    await saveRecap(b);
-    try { const all = await api('/api/series'); const row = all.find((x) => x.id === b.series.id); if (row) nextEpisode(row); } catch (err) { toast(err.message, true); }
-  });
-  $('#sb-kq').onchange = (e) => { b.kq = e.target.value; renderSb(box); };
-  $('#sb-hearall').onclick = () => Promise.all(b.panels.map((x, k) => (voiceOk(x, b) || !String(x.narration || '').trim() ? null : sbHear(box, k))));
-  $('#sb-playall').onclick = sbPlayAll;
-  $('#sb-add').onclick = () => { b.panels.push({ visual: '', narration: '', motion: 'slow push-in', image: '', kind: 'sketch', busy: null }); b.est = null; renderSb(box); sbEstimate(); };
-  let dragFrom = null;
-  on('.sb2-p', (el) => {
-    el.ondragstart = (e) => { dragFrom = +el.dataset.pi; el.classList.add('drag'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(dragFrom)); };
-    el.ondragend = () => el.classList.remove('drag');
-    el.ondragover = (e) => { e.preventDefault(); el.classList.add('over'); };
-    el.ondragleave = () => el.classList.remove('over');
-    el.ondrop = (e) => { e.preventDefault(); const to = +el.dataset.pi; if (dragFrom == null || dragFrom === to) return renderSb(box); const [m] = b.panels.splice(dragFrom, 1); b.panels.splice(to, 0, m); dragFrom = null; b.est = null; renderSb(box); sbEstimate(); };
-  });
-  $('#sb-all') && ($('#sb-all').onclick = () => b.panels.slice().forEach((x) => x.kind !== 'keyframe' && sbDraw(box, x, 'keyframe')));
+  $('#sb-all') && ($('#sb-all').onclick = () => b.panels.forEach((x, k) => x.kind !== 'keyframe' && sbDraw(box, k, 'keyframe')));
   $('#sb-tier').onchange = (e) => {
     const need = tiers[e.target.value]?.plan;
     if (need && !canUse(need)) { toast(`${TIER_NAME[e.target.value]} is on the ${PLAN_LABEL[need]} plan`); e.target.value = b.tier; return accountModal(); }
@@ -728,7 +615,7 @@ function presetCard() {
     <div class="zz-tpls">${list.map((x) => { const on = !!x.set && S.preset[S.mode] === x.id && Object.entries(x.set).every(([k, v]) => k === 'prompt' || f[k] === v); return `<button class="zz-opt ${on ? 'on' : ''}" data-preset="${x.id}"><b>${x.e} ${esc(x.t)}</b></button>`; }).join('')}</div>`;
 }
 function styleCard() {
-  const cur = F().style;
+  const cur = S.mode === 'video' ? SHOT.style : F().style;
   return `<h2>Visual style</h2><div class="zz-styles">${HOME_STYLES.map((x) => `<button class="zz-sty ${x[0] === cur ? 'on' : ''}" data-st="${x[0]}" title="${esc(x[2])}">${x[1]}</button>`).join('')}</div>`;
 }
 const SIDES = {
@@ -770,9 +657,34 @@ function mainStage() {
 }
 function renderMain() {
   const box = $('#zz-main'); if (!box) return;
+  if (S.mode === 'video') {
+    const c = S.app.catalog, models = c.videoModels || {}, mp = c.modelPlan || {};
+    box.innerHTML = `
+      <div class="zz-stagewrap"><div class="zz-stage" id="hs-stage" style="aspect-ratio:${SHOT.aspect.replace(':', '/')}">${stageHTML('PREVIEW · ' + (HOME_STYLES.find((x) => x[0] === SHOT.style)?.[1] || ''))}</div></div>
+      <label class="l" for="hs-p">Scene prompt</label>
+      <textarea class="in" id="hs-p" rows="2" maxlength="1500">${esc(SHOT.prompt)}</textarea>
+      <div class="zz-row">
+        <div><label class="l" for="hs-cam">Camera</label><select class="in" id="hs-cam">${Object.entries(CAM).map(([k, l]) => `<option value="${k}" ${k === SHOT.camera ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+        <div><label class="l" for="hs-md">Model</label><select class="in" id="hs-md">${Object.entries(models).map(([k, m]) => { const lock = mp[k] && !canUse(mp[k]); return `<option value="${k}" ${k === SHOT.model ? 'selected' : ''}>${esc(MODEL_NAME[k] || m.label)}${lock ? ` · 🔒 ${PLAN_LABEL[mp[k]]} plan` : ''}</option>`; }).join('')}</select></div>
+        <div><label class="l" for="hs-ar">Format</label><select class="in" id="hs-ar">${Object.entries(HOME_ASPECT).map(([k, l]) => `<option value="${k}" ${k === SHOT.aspect ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+      </div>
+      <button class="go zz-go" id="hs-go">Generate shot <span class="c" id="hs-est"></span></button>`;
+    const preview = () => { if (!SHOT.job) $('#hs-stage').innerHTML = stageHTML('PREVIEW · ' + (HOME_STYLES.find((x) => x[0] === SHOT.style)?.[1] || '')); shotEstimate(); };
+    studioPreview = preview;
+    $('#hs-p').oninput = (e) => { SHOT.prompt = e.target.value; clearTimeout(preview.t); preview.t = setTimeout(preview, 300); };
+    $('#hs-cam').onchange = (e) => { SHOT.camera = e.target.value; preview(); };
+    $('#hs-md').onchange = (e) => {
+      const v = e.target.value, need = mp[v];
+      if (need && !canUse(need)) { e.target.value = SHOT.model; toast(`${models[v]?.label || 'That model'} is on the ${PLAN_LABEL[need]} plan`); return accountModal(); }
+      SHOT.model = v; shotEstimate(); $('#zz-model').innerHTML = modelCard();
+    };
+    $('#hs-ar').onchange = (e) => { SHOT.aspect = e.target.value; $('#hs-stage').style.aspectRatio = SHOT.aspect.replace(':', '/'); preview(); };
+    $('#hs-go').onclick = (e) => shotGo(e.currentTarget);
+    if (SHOT.job) studioTick();
+    shotEstimate();
+    return;
+  }
   if (S.mode === 'schedule') { box.innerHTML = '<div id="sched"></div>'; renderSchedule(); return; }
-  if (S.mode === 'templates') return window.renderTemplates(box);
-  if (S.mode === 'series') return renderSeries(box);
   if (S.mode === 'edit') return renderEditor(box);
   if (S.mode === 'ideas') return renderIdeas(box);
   box.innerHTML = `<div class="fl-head"><h1>${FL_TITLE[S.mode] || ''}</h1><p>${HERO[S.mode]?.[1] || ''}</p></div>
@@ -783,55 +695,24 @@ function renderMain() {
   box.querySelectorAll('[data-flex]').forEach((b) => (b.onclick = () => { F().prompt = FL_EX[S.mode][+b.dataset.flex]; renderComposer(true); }));
   renderComposer();
 }
-function nextEpisode(row) {
-  const n = (row.episodes || []).length + 1;
-  modal(`<h2>Episode ${n} of ${esc(row.name)}</h2><p class="muted">Same character, same look. What should happen next? Leave it empty and Kravitas will continue the story with a new twist.</p>
-    <textarea class="in" id="ep-dir" rows="3" maxlength="600" placeholder="e.g. She confronts her boss, but the letter is gone"></textarea>
-    <div class="row" style="margin-top:12px;gap:8px"><button class="btn pri" id="ep-go">Plan episode ${n} <small>✦ ${(px().llm || 1) + SB_N * (px().imageSchnell || 1)}</small></button><button class="btn" id="ep-x">Cancel</button></div>`);
-  $('#ep-x').onclick = closeModal;
-  $('#ep-go').onclick = () => {
-    const dir = $('#ep-dir').value.trim() || 'Continue the story with a new development and end on another cliffhanger';
-    closeModal();
-    IDEAS.productId = row.productId; IDEAS.friendId = row.friendId; IDEAS.lang = row.lang || IDEAS.lang;
-    IDEAS.result = null; IDEAS.chat = [];
-    setMode('ideas'); renderAll();
-    sbStart($('#zz-main'), { title: `${row.name} · Episode ${n}`, prompt: `Episode ${n} of ${row.name}: ${dir}`, settings: {} }, false, row);
-  };
-}
-async function renderSeries(box) {
-  box.innerHTML = '<div class="fl-head"><h1>Series</h1><p>Characters and stories you continue. Every new episode keeps the same look.</p></div><div id="se-list" class="se-list"><p class="muted">Loading…</p></div>';
-  let list = [];
-  try { list = await api('/api/series'); } catch (e) { $('#se-list').innerHTML = `<p class="muted">${esc(e.message)}</p>`; return; }
-  $('#se-list').innerHTML = list.length ? list.map((x) => `<article class="se"><div class="se-h"><b>${esc(x.name)}</b><span class="muted">${(x.episodes || []).length} episode${(x.episodes || []).length === 1 ? '' : 's'}</span></div>
-      <p class="se-look">${esc(x.look || '')}</p>
-      <ol class="se-eps">${(x.episodes || []).map((e) => `<li><b>${esc(e.title || 'Episode ' + e.n)}</b><small>${esc(e.recap || '')}</small></li>`).join('')}</ol>
-      <div class="row" style="gap:8px"><button class="btn pri" data-sn="${x.id}">Next episode →</button><button class="btn" data-sd="${x.id}">Delete</button></div></article>`).join('')
-    : '<div class="empty">No series yet. Make a storyboard in Ideas, then tap "Save as a series" to keep the character for the next episodes.</div>';
-  box.querySelectorAll('[data-sn]').forEach((b) => (b.onclick = () => nextEpisode(list.find((x) => x.id === b.dataset.sn))));
-  box.querySelectorAll('[data-sd]').forEach((b) => (b.onclick = async () => { if (!confirm('Delete this series? Your videos stay in All media.')) return; await api(`/api/series/${b.dataset.sd}`, null, 'DELETE').catch((e) => toast(e.message, true)); renderSeries(box); }));
-}
 let studioPreview = () => {};
 // ---------- workspace shell: tool rail · work area · settings panel ----------
 const RAIL = [
-  ['Create', [['ideas', '✨', 'Ideas'], ['templates', '🧩', 'Templates'], ['ad', '🛍', 'Ad'], ['image', '🖼', 'Image'], ['video', '🎬', 'Video'], ['voice', '🎙', 'Voice'], ['edit', '✂', 'Edit'], ['schedule', '📅', 'Schedule'], ['soon3d', '🧊', '3D', 'Coming soon']]],
-  ['Library', [['media', '▦', 'All media'], ['chars', '☺', 'Characters'], ['products', '▣', 'Products'], ['series', '🎭', 'Series']]],
+  ['Create', [['ideas', '✨', 'Ideas'], ['ad', '🛍', 'Ad'], ['image', '🖼', 'Image'], ['video', '🎬', 'Video'], ['voice', '🎙', 'Voice'], ['edit', '✂', 'Edit'], ['schedule', '📅', 'Schedule'], ['soon3d', '🧊', '3D', 'Coming soon']]],
+  ['Library', [['media', '▦', 'All media'], ['chars', '☺', 'Characters'], ['products', '▣', 'Products']]],
 ];
 const LIB_MODES = new Set(['media', 'chars', 'products']);
-const COMPOSER_MODES = new Set(['ad', 'image', 'video', 'voice']);
-const FL_TITLE = { ad: 'Make an ad', image: 'Make an image', video: 'Make a video', voice: 'Make a voice-over' };
-const FL_NOUN = { ad: 'ads', image: 'images', video: 'videos', voice: 'voice-overs' };
+const COMPOSER_MODES = new Set(['ad', 'image', 'voice']);
+const FL_TITLE = { ad: 'Make an ad', image: 'Make an image', voice: 'Make a voice-over' };
+const FL_NOUN = { ad: 'ads', image: 'images', voice: 'voice-overs' };
 const FL_EX = {
   ad: ['50% off today only, free shipping', 'Halal and safe for sensitive skin', 'New arrival, limited stock'],
-  video: ['Slow orbit around the product on a marble table, soft window light', 'A creator unboxes the product and smiles at the camera', 'Hand picks up the product, steam rising, cosy cafe'],
   image: ['Product on a marble table, soft morning light', 'Flat lay with flowers, top view', 'A young woman holding the product in a cafe'],
   voice: ['Hai semua! Hari ni saya nak kongsi satu produk yang memang best.', 'Limited time offer. Tap the yellow basket now!', 'Jom cuba sekarang, stok terhad!'],
 };
-const TIER_SHORT = { motion: 'Motion style', lite: 'MiniMax H3 Turbo', fast: 'MiniMax H3 Turbo HD', studio: 'VEED Fabric', premium: 'OmniHuman 1.5' };
 const TIER_MODEL = { motion: ['Motion style (animated photo + voice)', 'Not full AI video: your photo moves with voice and captions'], lite: ['MiniMax H3 Turbo', 'minimax/h3-max-turbo/image-to-video'], fast: ['MiniMax H3 Turbo HD', 'minimax/h3-max-turbo/image-to-video'], studio: ['VEED Fabric lip-sync', 'veed/fabric-1.0'], premium: ['OmniHuman 1.5', 'fal-ai/bytedance/omnihuman/v1.5'] };
 const VIDEO_FAL = { 'h3-turbo': 'minimax/h3-max-turbo/image-to-video', 'seedance-fast': 'bytedance/seedance-2.0/fast/image-to-video', 'kling-std': 'fal-ai/kling-video/v3/standard/image-to-video', 'kling-pro': 'fal-ai/kling-video/v3/pro/image-to-video' };
 // Which AI model the current tool will use (all run on fal.ai).
-// Demo notices are for the owner on their own PC only; visitors on a shared link never see them.
-const OWNER_LOCAL = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
 const LANG_SHORT = { ms: 'BM', en: 'EN', manglish: 'BM+EN' };
 function llmName() {
   const W = S.app.catalog?.writers; if (W && W[IDEAS.writer]) return W[IDEAS.writer].name;
@@ -845,7 +726,7 @@ function llmName() {
 function modelInfo() {
   const c = S.app.catalog, m = S.mode;
   if (m === 'ad') { const k = F().tier || 'lite'; return { name: TIER_MODEL[k]?.[0] || k, fal: TIER_MODEL[k]?.[1], note: `${TIER_NAME[k] || k} quality. ${TIER_DESC[k] || ''}`, extra: 'Script: AI writer · Picture: ' + (c.tiers?.[k] && ['fast', 'studio', 'premium'].includes(k) ? 'Nano Banana 2' : 'Seedream 4') + ' · Voice: ElevenLabs or MiniMax' }; }
-  if (m === 'video') { const k = F().model || 'h3-turbo'; return { name: c.videoModels?.[k]?.label || k, fal: VIDEO_FAL[k], note: c.videoModels?.[k]?.tag || '', extra: 'Start picture: Nano Banana 2' }; }
+  if (m === 'video') { const k = SHOT.model; return { name: c.videoModels?.[k]?.label || k, fal: VIDEO_FAL[k], note: c.videoModels?.[k]?.tag || '', extra: 'Start picture: Nano Banana 2' }; }
   if (m === 'image') return F().quality === 'lite' ? { name: 'Seedream 4', fal: 'fal-ai/bytedance/seedream/v4', note: 'Good quality and cheaper. Upgrade to Creator for the sharpest model.' } : { name: 'Nano Banana 2', fal: 'fal-ai/nano-banana-2', note: 'Sharpest images. Keeps your character and product when you add them.' };
   if (m === 'voice') {
     const f = F();
@@ -858,7 +739,12 @@ function modelInfo() {
   if (m === 'edit') return { name: 'No AI needed to join clips', fal: '', note: 'New voice-overs use ElevenLabs or MiniMax. New music uses ElevenLabs Music.' };
   return { name: 'No AI model', fal: '', note: 'Scheduling and posting do not use credits.' };
 }
-function modelCard() { return ''; } // the right-hand Model card is gone; the model is named in each chatbox instead
+function modelCard() {
+  const i = modelInfo();
+  return `<div class="zz-top"><h2>Model</h2><button class="link" data-open="models">All models</button></div>
+    <div class="mdl"><b>${esc(i.name)}</b>${i.fal ? `<code>${esc(i.fal)}</code>` : ''}<small>${esc(i.note)}</small>${i.extra ? `<small>${esc(i.extra)}</small>` : ''}</div>
+    <p class="mdl-foot">Runs on fal.ai · ${S.app.mode === 'local' ? 'everything unlocked on your PC' : `your plan: ${access() === 'free' ? 'Free trial' : PLAN_LABEL[access()]}`}</p>`;
+}
 function galleryHTML() {
   const want = TOOL_JOBS[S.mode] || [];
   const list = S.jobs.filter((j) => want.includes(j.tool)).slice(0, 8);
@@ -869,8 +755,7 @@ function galleryHTML() {
   }).join('');
 }
 function libraryPage() {
-  if (S.mode === 'media') return `<div class="fl-head"><h1>All media</h1><p>Everything you have made. Tap one to open, post or edit it. Star the keepers.</p></div>
-    <div class="lib-chips" id="lib-chips">${[['all', 'All'], ['video', 'Videos'], ['image', 'Images'], ['fav', '★ Favourites']].map(([k, l]) => `<button class="chip ${(S.lf || 'all') === k ? 'on' : ''}" data-lf="${k}">${l}</button>`).join('')}</div>`;
+  if (S.mode === 'media') return `<div class="fl-head"><h1>All media</h1><p>Everything you have made. Tap one to open, post or edit it.</p></div>`;
   const chars = S.mode === 'chars';
   const list = chars ? S.friends : S.products;
   return `<div class="fl-head"><h1>${chars ? 'Characters' : 'Products'}</h1><p>${chars ? 'The faces Kravitas keeps the same in every image and video.' : 'What you sell. Add each product once, then pick it in any tool.'}</p></div>
@@ -908,7 +793,7 @@ document.addEventListener('click', (e) => {
   const t = e.target;
   const fr = t.closest('#presets [data-fr]');
   if (fr) {
-    if (S.mode === 'video') { F().friendId = fr.dataset.fr; fillSides(); return renderComposer(); }
+    if (S.mode === 'video') { SHOT.friendId = fr.dataset.fr; fillSides(); return studioPreview(); }
     F().friendId = F().friendId === fr.dataset.fr ? null : fr.dataset.fr; fillSides(); renderComposer(); if (S.mode === 'ad') $('#zz-main') && renderMain(); return;
   }
   const pd = t.closest('#presets [data-pd]');
@@ -917,7 +802,7 @@ document.addEventListener('click', (e) => {
   if (tp) { const x = HOME_TPLS[+tp.dataset.tpl]; Object.assign(SHOT, { prompt: x[2], camera: x[3], style: x[4] }); fillSides(); return renderMain(); }
   const st = t.closest('#presets [data-st]');
   if (st) {
-    if (S.mode === 'video') { F().style = st.dataset.st; fillSides(); return renderComposer(); }
+    if (S.mode === 'video') { SHOT.style = st.dataset.st; fillSides(); return studioPreview(); }
     F().style = st.dataset.st; fillSides(); return renderMain();
   }
   const pj = t.closest('#presets [data-postjob]');
@@ -1222,22 +1107,11 @@ function creditsModal(a, ledger) {
   m.querySelectorAll('[data-pack]').forEach((b) => (b.onclick = go({ pack: b.dataset.pack })));
 }
 
-// header search + library filters: filter visible media cards by title / type / favourite
-window.applyLibFilter = () => {
-  const q = ($('#fl-q')?.value || '').trim().toLowerCase(), f = S.mode === 'media' ? (S.lf || 'all') : 'all';
-  let n = 0;
-  document.querySelectorAll('#fl-gal .hs-card, #hs-strip .hs-card, #feed .grid > *').forEach((el) => {
-    const okT = f === 'all' || (f === 'fav' ? el.dataset.fav === '1' : el.dataset.t === f);
-    const ok = okT && (!q || el.textContent.toLowerCase().includes(q));
-    el.style.display = ok ? '' : 'none'; if (ok) n++;
-  });
-  let e = $('#lib-none');
-  if (S.mode === 'media' && !n && (q || f !== 'all')) { if (!e) { e = document.createElement('div'); e.id = 'lib-none'; e.className = 'empty'; $('#feed')?.append(e); } e.textContent = f === 'fav' && !q ? 'No favourites yet. Tap the star on anything you want to keep.' : 'Nothing matches that.'; } else e && e.remove();
-};
-document.addEventListener('input', (e) => { if (e.target.id === 'fl-q') window.applyLibFilter(); });
-document.addEventListener('click', (e) => {
-  const b = e.target.closest && e.target.closest('[data-lf]'); if (!b) return;
-  S.lf = b.dataset.lf; document.querySelectorAll('[data-lf]').forEach((x) => x.classList.toggle('on', x === b)); window.applyLibFilter();
+// header search: filter visible media cards by title
+document.addEventListener('input', (e) => {
+  if (e.target.id !== 'fl-q') return;
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll('#fl-gal .hs-card, #hs-strip .hs-card, #feed .grid > *').forEach((el) => { el.style.display = !q || el.textContent.toLowerCase().includes(q) ? '' : 'none'; });
 });
 
 document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-soon]'); if (b) toast(b.dataset.soon + ' is coming soon: turn a product photo into a spinning 3D shot.'); });

@@ -75,7 +75,7 @@ function toast(msg, bad) {
 
 // ---------- vocab ----------
 const LANG = { ms: 'Bahasa Melayu', en: 'English', manglish: 'Manglish' };
-const CAM = { static: 'Static', 'dolly-in': 'Dolly in', 'dolly-out': 'Dolly out', pan: 'Pan', orbit: 'Orbit', crane: 'Crane up', handheld: 'Handheld', crash: 'Crash zoom', fpv: 'FPV drone', 'tilt-up': 'Tilt up', 'tilt-down': 'Tilt down', 'zoom-out': 'Zoom out', tracking: 'Tracking', 'low-angle': 'Low angle hero', 'top-down': 'Top-down', whip: 'Whip pan', rack: 'Rack focus', 'dolly-zoom': 'Dolly zoom' };
+const CAM = { static: 'Static', 'dolly-in': 'Dolly in', 'dolly-out': 'Dolly out', pan: 'Pan', orbit: 'Orbit', crane: 'Crane up', handheld: 'Handheld', crash: 'Crash zoom', fpv: 'FPV drone' };
 const STYLE = { photo: 'Realistic', cinematic: 'Cinematic', ugc: 'Phone / UGC', studio: 'Studio', '3d': '3D animated', anime: 'Anime', clay: 'Clay', storybook: 'Storybook' };
 const PLATFORM = { tiktok: 'TikTok Shop', shopee: 'Shopee', lazada: 'Lazada', instagram: 'Reels' };
 
@@ -91,8 +91,6 @@ const MODES = {
   edit: { label: 'Edit' }, // the editor has its own main card (no composer)
   ideas: { label: 'Ideas' }, // brainstorm dump → prompts, saved to the library
   schedule: { label: 'Schedule', page: true },
-  templates: { label: 'Templates', page: true },
-  series: { label: 'Series', page: true },
   media: { label: 'All media' }, chars: { label: 'Characters' }, products: { label: 'Products' }, // library pages in the sidebar
 };
 const TOOL_MODE = Object.fromEntries(Object.entries(MODES).filter(([, v]) => v.tool).map(([m, v]) => [v.tool, m]));
@@ -141,13 +139,13 @@ const PRESETS = {
 };
 
 const DEFAULTS = {
-  video: () => ({ prompt: '', friendId: null, productId: null, startImage: null, endImage: null, camera: 'dolly-in', style: 'cinematic', model: 'h3-turbo', duration: 5, aspect: '9:16', audio: false }),
-  image: () => ({ prompt: '', friendId: null, productId: null, style: 'photo', aspect: '9:16', count: 1, quality: 'lite' }),
+  video: () => ({ prompt: '', friendId: null, productId: null, startImage: null, camera: 'dolly-in', style: 'cinematic', model: 'h3-turbo', duration: 5, aspect: '9:16', audio: false }),
+  image: () => ({ prompt: '', friendId: null, productId: null, style: 'photo', aspect: '9:16', count: 1, quality: canUse('creator') ? 'full' : 'lite' }),
   ad: () => ({ prompt: '', friendId: null, productId: null, format: 'talking', tier: startTier(), approve: true, variants: 1, angle: 'review', platform: 'tiktok', lang: 'ms', seconds: 8, voice: 'mm:Lively_Girl', captions: true }),
   talk: () => ({ prompt: '', friendId: null, image: null, textMode: 'script', tier: startTier(), lang: 'ms', voice: 'mm:Lively_Girl', captions: true, seconds: 8 }),
   story: () => ({ prompt: '', friendId: null, scenes: 4, tier: 'motion', aspect: '9:16', style: 'cinematic', lang: 'en', voice: 'el:Aria', model: 'h3-turbo', captions: true }),
   voice: () => ({ prompt: '', kind: 'tts', voice: 'el:Aria', voiceEngine: 'v3', emotion: 'neutral', speed: 1, lang: 'ms', length: 30 }),
-  home: () => ({}), schedule: () => ({}), templates: () => ({}), series: () => ({}),
+  home: () => ({}), schedule: () => ({}),
 };
 
 const PLACEHOLDER = {
@@ -336,8 +334,6 @@ function bindBrain(m, b) {
   }));
 }
 
-const favSet = () => { try { return new Set(JSON.parse(localStorage.getItem('kv-favs') || '[]')); } catch { return new Set(); } };
-const toggleFav = (id) => { const f = favSet(); f.has(id) ? f.delete(id) : f.add(id); try { localStorage.setItem('kv-favs', JSON.stringify([...f])); } catch {} return f.has(id); };
 function thumbOf(j) {
   const v = [...j.outputs].reverse().find((o) => o.type === 'video');
   const i = j.outputs.find((o) => o.type === 'image');
@@ -355,10 +351,10 @@ function cardHTML(j) {
     const cur = j.steps.find((s) => s.status === 'running') || j.steps[j.steps.length - 1];
     const pct = j.steps.length ? Math.round((j.steps.filter((s) => s.status === 'done').length / (j.steps.length + 1)) * 100) : 5;
     const st = j.status === 'error' ? `Failed: ${j.error || ''}` : j.status === 'running' ? `${cur?.label || 'Starting'}…${cur?.note ? ' · ' + cur.note : ''}` : j.outputs.some((o) => o.type === 'audio') ? '🎧 Audio ready · tap to play' : '📝 Script ready';
-    return `<div class="card ${j.status === 'running' ? 'run' : j.status === 'error' ? 'err' : ''}" data-job="${j.id}"><div class="box" style="aspect-ratio:${ratio}"><span class="tag">${label}</span><b>${esc(j.title)}</b><span class="st">${esc(st)}</span>${j.status === 'error' && j.input ? `<button class="btn retry" data-retry="${j.id}">↻ Try again</button>` : ''}${j.status === 'running' ? `<div class="bar"><i style="width:${pct}%"></i></div>` : ''}</div></div>`;
+    return `<div class="card ${j.status === 'running' ? 'run' : j.status === 'error' ? 'err' : ''}" data-job="${j.id}"><div class="box" style="aspect-ratio:${ratio}"><span class="tag">${label}</span><b>${esc(j.title)}</b><span class="st">${esc(st)}</span>${j.status === 'running' ? `<div class="bar"><i style="width:${pct}%"></i></div>` : ''}</div></div>`;
   }
   const media = t.type === 'video' ? `<video src="${t.url}#t=0.3" muted loop playsinline preload="metadata"></video>` : `<img src="${t.url}" loading="lazy" alt="">`;
-  return `<div class="card" data-job="${j.id}" data-t="${t.type}" data-fav="${favSet().has(j.id) ? 1 : 0}"><button class="fav ${favSet().has(j.id) ? 'on' : ''}" data-favbtn="${j.id}" aria-label="Save to favourites" title="Favourite">★</button>${media}<span class="tag">${label}</span>${j.mock ? '<span class="tag demo">demo</span>' : ''}<div class="ov">${esc(j.title)}</div></div>`;
+  return `<div class="card" data-job="${j.id}">${media}<span class="tag">${label}</span>${j.mock ? '<span class="tag demo">demo</span>' : ''}<div class="ov">${esc(j.title)}</div></div>`;
 }
 const sigs = new Map();
 function renderFeed() {
@@ -387,24 +383,21 @@ function renderFeed() {
     if (prev ? prev.nextElementSibling !== el : grid.firstElementChild !== el) prev ? prev.after(el) : grid.prepend(el);
     prev = el;
   }
-  window.applyLibFilter && window.applyLibFilter();
 }
 
 // ---------- composer ----------
 function pill(key, label, options, cur) {
-  let shown = options[cur] ?? cur;
-  if (key === 'lang') shown = { ms: 'BM', en: 'EN', manglish: 'BM+EN' }[cur] || shown;
-  if (key === 'format') shown = { talking: 'Talking', showcase: 'Showcase' }[cur] || shown;
-  return `<button class="pill" title="${esc(options[cur] ?? cur)}" data-pill="${key}"><span class="k">${label}</span>${esc(shown)} ▾</button>`;
+  const shown = options[cur] ?? cur;
+  return `<button class="pill" data-pill="${key}"><span class="k">${label}</span>${esc(shown)} ▾</button>`;
 }
 const toggle = (key, label, on) => `<button class="pill tg ${on ? 'on' : ''}" data-toggle="${key}">${on ? '✓ ' : ''}${label}</button>`;
 function pillOptions(key) {
   const c = S.app.catalog;
-  const models = Object.fromEntries(Object.entries(c.videoModels).map(([k, m]) => [k, m.label]));
+  const models = Object.fromEntries(Object.entries(c.videoModels).map(([k, m]) => [k, (typeof MODEL_NAME !== 'undefined' && MODEL_NAME[k]) || m.label]));
   return {
     model: models, camera: CAM, style: STYLE, lang: LANG, platform: PLATFORM,
     voice: voiceOptions(),
-    tier: Object.fromEntries(Object.entries(c.tiers || {}).map(([k, t]) => [k, (typeof TIER_SHORT !== 'undefined' && TIER_SHORT[k]) || t.label])),
+    tier: Object.fromEntries(Object.entries(c.tiers || {}).map(([k, t]) => [k, `${TIER_NAME[k] || t.label} · ${(typeof TIER_MODEL !== 'undefined' && TIER_MODEL[k]?.[0]) || t.label}`])),
     variants: { 1: '1 ad', 3: '3 variations', 5: '5 variations' },
     kind: { tts: 'Voice-over', sfx: 'Sound effect', music: 'Music' },
     voiceEngine: { v3: 'ElevenLabs v3 · expressive', multilingual: 'ElevenLabs Multilingual' },
@@ -421,8 +414,8 @@ function pillOptions(key) {
     textMode: { script: 'Exact script', topic: 'Topic → AI writes' },
   }[key];
 }
-const MODEL_SUB = () => Object.fromEntries(Object.entries(S.app.catalog.videoModels).map(([k, m]) => [k, [m.tag, m.perSec ? `✦ ${m.perSec}/sec` : ''].filter(Boolean).join(' · ')]));
-const TIER_SUB = () => Object.fromEntries(Object.entries(S.app.catalog.tiers || {}).map(([k]) => [k, `${TIER_NAME[k] || k} · ${TIER_DESC[k] || ''}`]));
+const MODEL_SUB = () => Object.fromEntries(Object.entries(S.app.catalog.videoModels).map(([k, m]) => [k, m.label]));
+const TIER_SUB = () => Object.fromEntries(Object.entries(S.app.catalog.tiers || {}).map(([k]) => [k, TIER_DESC[k] || '']));
 // Human names for the quality tiers (the server's keys stay motion/lite/fast/studio/premium)
 const TIER_NAME = { motion: 'Quick', lite: 'Standard', fast: 'Sharper', studio: 'Lip-sync', premium: 'Best' };
 const TIER_DESC = { motion: 'Moving photo + voice · cheapest', lite: 'Real AI video, up to 8s', fast: 'Sharper picture, up to 10s', studio: 'Mouth moves with the words', premium: 'Top quality lip-sync' };
@@ -462,17 +455,15 @@ function renderComposer(keepFocus) {
   const refs = REFS_OK.has(m) ? IDEAS.refs.map((r, i) => `<span class="ref">${r.kind === 'image' ? `<img src="${r.url}">` : '📄 '}${esc((r.name || 'File').slice(0, 18))}<button data-cpun="${i}">×</button></span>`) : [];
   const fr = friendById(f.friendId), pr = productById(f.productId);
   if (f.startImage) refs.push(`<span class="ref"><img src="${f.startImage}">Start frame<button data-unref="startImage">×</button></span>`);
-  if (m === 'video' && f.endImage) refs.push(`<span class="ref"><img src="${f.endImage}">End frame<button data-unref="endImage">×</button></span>`);
   if (f.image) refs.push(`<span class="ref"><img src="${f.image}">Photo<button data-unref="image">×</button></span>`);
   if (fr) refs.push(`<span class="ref"><img src="${fr.photos[0]}">${esc(fr.name)}<button data-unref="friendId">×</button></span>`);
   if (pr) refs.push(`<span class="ref"><img src="${pr.image}">${esc(pr.name)}<button data-unref="productId">×</button></span>`);
   const needs = m === 'ad' && !pr ? '<button class="add req" data-attach>＋ Product</button>' : m === 'talk' && !fr && !f.image ? '<button class="add req" data-attach>＋ Who talks</button>' : '';
   const P = (k, l) => pill(k, l, pillOptions(k), f[k]);
-  const MCHIP = () => `<button class="pill mchip" data-pill="voiceModel" title="The AI model this uses. Tap to change it."><span class="k">◆</span>${esc(modelInfo().name)}</button>`;
-  const VBOARD = '<button class="pill" data-vboard title="Plan the video scene by scene with pictures before you pay for it">🎞 Storyboard</button>';
+  const MCHIP = () => `<button class="pill mchip" data-open="models" title="The AI model this uses. Tap to see all models."><span class="k">◆</span>${esc(modelInfo().name)}</button>`;
   if (m === 'ad' && !ADV) f.approve = true; // simple mode always shows the script first
   const simple = {
-    video: [P('model', '◆'), P('camera', '🎥'), P('aspect', ''), VBOARD],
+    video: [P('camera', '🎥'), f.startImage ? '' : P('style', '')],
     image: [P('quality', '◆'), P('count', '×'), P('style', '')],
     ad: [P('tier', '◆'), P('lang', ''), P('format', '')],
     talk: [P('lang', '')],
@@ -480,7 +471,7 @@ function renderComposer(keepFocus) {
     voice: [MCHIP(), P('kind', ''), ...(f.kind === 'tts' ? [P('voice', '🎙'), P('lang', '')] : [P('length', '⏱')])],
   };
   const pills = ADV ? {
-    video: [P('model', '◆'), P('aspect', ''), P('duration', ''), P('camera', '🎥'), f.startImage ? '' : P('style', ''), f.model !== 'h3-turbo' ? toggle('audio', 'Sound', f.audio) : '', VBOARD],
+    video: [P('model', ''), P('aspect', ''), P('duration', ''), P('camera', '🎥'), f.startImage ? '' : P('style', ''), f.model !== 'h3-turbo' ? toggle('audio', 'Sound', f.audio) : ''],
     image: [P('quality', '◆'), P('aspect', ''), P('count', '×'), P('style', '')],
     ad: [P('format', ''), P('tier', '◆'), P('variants', '×'), P('angle', ''), P('platform', ''), P('lang', ''), P('seconds', ''), P('voice', '🎙'), toggle('approve', 'Approve first', f.approve), toggle('captions', 'Captions', f.captions)],
     talk: [P('textMode', ''), P('tier', '◆'), P('lang', ''), P('voice', '🎙'), f.textMode === 'topic' ? P('seconds', '') : '', toggle('captions', 'Captions', f.captions)],
@@ -546,7 +537,7 @@ function validate() {
 
 async function generate() {
   const bad = validate();
-  if (bad) { toast(bad, true); if (/＋ button/.test(bad)) { const pl = $('#composer .plus'); pl && attachMenu(pl); } return; }
+  if (bad) return toast(bad, true);
   const btn = $('#go');
   btn.disabled = true;
   try {
@@ -567,15 +558,11 @@ async function generate() {
 function openPop(anchor, html, onPick) {
   const pop = $('#pop');
   pop.innerHTML = html;
-  pop.hidden = false; pop.style.maxHeight = Math.max(200, innerHeight - 16) + 'px';
+  pop.hidden = false;
   const r = anchor.getBoundingClientRect();
   const w = pop.offsetWidth, h = pop.offsetHeight;
   pop.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left)) + 'px';
-  pop.style.maxHeight = Math.max(200, innerHeight - 16) + 'px'; pop.style.overflowY = 'auto';
-  const h2 = Math.min(h, innerHeight - 16);
-  let top = r.top - h2 - 8 > 8 ? r.top - h2 - 8 : r.bottom + 8;
-  top = Math.max(8, Math.min(top, innerHeight - h2 - 8));
-  pop.style.top = top + 'px';
+  pop.style.top = (r.top - h - 8 > 8 ? r.top - h - 8 : r.bottom + 8) + 'px';
   pop.onclick = (e) => { const it = e.target.closest('[data-v]'); if (it) { onPick(it.dataset.v, e); } };
 }
 const closePop = () => { $('#pop').hidden = true; };
@@ -587,8 +574,7 @@ function pillMenu(anchor, key) {
   openPop(anchor, Object.entries(opts).map(([v, l]) => {
     const need = needFor(key, /^\d+$/.test(v) ? +v : v);
     const locked = need && !canUse(need);
-    if (locked) return `<div class="it locked" aria-disabled="true" title="Included in the ${PLAN_LABEL[need]} plan"><span>${esc(l)}${sub[v] ? `<small>${sub[v]}</small>` : ''}</span><em class="lockbadge"><svg class="lk" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>${PLAN_LABEL[need]}</em></div>`;
-    return `<button class="it ${v === cur ? 'on' : ''}" data-v="${esc(v)}"><span>${esc(l)}${sub[v] ? `<small>${sub[v]}</small>` : ''}</span></button>`;
+    return `<button class="it ${v === cur ? 'on' : ''} ${locked ? 'locked' : ''}" data-v="${esc(v)}"><span>${esc(l)}${locked ? ` <em class="lock">🔒 ${PLAN_LABEL[need]}</em>` : ''}${sub[v] ? `<small>${sub[v]}</small>` : ''}</span></button>`;
   }).join(''), (v) => {
     const need = needFor(key, /^\d+$/.test(v) ? +v : v);
     if (need && !canUse(need)) { closePop(); toast(`${opts[v]} is on the ${PLAN_LABEL[need]} plan`); return accountModal(); }
@@ -599,12 +585,6 @@ function pillMenu(anchor, key) {
   });
 }
 
-function madeImages() {
-  const urls = [];
-  for (const j of S.jobs) if (j.status === 'done') for (const o of j.outputs || []) if (o.type === 'image' && o.url && !urls.includes(o.url)) urls.push(o.url);
-  if (!urls.length) return '<hr><div class="h">Images you made</div><p class="muted" style="margin:4px 10px 8px;font-size:12.5px">Images you generate show up here, ready to become a video.</p>';
-  return `<hr><div class="h">Use an image you made</div><div class="madegrid">${urls.slice(0, 8).map((u) => `<button class="it mg" data-v="img:${u}" title="Use as the start frame"><img src="${u}"></button>`).join('')}</div>`;
-}
 function attachMenu(anchor) {
   const m = S.mode;
   const showProducts = m !== 'talk' && m !== 'story';
@@ -619,9 +599,7 @@ function attachMenu(anchor) {
     ${S.products.map((p) => `<button class="it" data-v="p:${p.id}"><img src="${p.image}"><span>${esc(p.name)}<small>${esc(p.price)}</small></span><span class="x" data-del="p:${p.id}" title="Delete">🗑</span></button>`).join('')}
     <button class="it" data-v="new:product">＋ New product</button>` : ''}
     ${REFS_OK.has(m) ? `<hr><button class="it" data-v="ref">📎 Reference file · image, PDF, Word, text</button>` : ''}
-    ${showUpload ? `<hr><button class="it" data-v="upload">⬆ Upload ${m === 'talk' ? 'a photo' : 'a start frame'} from your computer</button>` : ''}
-    ${m === 'video' ? `<button class="it" data-v="upload-end">⬆ Upload an end frame · the shot lands on this picture (Kling)</button>` : ''}
-    ${m === 'video' ? madeImages() : ''}`;
+    ${showUpload ? `<hr><button class="it" data-v="upload">⬆ Upload ${m === 'talk' ? 'a photo' : 'a start frame'}</button>` : ''}`;
   openPop(anchor, html, async (v, e) => {
     const del = e.target.closest('[data-del]');
     if (del) {
@@ -636,19 +614,12 @@ function attachMenu(anchor) {
     closePop();
     const f = F();
     if (v === 'ref') return $('#cp-file')?.click();
-    if (v.startsWith('img:')) f.startImage = v.slice(4);
     if (v.startsWith('f:')) { f.friendId = v.slice(2); f.image = null; }
     else if (v.startsWith('p:')) f.productId = v.slice(2);
     else if (v === 'new:friend') return friendModal();
     else if (v === 'new:avatars') return avatarLibraryModal();
     else if (v === 'new:create-avatar') return avatarBuilderModal();
     else if (v === 'new:product') return productModal();
-    else if (v === 'upload-end') return pickFile(async (file) => {
-      const { url } = await api('/api/upload', { dataUrl: await fileToDataUrl(file) });
-      f.endImage = url;
-      if (!S.app.catalog.videoModels?.[f.model]?.endFrame) { f.model = 'kling-std'; toast('End frames use Kling, so the model was switched'); }
-      renderComposer();
-    });
     else if (v === 'upload') return pickFile(async (file) => {
       const { url } = await api('/api/upload', { dataUrl: await fileToDataUrl(file) });
       if (m === 'talk') { f.image = url; f.friendId = null; } else f.startImage = url;
@@ -658,16 +629,6 @@ function attachMenu(anchor) {
   });
 }
 
-async function lastFrameOf(src) {
-  const v = document.createElement('video'); v.crossOrigin = 'anonymous'; v.muted = true; v.preload = 'auto'; v.src = src;
-  await new Promise((res, rej) => { v.onloadedmetadata = res; v.onerror = rej; setTimeout(rej, 15000); });
-  v.currentTime = Math.max(0, (isFinite(v.duration) ? v.duration : 1) - 0.08);
-  await new Promise((res, rej) => { v.onseeked = res; v.onerror = rej; setTimeout(rej, 15000); });
-  const c = document.createElement('canvas'); c.width = v.videoWidth; c.height = v.videoHeight;
-  c.getContext('2d').drawImage(v, 0, 0);
-  const { url } = await api('/api/upload', { dataUrl: c.toDataURL('image/jpeg', 0.92) });
-  return url;
-}
 function pickFile(cb, multiple) {
   const i = document.createElement('input');
   i.type = 'file'; i.accept = 'image/*'; i.multiple = !!multiple;
@@ -764,7 +725,7 @@ function jobModal(id) {
       <div class="acts">
         ${first ? `<a class="btn pri" id="dl" href="${dl(first.url)}" download>⬇ Download</a>` : ''}
         ${j.text ? '<button class="btn" id="cp">Copy text</button>' : ''}
-        ${first?.type === 'image' && j.tool !== 'avatarGen' ? '<button class="btn" id="anim">🎬 Animate</button>' : ''}<button class="btn" id="favm">${favSet().has(j.id) ? '★ Saved' : '☆ Favourite'}</button>${first?.type === 'video' ? '<button class="btn" id="contin" title="Start the next shot where this one ended">⏭ Continue from last frame</button>' : ''}
+        ${first?.type === 'image' && j.tool !== 'avatarGen' ? '<button class="btn" id="anim">🎬 Animate</button>' : ''}
         ${j.status === 'done' && media.some((o) => o.type === 'image' || o.type === 'video') ? '<button class="btn" id="toedit">✂ Edit & add sound</button>' : ''}
         ${j.tool === 'avatarGen' && !j.input?.preset && j.status === 'done' ? '<button class="btn pri" id="saveav">＋ Save as friend</button>' : ''}
         ${media.some((o) => o.type === 'video') && j.status === 'done' ? '<button class="btn" id="post">📤 Post / schedule</button>' : ''}
@@ -803,15 +764,6 @@ function jobModal(id) {
   $('#post', m) && ($('#post', m).onclick = () => postModal(j, cur?.type === 'video' ? cur : media.find((o) => o.type === 'video')));
   $('#board', m) && ($('#board', m).onclick = () => storyboardModal({ board: j.board, reuseFrom: j.id, input: j.input }));
   $('#cp', m) && ($('#cp', m).onclick = () => navigator.clipboard.writeText(j.text).then(() => toast('Copied'), () => toast('Select the text to copy it', true)));
-  $('#favm', m) && ($('#favm', m).onclick = (e) => { const on = toggleFav(j.id); e.currentTarget.textContent = on ? '★ Saved' : '☆ Favourite'; document.querySelectorAll(`[data-favbtn="${j.id}"]`).forEach((b) => { b.classList.toggle('on', on); b.closest('.card').dataset.fav = on ? 1 : 0; }); window.applyLibFilter && window.applyLibFilter(); });
-  $('#contin', m) && ($('#contin', m).onclick = async (e) => {
-    const b = e.currentTarget, v = (cur?.type === 'video' ? cur : media.find((o) => o.type === 'video'));
-    if (!v) return; b.disabled = true; b.textContent = 'Grabbing frame…';
-    try {
-      const url = await lastFrameOf(v.url);
-      setMode('video'); F().startImage = url; F().endImage = null; closeModal(); renderAll(); toast('Last frame is your next start frame');
-    } catch { toast('Could not grab the last frame. Download the video, take a screenshot of the end, and upload it as a start frame.', true); b.disabled = false; b.textContent = '⏭ Continue from last frame'; }
-  });
   $('#anim', m) && ($('#anim', m).onclick = () => { setMode('video'); F().startImage = cur.url; closeModal(); renderComposer(true); });
   $('#reuse', m).onclick = () => {
     const mode = TOOL_MODE[j.tool];
@@ -929,9 +881,9 @@ function renderAll() {
   renderFeed();
 }
 
-document.addEventListener('click', async (e) => {
+document.addEventListener('click', (e) => {
   const t = e.target;
-  if (!$('#pop').hidden && !(e.composedPath ? e.composedPath().some((n) => n.id === 'pop') : t.closest('#pop')) && !t.closest('[data-pill],[data-attach],#id-model')) closePop();
+  if (!$('#pop').hidden && !t.closest('#pop') && !t.closest('[data-pill],[data-attach]')) closePop();
   const mode = t.closest('[data-mode]');
   if (mode) { e.preventDefault(); setMode(mode.dataset.mode); renderAll(); return; }
   if (t.closest('[data-open="models"]')) return modelsModal();
@@ -940,11 +892,7 @@ document.addEventListener('click', async (e) => {
   if (nw) return nw.dataset.new === 'friend' ? friendModal() : productModal();
   if (t.closest('[data-close]') || t.id === 'modal') return closeModal();
   const pl = t.closest('[data-pill]');
-  if (pl) {
-    const k = pl.dataset.pill;
-    if (k === 'voiceModel' || (k === 'model' && S.mode === 'video') || k === 'tier' || k === 'quality') return window.openModelPicker(pl, S.mode);
-    return pillMenu(pl, k);
-  }
+  if (pl) return pillMenu(pl, pl.dataset.pill);
   const tg = t.closest('[data-toggle]');
   if (tg) { F()[tg.dataset.toggle] = !F()[tg.dataset.toggle]; return renderComposer(); }
   const at = t.closest('[data-attach]');
@@ -953,12 +901,6 @@ document.addEventListener('click', async (e) => {
   if (un) { F()[un.dataset.unref] = null; return renderComposer(); }
   if (t.closest('#go')) return generate();
   if (t.closest('[data-board]')) return storyboardModal({ input: F() });
-  if (t.closest('[data-vboard]')) {
-    const f = F(); if (!f.prompt.trim()) return toast('Describe the video first, then open the storyboard', true);
-    Object.assign(IDEAS, { dump: f.prompt, productId: f.productId || IDEAS.productId, friendId: f.friendId || IDEAS.friendId, result: null, chat: [] });
-    setMode('ideas'); renderAll();
-    return sbStart($('#zz-main'), { title: 'Video', mode: 'video', why: '', prompt: f.prompt, settings: { camera: f.camera, style: f.style, aspect: f.aspect } });
-  }
   const tc = t.closest('[data-tag]');
   if (tc) { const ta = $('#prompt'); const at = ta.selectionStart ?? ta.value.length; ta.value = ta.value.slice(0, at) + tc.dataset.tag + ' ' + ta.value.slice(at); F().prompt = ta.value; ta.focus(); estimate(); return; }
   const go = t.closest('[data-go]');
@@ -985,16 +927,6 @@ document.addEventListener('click', async (e) => {
     renderPresets(); renderComposer(true);
     return;
   }
-  const rt = t.closest('[data-retry]');
-  if (rt) {
-    const old = S.jobs.find((x) => x.id === rt.dataset.retry); if (!old) return;
-    rt.disabled = true; rt.textContent = 'Starting…';
-    try { const job = await api('/api/jobs', { tool: old.tool, input: old.input }); S.jobs.unshift(job); renderFeed(); poll(); load().then(() => renderFeed()); }
-    catch (err) { toast(err.message, true); if (err.code === 'credits' || err.code === 'plan') accountModal(); rt.disabled = false; rt.textContent = '↻ Try again'; }
-    return;
-  }
-  const fb = t.closest('[data-favbtn]');
-  if (fb) { const on = toggleFav(fb.dataset.favbtn); fb.classList.toggle('on', on); fb.closest('.card').dataset.fav = on ? 1 : 0; window.applyLibFilter && window.applyLibFilter(); toast(on ? 'Added to favourites' : 'Removed from favourites'); return; }
   const card = t.closest('[data-job]');
   if (card) return jobModal(card.dataset.job);
 });

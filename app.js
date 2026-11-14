@@ -10,8 +10,8 @@ import { config, MODE, PACKS, PLANS, ROOT } from './lib/config.js';
 import { store } from './lib/store/index.js';
 import { saveDataUrl, saveAudioDataUrl, uid as newId } from './lib/media.js';
 import { isMock, falKey, llmModel, run as falRun, toRemote } from './lib/fal.js';
-import { TOOLS, STYLES, CAMERAS, createJob, expireStale, removeBg, live, planStory, planPanels, editPanels, drawPanel, tts } from './lib/pipelines.js';
-import { WRITERS, VIDEO_MODELS, VOICES, PRICE, TIERS, EMOTIONS, MODELS, MARKUP, MODEL_PLAN, MAX_VARIANTS, allowed, imageCost, ttsCost, tierOf } from './lib/models.js';
+import { TOOLS, STYLES, CAMERAS, createJob, expireStale, removeBg, live, planStory, planPanels, drawPanel } from './lib/pipelines.js';
+import { WRITERS, VIDEO_MODELS, VOICES, PRICE, TIERS, EMOTIONS, MODELS, MARKUP, MODEL_PLAN, MAX_VARIANTS, allowed, imageCost } from './lib/models.js';
 import { AVATAR_PRESETS } from './lib/avatars.js';
 import * as social from './lib/social.js';
 import { PLATFORMS, ANGLES, LANGS } from './lib/prompts.js';
@@ -168,7 +168,7 @@ app.get('/api/state', wrap(async (req, res) => {
     userId: req.uid, mode: MODE, mock: isMock(), ffmpeg: hasFF(), credits: profile?.credits ?? 0,
     llmModel: llmModel(), keySet: !!falKey(), payments: !!stripe, plan: profile?.plan || null, brand: String(profile?.prefs?.brand || ''), access: await planOf(req.uid), social: social.socialEnabled(),
     catalog: {
-      videoModels: Object.fromEntries(Object.entries(VIDEO_MODELS).map(([k, m]) => [k, { label: m.label, tag: m.tag, perSec: m.perSec, endFrame: !!m.endFrame }])),
+      videoModels: Object.fromEntries(Object.entries(VIDEO_MODELS).map(([k, m]) => [k, { label: m.label, tag: m.tag, perSec: m.perSec }])),
       tiers: Object.fromEntries(Object.entries(TIERS).map(([k, t]) => [k, { label: t.label, tag: t.tag, maxSec: t.maxSec, plan: t.plan }])),
       writers: WRITERS, modelPlan: MODEL_PLAN, maxVariants: MAX_VARIANTS, voices: VOICES, emotions: EMOTIONS, markup: MARKUP,
       avatars: AVATAR_PRESETS.map(({ id, name, tagline, look }) => ({ id, name, tagline, look })),
@@ -251,7 +251,6 @@ app.post('/api/billing/portal', wrap(async (req, res) => {
 
 // ---------- uploads ----------
 app.post('/api/upload', limit('upload', 40, 60), wrap(async (req, res) => res.json({ url: await saveDataUrl(req.body.dataUrl) })));
-app.post('/api/upload-audio', limit('upload', 20, 60), wrap(async (req, res) => res.json({ url: await saveAudioDataUrl(req.body.dataUrl) })));
 
 // ---------- friends ----------
 app.get('/api/friends', wrap(async (req, res) => res.json(await store.list('friends', req.uid))));
@@ -311,7 +310,7 @@ app.post('/api/brainstorm', limit('brainstorm', 30, 60), wrap(async (req, res) =
   try {
     const w = WRITERS[req.body.writer];
     if (w && !allowed(await planOf(req.uid), w.plan)) throw planFail(w.name, w.plan);
-    res.json(await brainstorm({ mode, prompt: String(prompt || '').slice(0, 4000), friend, product, image: img, lang, chat, previous, brand, refs, effort: ['quick', 'balanced', 'deep'].includes(req.body.effort) ? req.body.effort : 'balanced', model: w && w.id !== WRITERS.flash.id ? w.id : null }));
+    res.json(await brainstorm({ mode, prompt: String(prompt || '').slice(0, 4000), friend, product, image: img, lang, chat, previous, brand, refs, model: w && w.id !== WRITERS.flash.id ? w.id : null }));
   } catch (e) {
     await store.adjust(req.uid, cost, 'Refund (brainstorm failed)', null, true);
     throw e;
@@ -339,32 +338,6 @@ app.post('/api/ideas', limit('create', 60, 60), wrap(async (req, res) => {
   });
   res.json(row);
 }));
-// ---------- series: a saved character/look plus the episodes so far ----------
-const cleanEp = (e, n) => ({ n, title: str(e?.title, 120), recap: str(e?.recap, 900) });
-app.get('/api/series', wrap(async (req, res) => res.json(await store.list('series', req.uid))));
-app.post('/api/series', limit('create', 30, 60), wrap(async (req, res) => {
-  const b = req.body || {};
-  const name = str(b.name, 80).trim();
-  if (!name) throw fail('Give the series a name');
-  const row = await store.insert('series', req.uid, {
-    id: newId(), name, look: str(b.look, 800), friendId: b.friendId ? str(b.friendId, 60) : null, productId: b.productId ? str(b.productId, 60) : null,
-    aspect: ASPECTS.includes(b.aspect) ? b.aspect : '9:16', lang: str(b.lang || 'ms', 10), episodes: (Array.isArray(b.episodes) ? b.episodes : []).slice(0, 1).map((e, k) => cleanEp(e, k + 1)), created: Date.now(),
-  });
-  res.json(row);
-}));
-app.post('/api/series/:id/episodes', limit('create', 60, 60), wrap(async (req, res) => {
-  const cur = await store.get('series', req.uid, req.params.id);
-  if (!cur) throw fail('Series not found', 404);
-  const eps = [...(cur.episodes || []), cleanEp(req.body, (cur.episodes || []).length + 1)].slice(0, 60);
-  res.json(await store.update('series', req.uid, cur.id, { episodes: eps }));
-}));
-app.post('/api/series/:id/episodes/:n', limit('create', 120, 60), wrap(async (req, res) => {
-  const cur = await store.get('series', req.uid, req.params.id);
-  if (!cur) throw fail('Series not found', 404);
-  const eps = (cur.episodes || []).map((e) => (e.n === +req.params.n ? cleanEp({ title: req.body?.title ?? e.title, recap: req.body?.recap ?? e.recap }, e.n) : e));
-  res.json(await store.update('series', req.uid, cur.id, { episodes: eps }));
-}));
-app.delete('/api/series/:id', wrap(async (req, res) => { await store.remove('series', req.uid, req.params.id); res.json({ ok: true }); }));
 app.delete('/api/ideas/:id', wrap(async (req, res) => { await store.remove('ideas', req.uid, req.params.id); res.json({ ok: true }); }));
 app.put('/api/brand', limit('create', 30, 60), wrap(async (req, res) => {
   const brand = str(req.body?.brand, 1500);
@@ -427,26 +400,12 @@ app.post('/api/panels/plan', limit('plan', 30, 60), wrap(async (req, res) => {
   const ctx = { charge(c) { spent += c; } };
   try {
     const plan = await planPanels(ctx, { prompt, lang: b.lang, panels: n, product: L.product(b.productId), friend: L.friend(b.friendId), brand: L.brand, notes: str(b.notes, 3000) });
-    if (b.look) plan.look = str(b.look, 800); // series: the saved look wins so the character does not drift between episodes
     plan.panels = await Promise.all(plan.panels.map(async (x) => ({ ...x, image: await drawPanel(ctx, { kind: 'sketch', visual: x.visual, look: plan.look, aspect }), kind: 'sketch' })));
     res.json({ ...plan, aspect, cost });
   } catch (e) {
     await store.adjust(req.uid, cost, 'Refund (storyboard failed)', null, true);
     throw e;
   }
-}));
-app.post('/api/panels/edit', limit('plan', 40, 60), wrap(async (req, res) => {
-  const b = req.body || {};
-  const instruction = str(b.instruction, 600).trim();
-  if (!instruction) throw fail('Say what to change, for example "make scene 2 funnier"');
-  const panels = (Array.isArray(b.panels) ? b.panels : []).slice(0, 8).map((x) => ({ visual: str(x.visual, 600), motion: str(x.motion, 120), narration: str(x.narration, 300) }));
-  if (panels.length < 2) throw fail('There is no storyboard to edit yet');
-  const cost = PRICE.llm;
-  await store.adjust(req.uid, -cost, 'Storyboard edit', null);
-  try {
-    const ctx = { charge() {} };
-    res.json({ ...(await editPanels(ctx, { instruction, panels, look: str(b.look, 800), lang: b.lang })), cost });
-  } catch (e) { await store.adjust(req.uid, cost, 'Refund (edit failed)', null, true); throw e; }
 }));
 app.post('/api/panels/draw', limit('draw', 120, 60), wrap(async (req, res) => {
   const b = req.body || {};
@@ -455,8 +414,7 @@ app.post('/api/panels/draw', limit('draw', 120, 60), wrap(async (req, res) => {
   if (!visual) throw fail('Describe what happens in this panel first');
   const L = await lookups(req.uid);
   const aspect = ASPECTS.includes(b.aspect) ? b.aspect : '9:16';
-  // Cheap by default for everyone; the expensive model only when the user picked it and the plan allows it.
-  const quality = kind === 'keyframe' && b.quality === 'full' && allowed(await planOf(req.uid), 'creator') ? 'full' : 'lite';
+  const quality = kind === 'keyframe' && allowed(await planOf(req.uid), 'creator') ? 'full' : 'lite';
   const f = L.friend(b.friendId), p = L.product(b.productId);
   const cost = kind === 'sketch' ? imageCost('lite', false) : imageCost(quality, !!(f || p));
   await store.adjust(req.uid, -cost, kind === 'sketch' ? 'Storyboard sketch' : 'Storyboard keyframe', null);
@@ -465,26 +423,6 @@ app.post('/api/panels/draw', limit('draw', 120, 60), wrap(async (req, res) => {
     res.json({ image, kind, cost });
   } catch (e) {
     await store.adjust(req.uid, cost, 'Refund (panel failed)', null, true);
-    throw e;
-  }
-}));
-
-// One spoken line of a storyboard, recorded now so the user can hear it before any video is made.
-// The video job reuses this recording, so listening first costs nothing extra when the line is kept.
-app.post('/api/panels/voice', limit('draw', 150, 60), wrap(async (req, res) => {
-  const b = req.body || {};
-  const text = str(b.text, 400).trim();
-  if (!text) throw fail('Write what is said in this panel first');
-  const lang = ['ms', 'en', 'manglish'].includes(b.lang) ? b.lang : 'ms';
-  const q = tierOf(TIERS[b.tier] ? b.tier : 'motion').voice;
-  const voice = lang === 'ms' ? 'mm:Lively_Girl' : 'el:Aria';
-  const cost = ttsCost(text, q);
-  await store.adjust(req.uid, -cost, 'Storyboard voice preview', null);
-  try {
-    const r = await tts({ charge() {} }, { text, voice, lang, quality: q });
-    res.json({ url: r.url, dur: r.dur, cost });
-  } catch (e) {
-    await store.adjust(req.uid, cost, 'Refund (voice preview failed)', null, true);
     throw e;
   }
 }));
@@ -522,11 +460,10 @@ async function lookups(uid) {
 const str = (v, n) => String(v ?? '').slice(0, n);
 function cleanInput(input) {
   const i = { ...input };
-  for (const k of ['startImage', 'endImage', 'image', 'musicUrl']) if (i[k] && !store.isOwnUrl(i[k])) delete i[k];
+  for (const k of ['startImage', 'image']) if (i[k] && !store.isOwnUrl(i[k])) delete i[k];
   delete i.refs;
   if (i.look != null) i.look = str(i.look, 800);
   for (const k of ['prompt', 'script', 'notes', 'topic', 'tone', 'text']) if (typeof i[k] === 'string') i[k] = i[k].slice(0, k === 'text' ? 5000 : 2000);
-  if (i.musicVol != null) i.musicVol = Math.min(100, Math.max(5, +i.musicVol || 25));
   if (i.quality != null) i.quality = i.quality === 'lite' ? 'lite' : 'full';
   if (i.variants != null) i.variants = [1, 3, 5].includes(+i.variants) ? +i.variants : 1;
   if (i.scripts != null) i.scripts = (Array.isArray(i.scripts) ? i.scripts : []).slice(0, 5).map((x) => str(x, 1200));
@@ -536,7 +473,7 @@ function cleanInput(input) {
     const b = i.board;
     i.board = {
       title: str(b.title, 120), caption: str(b.caption, 600), hashtags: (Array.isArray(b.hashtags) ? b.hashtags : []).slice(0, 15).map((h) => str(h, 40)),
-      scenes: (Array.isArray(b.scenes) ? b.scenes : []).slice(0, 8).map((s) => ({ narration: str(s.narration, 400), visual: str(s.visual, 600), motion: str(s.motion, 200), ...(s.frame && store.isOwnUrl(s.frame) ? { frame: str(s.frame, 600) } : {}), ...(s.voice?.url && store.isOwnUrl(s.voice.url) && +s.voice.dur > 0 ? { voice: { url: str(s.voice.url, 600), dur: Math.min(60, +s.voice.dur) } } : {}) })).filter((s) => s.narration.trim()),
+      scenes: (Array.isArray(b.scenes) ? b.scenes : []).slice(0, 8).map((s) => ({ narration: str(s.narration, 400), visual: str(s.visual, 600), motion: str(s.motion, 200), ...(s.frame && store.isOwnUrl(s.frame) ? { frame: str(s.frame, 600) } : {}) })).filter((s) => s.narration.trim()),
     };
     if (!i.board.scenes.length) delete i.board;
   }
