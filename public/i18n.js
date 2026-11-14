@@ -40,7 +40,7 @@
     'loads one straight into the right tool.': 'memuatkannya terus ke alat yang betul.',
     'Messy is fine. Type, paste, or drop files here: product sheets, screenshots, PDF, Word. Kravitas reads them and writes the prompts.': 'Bersepah pun tak apa. Taip, tampal atau lepaskan fail di sini: helaian produk, tangkap layar, PDF, Word. Kravitas baca dan tulis prompt untuk anda.',
     'Attach images, PDF, Word or text': 'Lampirkan gambar, PDF, Word atau teks', 'Add a product photo': 'Tambah gambar produk', 'Add a character': 'Tambah watak',
-    'Attach more files': 'Lampirkan fail lagi', 'Who it\'s for': 'Untuk siapa', 'Hooks': 'Hook', 'Copy': 'Salin', 'Ready-to-use prompts': 'Prompt sedia guna',
+    'Attach more files': 'Lampirkan fail lagi', 'Who it\'s for': 'Untuk siapa', 'Hooks': 'Hook', 'Copy': 'Salin', 'Ready-to-use prompts': 'Prompt sedia guna', 'Show details and prompts': 'Tunjuk butiran dan prompt', 'Prompt it will use': 'Prompt yang akan digunakan', 'Details ▾': 'Butiran ▾', 'Hide ▴': 'Sembunyi ▴',
     'Use it →': 'Guna →', 'Storyboard': 'Papan cerita', 'Tell Kravitas more': 'Beritahu Kravitas lagi', 'Send': 'Hantar', 'Shown to Kravitas': 'Ditunjukkan kepada Kravitas',
     'Target busy mums': 'Sasarkan ibu yang sibuk', 'Make it funnier': 'Jadikan lebih lucu', 'Raya / festive theme': 'Tema Raya / perayaan', 'Push the price & promo': 'Tekankan harga & promosi',
     'Younger Gen Z vibe': 'Gaya Gen Z yang muda', 'More premium feel': 'Rasa lebih premium', 'PDF and Word are read as text': 'PDF dan Word dibaca sebagai teks',

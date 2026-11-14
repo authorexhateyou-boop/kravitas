@@ -15,7 +15,7 @@
   const VIDEO_MODELS = {
     'h3-turbo': { label: 'MiniMax H3 Turbo', tag: 'Best value', cps: 1.5 },
     'seedance-fast': { label: 'Seedance 2.0 Fast', tag: 'Native audio', cps: 10 },
-    'kling-std': { label: 'Kling 3.0 Standard', tag: 'Smooth motion', cps: 8 },
+    'kling-std': { label: 'Kling 3.0 Standard', tag: 'Smooth motion', cps: 8, endFrame: true },
     'kling-pro': { label: 'Kling 3.0 Pro', tag: 'Top quality', cps: 14 },
   };
   for (const m of Object.values(VIDEO_MODELS)) m.perSec = Math.ceil(m.cps * MARKUP * 10) / 10;
@@ -198,6 +198,15 @@
     handheld: (t) => ({ z: 1.1, dx: Math.sin(t * 23) * 0.008, dy: Math.cos(t * 17) * 0.008, r: Math.sin(t * 11) * 0.006 }),
     crash: (t) => ({ z: 1 + 0.9 * Math.pow(t, 3), dx: 0, dy: 0, r: 0 }),
     fpv: (t) => ({ z: 1 + 0.5 * t, dx: Math.sin(t * 5) * 0.03, dy: -0.05 * t, r: Math.sin(t * 4) * 0.05 }),
+    'tilt-up': (t) => ({ z: 1.2, dx: 0, dy: (0.5 - t) * 0.16, r: 0 }),
+    'tilt-down': (t) => ({ z: 1.2, dx: 0, dy: (t - 0.5) * 0.16, r: 0 }),
+    'zoom-out': (t) => ({ z: 1.3 - 0.3 * t, dx: 0, dy: 0, r: 0 }),
+    tracking: (t) => ({ z: 1.15, dx: (0.5 - t) * 0.12, dy: 0, r: 0.01 }),
+    'low-angle': (t) => ({ z: 1.12 + 0.1 * t, dx: 0, dy: -0.06 * t, r: -0.02 * t }),
+    'top-down': (t) => ({ z: 1.15, dx: 0, dy: 0, r: (t - 0.5) * 0.25 }),
+    whip: (t) => ({ z: 1.15, dx: t < 0.7 ? 0 : (t - 0.7) * -0.5, dy: 0, r: 0 }),
+    rack: (t) => ({ z: 1 + 0.08 * t, dx: 0, dy: 0, r: 0 }),
+    'dolly-zoom': (t) => ({ z: 1 + 0.35 * t, dx: 0, dy: 0, r: 0 }),
     talk: (t) => ({ z: 1.06 + 0.012 * Math.sin(t * 30), dx: 0, dy: 0.004 * Math.sin(t * 40), r: 0.006 * Math.sin(t * 9) }),
   };
 
@@ -640,11 +649,11 @@
       return {
         userId: 'preview', mode: 'preview', mock: true, ffmpeg: true, credits: st.credits, llmModel: 'google/gemini-2.5-flash', payments: true, plan: st.plan || null, social: true,
         access: st.plan || 'free', brand: st.brand || '',
-        catalog: { writers: { flash: { name: 'Gemini 2.5 Flash', plan: 'free', note: 'Fast and cheap' }, pro: { name: 'Gemini 2.5 Pro', plan: 'starter', note: 'Deeper thinking' }, gpt: { name: 'GPT-4o', plan: 'creator', note: 'Strong with images' }, claude: { name: 'Claude 3.7 Sonnet', plan: 'creator', note: 'Best writing' } }, videoModels: VIDEO_MODELS, tiers: TIERS, modelPlan: MODEL_PLAN, maxVariants: MAX_VARIANTS, voices: VOICES, emotions: EMOTIONS, markup: MARKUP, avatars: AVATARS, price: PRICE, styles: [], cameras: [], platforms: { tiktok: 'TikTok Shop', shopee: 'Shopee', lazada: 'Lazada', instagram: 'Instagram Reels' }, angles: [], langs: ['ms', 'en', 'manglish'] },
+        catalog: { writers: { lite: { name: 'Gemini 2.5 Flash Lite', plan: 'free', note: 'Fastest, simple jobs', more: true }, flash: { name: 'Gemini 2.5 Flash', plan: 'free', note: 'Fast and cheap' }, pro: { name: 'Gemini 2.5 Pro', plan: 'starter', note: 'Deeper thinking' }, gpt: { name: 'GPT-4o', plan: 'creator', note: 'Strong with images' }, claude: { name: 'Claude 3.7 Sonnet', plan: 'creator', note: 'Best writing' }, mini: { name: 'GPT-4o mini', plan: 'basic', note: 'Quick and light', more: true }, sonnet4: { name: 'Claude Sonnet 4', plan: 'pro', note: 'Newest Claude, best writing', more: true } }, videoModels: VIDEO_MODELS, tiers: TIERS, modelPlan: MODEL_PLAN, maxVariants: MAX_VARIANTS, voices: VOICES, emotions: EMOTIONS, markup: MARKUP, avatars: AVATARS, price: PRICE, styles: [], cameras: [], platforms: { tiktok: 'TikTok Shop', shopee: 'Shopee', lazada: 'Lazada', instagram: 'Instagram Reels' }, angles: [], langs: ['ms', 'en', 'manglish'] },
       };
     }
     if (p === '/api/ledger') return st.ledger.slice(0, 100);
-    if (p === '/api/upload') return { url: body.dataUrl };
+    if (p === '/api/upload' || p === '/api/upload-audio') return { url: body.dataUrl };
     if (p === '/api/estimate') return { credits: Math.ceil((ESTIMATE[body.tool] || (() => 0))(body.input || {})) };
     if (p === '/api/checkout') {
       // Preview: simulate a successful subscription so plan limits can be tested. Packs stay off.
@@ -683,6 +692,20 @@
       if (/wordprocessingml|\.docx$/i.test(m[1] + name)) throw err('Word files are read in the full version. For this preview, paste the text or save it as PDF.');
       throw err(`${name}: use an image, PDF, Word (.docx) or text file`);
     }
+    if (p === '/api/series' && method === 'GET') return st.series || [];
+    if (p === '/api/series' && method === 'POST') {
+      if (!String(body.name || '').trim()) throw err('Give the series a name');
+      const row = { id: id(), name: String(body.name).slice(0, 80), look: String(body.look || '').slice(0, 800), friendId: body.friendId || null, productId: body.productId || null, aspect: body.aspect || '9:16', lang: body.lang || 'ms', episodes: (body.episodes || []).slice(0, 1).map((e, k) => ({ n: k + 1, title: String(e.title || '').slice(0, 120), recap: String(e.recap || '').slice(0, 900) })), created: Date.now() };
+      (st.series ||= []).unshift(row); save(); return row;
+    }
+    { const m = p.match(/^\/api\/series\/([^/]+)\/episodes(?:\/(\d+))?$/);
+      if (m && method === 'POST') {
+        const cur = (st.series || []).find((x) => x.id === m[1]); if (!cur) throw err('Series not found');
+        if (m[2]) cur.episodes = cur.episodes.map((e) => (e.n === +m[2] ? { ...e, title: body.title ?? e.title, recap: body.recap ?? e.recap } : e));
+        else cur.episodes.push({ n: cur.episodes.length + 1, title: String(body.title || '').slice(0, 120), recap: String(body.recap || '').slice(0, 900) });
+        save(); return cur;
+      } }
+    if (p.startsWith('/api/series/') && method === 'DELETE') { st.series = (st.series || []).filter((x) => x.id !== p.split('/').pop()); save(); return { ok: true }; }
     if (p === '/api/ideas' && method === 'GET') return st.ideas || [];
     if (p === '/api/ideas' && method === 'POST') {
       const row = { id: id(), mode: ['ad', 'video', 'image'].includes(body.mode) ? body.mode : 'ad', title: String(body.title || body.prompt || 'Idea').slice(0, 80), prompt: String(body.prompt || '').slice(0, 2000), why: String(body.why || '').slice(0, 300), hook: String(body.hook || '').slice(0, 300), settings: body.settings || {}, productId: body.productId || null, friendId: body.friendId || null, lang: body.lang || 'ms', createdAt: Date.now() };
@@ -713,6 +736,22 @@
       if (st.credits < PRICE.llm) throw err('Not enough credits. Top up to continue.', 'credits');
       await sleep(1400); st.credits -= PRICE.llm; st.ledger.unshift({ at: Date.now(), what: 'Storyboard plan', credits: -PRICE.llm }); save();
       return planBoard(body.prompt, body.scenes);
+    }
+    if (p === '/api/panels/voice') {
+      const text = String(body.text || '').trim(); if (!text) throw err('Write what is said in this panel first');
+      const cost = credits((text.length / 1000) * (['motion', 'lite'].includes(body.tier) || !body.tier ? 6 : 10));
+      if (st.credits < cost) throw err('Not enough credits. Top up to continue.', 'credits');
+      await sleep(700); st.credits -= cost; st.ledger.unshift({ at: Date.now(), what: 'Storyboard voice preview', credits: -cost }); save();
+      const dur = Math.max(2, text.split(/\s+/).length / 2.6);
+      return { url: URL.createObjectURL(synthAudio('tts', dur, text)), dur, cost };
+    }
+    if (p === '/api/panels/edit') {
+      const ins = String(body.instruction || '').trim(); if (!ins) throw err('Say what to change, for example "make scene 2 funnier"');
+      if (st.credits < PRICE.llm) throw err('Not enough credits. Top up to continue.', 'credits');
+      await sleep(900); st.credits -= PRICE.llm; st.ledger.unshift({ at: Date.now(), what: 'Storyboard edit', credits: -PRICE.llm }); save();
+      const nums = [...ins.matchAll(/(?:scene|panel|babak)\s*(\d)/gi)].map((m) => +m[1]); const ps = body.panels || [];
+      const hit = (nums.length ? nums : ps.map((_, k) => k + 1)).filter((n) => ps[n - 1]);
+      return { cost: PRICE.llm, note: 'Demo edit', changes: hit.map((n) => ({ index: n - 1, visual: `${ps[n - 1].visual} (${ins})`.slice(0, 280), motion: ps[n - 1].motion, narration: ps[n - 1].narration })) };
     }
     if (p === '/api/panels/plan' || p === '/api/panels/draw') {
       const plan = p.endsWith('plan');
