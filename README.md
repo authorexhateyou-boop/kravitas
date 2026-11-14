@@ -22,7 +22,7 @@ accurate packaging. One click turns a product into a ready-to-post TikTok Shop /
 starter credits, and tops up through Stripe (card, FPX, GrabPay). Follow **[DEPLOY.md](DEPLOY.md)**.
 
 **Local (your PC):** double-click **`start.bat`** (needs Node.js 20+). With no Supabase settings it runs as a
-single-user studio at http://localhost:3365. Paste your fal.ai key under ⚙ to leave demo mode.
+single-user studio at http://localhost:3365. Paste your fal.ai key under ⚙ first: without it every AI action stops with a clear message.
 
 ## Credits
 

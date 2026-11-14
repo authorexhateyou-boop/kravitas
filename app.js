@@ -9,7 +9,7 @@ import Stripe from 'stripe';
 import { config, MODE, PACKS, PLANS, ROOT } from './lib/config.js';
 import { store } from './lib/store/index.js';
 import { saveDataUrl, saveAudioDataUrl, uid as newId } from './lib/media.js';
-import { isMock, falKey, llmModel, run as falRun, toRemote } from './lib/fal.js';
+import { isMock, keyMissing, falKey, llmModel, run as falRun, toRemote } from './lib/fal.js';
 import { TOOLS, STYLES, CAMERAS, createJob, expireStale, removeBg, live, planStory, planPanels, editPanels, drawPanel, tts } from './lib/pipelines.js';
 import { WRITERS, VIDEO_MODELS, VOICES, PRICE, TIERS, EMOTIONS, MODELS, MARKUP, MODEL_PLAN, MAX_VARIANTS, allowed, imageCost, ttsCost, tierOf } from './lib/models.js';
 import { AVATAR_PRESETS } from './lib/avatars.js';
@@ -51,6 +51,13 @@ const wrap = (fn) => (req, res) => Promise.resolve(fn(req, res)).catch((e) => {
   res.status(e.status || 400).json({ error: e.message || String(e), ...(e.code ? { code: e.code } : {}) });
 });
 const fail = (msg, status = 400) => Object.assign(new Error(msg), { status });
+
+// Anything that spends AI stops early and clearly when the fal.ai key is missing, so nobody is charged for nothing.
+const SPENDS = /^\/(brainstorm|storyboard\/plan|panels\/(plan|edit|draw|voice)|voices|jobs|series\/[^/]+\/episodes\/\d+)$/;
+app.use('/api', (req, res, next) => {
+  if (req.method === 'POST' && SPENDS.test(req.path) && keyMissing()) return res.status(503).json({ error: 'The AI is not connected yet. The owner needs to add the fal.ai key (FAL_KEY) first.', code: 'nokey' });
+  next();
+});
 
 // ---------- Stripe webhook (needs the raw body, so it goes before express.json) ----------
 async function grant(session) {

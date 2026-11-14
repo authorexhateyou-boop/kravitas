@@ -385,7 +385,7 @@ function renderIdeas(box) {
   const pr = productById(IDEAS.productId), fr = friendById(IDEAS.friendId);
   box.innerHTML = `
     <div class="id-wrap">
-      ${r ? `<div class="id-out ${IDEAS.busy ? 'dim' : ''}">${S.app.mock || (OWNER_LOCAL && !S.app.keySet) ? `<div class="id-demo-banner">Demo mode: these ideas are placeholders. The AI is not reading your text or your images yet, so they will not match what you asked for.${OWNER_LOCAL ? ' Connect the AI in Settings ⚙ (or start Kravitas with start.bat) to get real results.' : ' This preview runs on practice data. The real AI only runs when Kravitas is started with a working fal.ai key.'}</div>` : ''}
+      ${r ? `<div class="id-out ${IDEAS.busy ? 'dim' : ''}">${S.app.mock ? `<div class="id-demo-banner">Demo mode: these ideas are placeholders. The AI is not reading your text or your images yet, so they will not match what you asked for.${OWNER_LOCAL ? ' Connect the AI in Settings ⚙ (or start Kravitas with start.bat) to get real results.' : ' This preview runs on practice data. The real AI only runs when Kravitas is started with a working fal.ai key.'}</div>` : ''}
         <p class="b-sum">${esc(r.summary)}</p>
         <div class="id-cols">
           <div><h3>Who it's for</h3><p>${esc(r.audience)}</p></div>
@@ -413,7 +413,7 @@ function renderIdeas(box) {
             <label class="ib lg" title="Language" aria-label="Language"><span class="v">${LANG_SHORT[IDEAS.lang] || 'BM'}</span><select id="id-lang" aria-label="Language">${Object.entries(LANG).map(([k, l]) => `<option value="${k}" ${k === IDEAS.lang ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
             ${r ? '<button type="button" class="ib" id="id-new" title="Start a new idea" aria-label="New idea"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4"/></svg></button>' : ''}
             <span class="sp"></span>
-            ${OWNER_LOCAL && (S.app.mock || !S.app.keySet) ? '<span class="demo-dot" title="Demo mode: the AI cannot read your images or really follow your text until the AI is connected in Settings.">Demo</span>' : ''}
+            ${S.app.mock ? '<span class="demo-dot" title="Practice mode: placeholder results only.">Demo</span>' : ''}
             <button type="button" class="mdl" id="id-model" title="Choose the AI model and how hard it thinks" aria-label="AI model"><span class="v">${esc(llmName())} ▾</span></button>
             <button class="send" id="id-go" ${IDEAS.busy ? 'disabled' : ''} title="${r ? 'Send (✦ 1)' : 'Turn into prompts (✦ 2)'}" aria-label="${r ? 'Send' : 'Turn into prompts'}">${IDEAS.busy && !r ? '<i class="spin"></i>' : '<svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>'}</button>
           </div>

@@ -873,8 +873,8 @@ async function accountModal() {
 
 function localSettings(a, ledger) {
   const m = modal(`<h2>Settings</h2>
-    <p class="muted" style="margin:0 0 6px">${a.mock ? '🧪 Demo mode: no fal.ai key yet.' : '✅ fal.ai connected'}</p>
-    <label class="l">fal.ai API key</label><input class="in" id="key" type="password" placeholder="${a.mock ? 'paste key' : 'paste a new key to replace'}" autocomplete="off">
+    <p class="muted" style="margin:0 0 6px">${a.keySet ? '✅ fal.ai key saved' : '⚠️ No fal.ai key yet: AI actions are off until you add one.'}</p>
+    <label class="l">fal.ai API key</label><input class="in" id="key" type="password" placeholder="${a.keySet ? 'paste a new key to replace' : 'paste key'}" autocomplete="off">
     <p class="hint">Get it at <a href="https://fal.ai/dashboard/keys" target="_blank" rel="noopener">fal.ai/dashboard/keys</a>. Stored only on this computer.</p>
     <label class="l">Script AI model</label><input class="in" id="llm" value="${esc(a.llmModel)}">
     <div class="acts" style="margin-top:12px"><button class="btn pri" id="sv">Save</button>${a.mock ? '' : '<button class="btn danger" id="dc">Disconnect</button>'}</div>
@@ -888,7 +888,7 @@ function localSettings(a, ledger) {
     await api('/api/settings', body);
     toast('Saved'); closeModal(); await load(); renderAll();
   };
-  $('#dc', m) && ($('#dc', m).onclick = async () => { await api('/api/settings', { falKey: '' }); toast('Back to demo mode'); closeModal(); await load(); renderAll(); });
+  $('#dc', m) && ($('#dc', m).onclick = async () => { await api('/api/settings', { falKey: '' }); toast('Key removed'); closeModal(); await load(); renderAll(); });
   m.querySelectorAll('[data-add]').forEach((b) => (b.onclick = async () => { await api('/api/settings', { addCredits: +b.dataset.add }); toast(`+${b.dataset.add} credits`); accountModal(); }));
 }
 
