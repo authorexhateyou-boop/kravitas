@@ -916,3 +916,12 @@ button.ib{background:none;border:0;font:inherit}button.ib:hover{background:#2c2c
 .id-idea.open .id-more,.id-ideas.all .id-idea .id-more{display:flex}
 .id-ideas.all .id-tog{display:none}
 .id-lbl{margin:2px 0 0;font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+
+.id-other{background:transparent;border:1px dashed var(--line);border-radius:999px;color:#fff;font:inherit;font-size:13px;padding:6px 12px;min-width:90px;width:120px}
+.id-other:focus,.id-other.on{outline:none;border:1px solid #fff}
+.id-think .link{margin-top:10px}
+
+.editbox{display:flex;flex-direction:column;gap:8px;border:1px solid var(--line);border-radius:14px;padding:12px;margin:10px 0}
+.editbox[hidden]{display:none}.editbox>small{color:var(--muted);margin-top:-4px}
+.editbox textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;color:#fff;font:inherit;padding:8px 10px;resize:vertical}
+.editbox .chips{display:flex;flex-wrap:wrap;gap:6px}.ebgo{display:flex;gap:8px;flex-wrap:wrap}

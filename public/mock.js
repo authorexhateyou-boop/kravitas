@@ -737,6 +737,15 @@
       await sleep(1400); st.credits -= PRICE.llm; st.ledger.unshift({ at: Date.now(), what: 'Storyboard plan', credits: -PRICE.llm }); save();
       return planBoard(body.prompt, body.scenes);
     }
+    if (p === '/api/brainstorm/questions') {
+      await sleep(600);
+      const t = String(body.prompt || ''), said = /\b(image|photo|poster|picture|packshot|thumbnail|video|clip|reel|ad|iklan|ugc|story|gambar)\b/i.test(t);
+      const q = [];
+      if (!said) q.push({ id: 'kind', q: 'What do you want Kravitas to make?', options: ['Image', 'Video', 'Ad (video with voice)', 'Not sure, suggest'] });
+      if (/hoodie|shirt|tee|dress|tudung|jacket|cap\b/i.test(t)) q.push({ id: 'show', q: 'How should it be shown?', options: ['On a model', 'Flat on a table', 'Mockup front and back'] });
+      q.push({ id: 'platform', q: 'Where will it be posted?', options: ['TikTok', 'Instagram Reels', 'Shopee listing', 'Facebook'] });
+      return { questions: q.slice(0, 4) };
+    }
     if (p === '/api/panels/voice') {
       const text = String(body.text || '').trim(); if (!text) throw err('Write what is said in this panel first');
       const cost = credits((text.length / 1000) * (['motion', 'lite'].includes(body.tier) || !body.tier ? 6 : 10));

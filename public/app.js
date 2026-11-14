@@ -761,10 +761,16 @@ function jobModal(id) {
       ${j.error ? `<div class="err">${esc(j.error)}</div>` : ''}
       ${j.status !== 'done' ? `<ul class="steps">${j.steps.map((s) => `<li class="${s.status}">${esc(s.label)}</li>`).join('')}</ul>` : ''}
       ${review ? `<div class="review-box"><b>Review before rendering</b><small>Edit any script, then approve. Nothing is rendered until you do.</small>${j.draftData.plans.map((pl, k) => `<label>${j.draftData.plans.length > 1 ? `V${k + 1} · ${esc(j.draftData.angles?.[k] || '')}` : 'Script'}<textarea data-sc="${k}" rows="4">${esc(pl.script || '')}</textarea></label>`).join('')}<button class="btn pri" id="approve">Approve & render <span id="apc"></span></button></div>` : j.text ? `<div class="txt" id="jt">${esc(j.text)}</div>` : ''}
+      <div class="editbox" id="eb" hidden>
+        <b>What should change?</b><small>Kravitas keeps everything else the same.</small>
+        <div class="chips">${['Change the colour to…', 'Remove the background', 'Make it brighter', 'Add the text “…”', 'Make it look more premium'].map((x) => `<button type="button" class="chip" data-ec="${esc(x)}">${esc(x)}</button>`).join('')}</div>
+        <textarea id="ebt" rows="2" maxlength="300" placeholder="e.g. make the hoodie dark green"></textarea>
+        <div class="ebgo"><button class="btn pri" id="ebgo">Apply <small id="ebc1"></small></button><button class="btn" id="ebgo2" title="Slower and more faithful: best for logos, text and faces">Precise <small id="ebc2"></small></button></div>
+      </div>
       <div class="acts">
         ${first ? `<a class="btn pri" id="dl" href="${dl(first.url)}" download>⬇ Download</a>` : ''}
         ${j.text ? '<button class="btn" id="cp">Copy text</button>' : ''}
-        ${first?.type === 'image' && j.tool !== 'avatarGen' ? '<button class="btn" id="anim">🎬 Animate</button>' : ''}<button class="btn" id="favm">${favSet().has(j.id) ? '★ Saved' : '☆ Favourite'}</button>${first?.type === 'video' ? '<button class="btn" id="contin" title="Start the next shot where this one ended">⏭ Continue from last frame</button>' : ''}
+        ${first?.type === 'image' && j.tool !== 'avatarGen' ? '<button class="btn" id="imgedit">✏ Edit this image</button><button class="btn" id="anim">🎬 Animate</button>' : ''}<button class="btn" id="favm">${favSet().has(j.id) ? '★ Saved' : '☆ Favourite'}</button>${first?.type === 'video' ? '<button class="btn" id="contin" title="Start the next shot where this one ended">⏭ Continue from last frame</button>' : ''}
         ${j.status === 'done' && media.some((o) => o.type === 'image' || o.type === 'video') ? '<button class="btn" id="toedit">✂ Edit & add sound</button>' : ''}
         ${j.tool === 'avatarGen' && !j.input?.preset && j.status === 'done' ? '<button class="btn pri" id="saveav">＋ Save as friend</button>' : ''}
         ${media.some((o) => o.type === 'video') && j.status === 'done' ? '<button class="btn" id="post">📤 Post / schedule</button>' : ''}
@@ -797,6 +803,8 @@ function jobModal(id) {
     $('#dl', m).href = dl(cur.url);
     m.querySelectorAll('.thumbs button').forEach((x) => x.classList.toggle('on', x === b));
     const a = $('#anim', m); if (a) a.style.display = cur.type === 'image' ? '' : 'none';
+    const ie = $('#imgedit', m); if (ie) ie.style.display = cur.type === 'image' ? '' : 'none';
+    if (cur.type !== 'image') $('#eb', m).hidden = true;
   });
   $('#saveav', m) && ($('#saveav', m).onclick = () => saveAvatarFromJob(j, cur));
   $('#toedit', m) && ($('#toedit', m).onclick = () => { const o = cur && cur.type !== 'audio' ? cur : media.find((x) => x.type !== 'audio'); closeModal(); editAdd(o, j); setMode('edit'); renderAll(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
@@ -812,6 +820,26 @@ function jobModal(id) {
       setMode('video'); F().startImage = url; F().endImage = null; closeModal(); renderAll(); toast('Last frame is your next start frame');
     } catch { toast('Could not grab the last frame. Download the video, take a screenshot of the end, and upload it as a start frame.', true); b.disabled = false; b.textContent = '⏭ Continue from last frame'; }
   });
+  $('#imgedit', m) && ($('#imgedit', m).onclick = async () => {
+    const box = $('#eb', m); box.hidden = !box.hidden; if (box.hidden) return;
+    $('#ebt', m).focus();
+    const est = (quality) => api('/api/estimate', { tool: 'image', input: { prompt: 'x', startImage: cur.url, quality, count: 1 } }).then((r) => `✦ ${r.credits}`, () => '');
+    $('#ebc1', m).textContent = await est('lite'); $('#ebc2', m).textContent = await est('full');
+  });
+  m.querySelectorAll('[data-ec]').forEach((b) => (b.onclick = () => { const t = $('#ebt', m); t.value = b.dataset.ec; t.focus(); const i = t.value.indexOf('…'); if (i >= 0) t.setSelectionRange(i, i + 1); }));
+  const editGo = (quality) => async (e) => {
+    const text = $('#ebt', m).value.trim();
+    if (!text) { toast('Say what should change first', true); return $('#ebt', m).focus(); }
+    if (cur?.type !== 'image') return;
+    e.currentTarget.disabled = true;
+    try {
+      const job = await api('/api/jobs', { tool: 'image', input: { prompt: `Edit the attached image: ${text}. Keep everything else exactly the same: same subject, composition, lighting and any logo or text.`, startImage: cur.url, aspect: j.input?.aspect || '9:16', style: '', count: 1, quality } });
+      S.jobs.unshift(job); closeModal(); renderFeed(); poll(); load().then(() => renderFeed());
+      toast('Editing your image…');
+    } catch (err) { toast(err.message, true); e.currentTarget.disabled = false; if (err.code === 'credits' || err.code === 'plan') accountModal(); }
+  };
+  $('#ebgo', m) && ($('#ebgo', m).onclick = editGo('lite'));
+  $('#ebgo2', m) && ($('#ebgo2', m).onclick = editGo('full'));
   $('#anim', m) && ($('#anim', m).onclick = () => { setMode('video'); F().startImage = cur.url; closeModal(); renderComposer(true); });
   $('#reuse', m).onclick = () => {
     const mode = TOOL_MODE[j.tool];

@@ -17,7 +17,7 @@ import * as social from './lib/social.js';
 import { PLATFORMS, ANGLES, LANGS } from './lib/prompts.js';
 import { hasFF } from './lib/ffmpeg.js';
 import { securityHeaders, limit } from './lib/security.js';
-import { brainstorm, BRAINSTORM_COST, FOLLOWUP_COST } from './lib/brainstorm.js';
+import { brainstorm, clarify, BRAINSTORM_COST, FOLLOWUP_COST } from './lib/brainstorm.js';
 import { readReference } from './lib/refs.js';
 
 const stripe = config.stripeSecret ? new Stripe(config.stripeSecret) : null;
@@ -53,7 +53,7 @@ const wrap = (fn) => (req, res) => Promise.resolve(fn(req, res)).catch((e) => {
 const fail = (msg, status = 400) => Object.assign(new Error(msg), { status });
 
 // Anything that spends AI stops early and clearly when the fal.ai key is missing, so nobody is charged for nothing.
-const SPENDS = /^\/(brainstorm|storyboard\/plan|panels\/(plan|edit|draw|voice)|voices|jobs|series\/[^/]+\/episodes\/\d+)$/;
+const SPENDS = /^\/(brainstorm(\/questions)?|storyboard\/plan|panels\/(plan|edit|draw|voice)|voices|jobs|series\/[^/]+\/episodes\/\d+)$/;
 app.use('/api', (req, res, next) => {
   if (req.method === 'POST' && SPENDS.test(req.path) && keyMissing()) return res.status(503).json({ error: 'The AI is not connected yet. The owner needs to add the fal.ai key (FAL_KEY) first.', code: 'nokey' });
   next();
@@ -326,6 +326,16 @@ app.post('/api/brainstorm', limit('brainstorm', 30, 60), wrap(async (req, res) =
 }));
 
 // ---------- reference files for Ideas (image / PDF / DOCX / text) ----------
+// Free: a tiny, cheap model call that asks what is missing before the ideas are written.
+app.post('/api/brainstorm/questions', limit('plan', 40, 60), wrap(async (req, res) => {
+  const { prompt, friendId, productId, image, lang } = req.body;
+  const refs = (Array.isArray(req.body.refs) ? req.body.refs : []).slice(0, 4).map((r) => (r?.kind === 'image' && store.isOwnUrl(r.url) ? { kind: 'image', url: r.url } : null)).filter(Boolean);
+  const [friend, product] = await Promise.all([friendId ? store.get('friends', req.uid, friendId) : null, productId ? store.get('products', req.uid, productId) : null]);
+  const brand = String((await store.getProfile(req.uid))?.prefs?.brand || '');
+  try { res.json({ questions: await clarify({ prompt: String(prompt || '').slice(0, 3000), friend, product, image: image && store.isOwnUrl(image) ? image : null, lang, refs, brand }) }); }
+  catch (e) { res.json({ questions: [] }); } // never block the user because the questions failed
+}));
+
 app.post('/api/refs', limit('create', 40, 60), wrap(async (req, res) => {
   const { file, name } = req.body || {};
   if (typeof file !== 'string' || file.length > 14 * 1024 * 1024) throw fail('That file is too large (max 10 MB)');

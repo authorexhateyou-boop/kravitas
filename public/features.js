@@ -293,16 +293,30 @@ function ideasInput(extra = {}) {
 }
 function ideaKey(x) { return `${x.mode}|${x.title}|${x.prompt}`; }
 const ASK = { platform: [['tiktok', 'TikTok'], ['reels', 'Instagram Reels'], ['shorts', 'YouTube Shorts'], ['facebook', 'Facebook']], tone: [['funny', 'Funny'], ['emotional', 'Emotional'], ['hardsell', 'Hard sell'], ['chill', 'Chill'], ['dramatic', 'Dramatic']], length: [['15', '15 seconds'], ['30', '30 seconds'], ['60', '60 seconds']] };
+// Fallback questions, used when the smart ones cannot be fetched.
+const STATIC_QS = () => [
+  { id: 'platform', q: 'Where will it be posted?', options: ['TikTok', 'Instagram Reels', 'YouTube Shorts', 'Facebook'] },
+  { id: 'tone', q: 'What tone?', options: ['Funny', 'Emotional', 'Hard sell', 'Chill', 'Dramatic'] },
+  { id: 'length', q: 'How long?', options: ['15 seconds', '30 seconds', '60 seconds'] },
+];
 function askCard() {
-  const a = IDEAS.ask;
-  return `<div class="id-ask"><b>Three quick questions</b><small>So the ideas fit. Skip any you don't care about.</small>
-    ${Object.entries(ASK).map(([k, opts]) => `<div class="id-askrow"><span>${{ platform: 'Where will it be posted?', tone: 'What tone?', length: 'How long?' }[k]}</span><div>${opts.map(([v, l]) => `<button class="chip ${a[k] === v ? 'on' : ''}" data-ask="${k}:${v}">${l}</button>`).join('')}</div></div>`).join('')}
+  if (!IDEAS.qs) return '<div class="id-think"><i></i><b>Kravitas is reading your notes…</b><small>Working out what it needs to ask so the ideas fit.</small><button class="link" id="ask-skip">Skip the questions</button></div>';
+  const a = IDEAS.qa || {};
+  return `<div class="id-ask"><b>A few quick questions</b><small>Pick what fits, type your own, or skip. This only helps Kravitas aim better. It's free.</small>
+    ${IDEAS.qs.map((x) => { const typed = a[x.id] && !x.options.includes(a[x.id]); return `<div class="id-askrow"><span>${esc(x.q)}</span><div>${x.options.map((o) => `<button class="chip ${a[x.id] === o ? 'on' : ''}" data-ask="${esc(x.id)}" data-v="${esc(o)}">${esc(o)}</button>`).join('')}<input class="id-other ${typed ? 'on' : ''}" data-other="${esc(x.id)}" placeholder="Other…" maxlength="80" value="${typed ? esc(a[x.id]) : ''}"></div></div>`; }).join('')}
     <div class="id-askgo"><button class="btn pri" id="ask-go">Make ideas</button><button class="link" id="ask-skip">Skip the questions</button></div></div>`;
 }
-const briefText = () => { const a = IDEAS.ask || {}; const n = (k) => (ASK[k].find((o) => o[0] === a[k]) || [])[1]; const parts = [n('platform') && `Platform: ${n('platform')}`, n('tone') && `Tone: ${n('tone')}`, n('length') && `Length: ${n('length')}`].filter(Boolean); return parts.length ? `\n\n[Brief] ${parts.join(' · ')}` : ''; };
+const briefText = () => { const a = IDEAS.qa || {}; const lines = (IDEAS.qs || []).filter((x) => a[x.id]).map((x) => `- ${x.q} ${a[x.id]}`); return lines.length ? `\n\n[The user answered Kravitas's questions. Follow these answers.]\n${lines.join('\n')}` : ''; };
 async function ideasRun(box, force) {
   if (!IDEAS.dump.trim() && !IDEAS.productId && !IDEAS.friendId && !IDEAS.refs.length) { toast('Dump some ideas first, or add a product or a reference', true); return $('#id-dump')?.focus(); }
-  if (!force && !IDEAS.skipAsk && !IDEAS.result) { IDEAS.ask = IDEAS.ask || { platform: 'tiktok', tone: '', length: '30' }; IDEAS.asking = true; return renderIdeas(box); }
+  if (!force && !IDEAS.skipAsk && !IDEAS.result) {
+    IDEAS.asking = true; IDEAS.qs = null; IDEAS.qa = {}; const token = (IDEAS.askToken = Date.now()); renderIdeas(box);
+    let qs;
+    try { qs = (await api('/api/brainstorm/questions', { prompt: IDEAS.dump, productId: IDEAS.productId, friendId: IDEAS.friendId, lang: IDEAS.lang, refs: IDEAS.refs.map(({ kind, url }) => ({ kind, url })) })).questions; } catch (e) { qs = STATIC_QS(); }
+    if (IDEAS.askToken !== token || !IDEAS.asking) return; // the user skipped or left while we were thinking
+    if (!qs.length) { IDEAS.qs = []; return ideasRun(box, true); }
+    IDEAS.qs = qs; return renderIdeas(box);
+  }
   IDEAS.asking = false;
   if (!IDEAS.dump.trim() && !IDEAS.productId && !IDEAS.friendId && !IDEAS.refs.length) { toast('Dump some ideas first, or add a product or a reference', true); return $('#id-dump')?.focus(); }
   if (IDEAS.uploading) return toast('Still reading your files, one moment', true);
@@ -424,14 +438,15 @@ function renderIdeas(box) {
   const send = () => { if (IDEAS.busy) return; if (IDEAS.result) { const v = (IDEAS.msg || '').trim(); if (!v) return toast('Tell Kravitas what to change first', true); IDEAS.msg = ''; ideasRefine(box, v); } else ideasRun(box); };
   on('#id-dump', 'oninput', (e) => { if (IDEAS.result) IDEAS.msg = e.target.value; else IDEAS.dump = e.target.value; grow(e.target); });
   on('#id-dump', 'onkeydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
-  on('#id-new', 'onclick', () => { IDEAS.result = null; IDEAS.chat = []; IDEAS.msg = ''; IDEAS.dump = ''; renderIdeas(box); });
+  on('#id-new', 'onclick', () => { IDEAS.skipAsk = false; IDEAS.qs = null; IDEAS.qa = {}; IDEAS.asking = false; IDEAS.result = null; IDEAS.chat = []; IDEAS.msg = ''; IDEAS.dump = ''; renderIdeas(box); });
   if ($('#id-dump')) grow($('#id-dump'));
   on('#id-prod', 'onchange', (e) => { if (e.target.value === '__new') { e.target.value = IDEAS.productId || ''; return productModal(); } IDEAS.productId = e.target.value || null; });
   on('#id-face', 'onchange', (e) => { if (e.target.value === '__new') { e.target.value = IDEAS.friendId || ''; return friendModal(); } IDEAS.friendId = e.target.value || null; });
   on('#id-model', 'onclick', (e) => { e.stopPropagation(); window.openModelPicker(e.currentTarget, 'ideas'); });
-  box.querySelectorAll('[data-ask]').forEach((b) => (b.onclick = () => { const [k, v] = b.dataset.ask.split(':'); IDEAS.ask[k] = IDEAS.ask[k] === v ? '' : v; renderIdeas(box); }));
+  box.querySelectorAll('[data-ask]').forEach((b) => (b.onclick = () => { const k = b.dataset.ask, v = b.dataset.v; IDEAS.qa = IDEAS.qa || {}; IDEAS.qa[k] = IDEAS.qa[k] === v ? '' : v; renderIdeas(box); }));
+  box.querySelectorAll('[data-other]').forEach((inp) => (inp.oninput = () => { IDEAS.qa = IDEAS.qa || {}; IDEAS.qa[inp.dataset.other] = inp.value.trim(); inp.classList.toggle('on', !!inp.value.trim()); inp.parentElement.querySelectorAll('.chip.on').forEach((c) => c.classList.remove('on')); }));
   on('#ask-go', 'onclick', () => ideasRun(box, true));
-  on('#ask-skip', 'onclick', () => { IDEAS.skipAsk = true; IDEAS.ask = {}; ideasRun(box, true); });
+  on('#ask-skip', 'onclick', () => { IDEAS.skipAsk = true; IDEAS.qs = null; IDEAS.qa = {}; IDEAS.asking = false; ideasRun(box, true); });
   on('#id-lang', 'onchange', (e) => { IDEAS.lang = e.target.value; const v = e.target.parentElement.querySelector('.v'); if (v) v.textContent = LANG_SHORT[IDEAS.lang] || 'BM'; });
   on('#id-go', 'onclick', send);
   if (IDEAS.autorun) { IDEAS.autorun = false; setTimeout(() => ideasRun(box), 0); }
