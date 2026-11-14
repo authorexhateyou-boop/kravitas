@@ -140,7 +140,7 @@ const PRESETS = {
 
 const DEFAULTS = {
   video: () => ({ prompt: '', friendId: null, productId: null, startImage: null, endImage: null, camera: 'dolly-in', style: 'cinematic', model: 'h3-turbo', duration: 5, aspect: '9:16', audio: false }),
-  image: () => ({ prompt: '', friendId: null, productId: null, style: 'photo', aspect: '9:16', count: 1, quality: canUse('creator') ? 'full' : 'lite' }),
+  image: () => ({ prompt: '', friendId: null, productId: null, style: 'photo', aspect: '9:16', count: 1, quality: 'lite' }),
   ad: () => ({ prompt: '', friendId: null, productId: null, format: 'talking', tier: startTier(), approve: true, variants: 1, angle: 'review', platform: 'tiktok', lang: 'ms', seconds: 8, voice: 'mm:Lively_Girl', captions: true }),
   talk: () => ({ prompt: '', friendId: null, image: null, textMode: 'script', tier: startTier(), lang: 'ms', voice: 'mm:Lively_Girl', captions: true, seconds: 8 }),
   story: () => ({ prompt: '', friendId: null, scenes: 4, tier: 'motion', aspect: '9:16', style: 'cinematic', lang: 'en', voice: 'el:Aria', model: 'h3-turbo', captions: true }),
