@@ -678,6 +678,7 @@ function mainStage() {
 function renderMain() {
   const box = $('#zz-main'); if (!box) return;
   if (S.mode === 'schedule') { box.innerHTML = '<div id="sched"></div>'; renderSchedule(); return; }
+  if (S.mode === 'templates') return window.renderTemplates(box);
   if (S.mode === 'edit') return renderEditor(box);
   if (S.mode === 'ideas') return renderIdeas(box);
   box.innerHTML = `<div class="fl-head"><h1>${FL_TITLE[S.mode] || ''}</h1><p>${HERO[S.mode]?.[1] || ''}</p></div>
@@ -691,7 +692,7 @@ function renderMain() {
 let studioPreview = () => {};
 // ---------- workspace shell: tool rail · work area · settings panel ----------
 const RAIL = [
-  ['Create', [['ideas', '✨', 'Ideas'], ['ad', '🛍', 'Ad'], ['image', '🖼', 'Image'], ['video', '🎬', 'Video'], ['voice', '🎙', 'Voice'], ['edit', '✂', 'Edit'], ['schedule', '📅', 'Schedule'], ['soon3d', '🧊', '3D', 'Coming soon']]],
+  ['Create', [['ideas', '✨', 'Ideas'], ['templates', '🧩', 'Templates'], ['ad', '🛍', 'Ad'], ['image', '🖼', 'Image'], ['video', '🎬', 'Video'], ['voice', '🎙', 'Voice'], ['edit', '✂', 'Edit'], ['schedule', '📅', 'Schedule'], ['soon3d', '🧊', '3D', 'Coming soon']]],
   ['Library', [['media', '▦', 'All media'], ['chars', '☺', 'Characters'], ['products', '▣', 'Products']]],
 ];
 const LIB_MODES = new Set(['media', 'chars', 'products']);

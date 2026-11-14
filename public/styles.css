@@ -881,3 +881,9 @@ button.ib{background:none;border:0;font:inherit}button.ib:hover{background:#2c2c
   .id-dock .id-chat textarea{min-height:56px;padding:14px 16px 4px}
   .ws .composer.inline .prompt{padding:10px 10px 4px;min-height:44px}
 }
+.tpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.tpl{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--s2,#111);display:flex;flex-direction:column}
+.tpl-cover{height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:linear-gradient(135deg,hsl(var(--h) 45% 24%),hsl(calc(var(--h) + 40) 40% 10%))}
+.tpl-e{font-size:38px}.tpl-cover small{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+.tpl-b{padding:14px;display:flex;flex-direction:column;gap:6px;flex:1}.tpl-b b{font-size:15px}.tpl-b p{margin:0;color:var(--muted);font-size:12.5px}
+.tpl-b ul{margin:6px 0 10px;padding-left:18px;font-size:12.5px;color:var(--muted);flex:1}.tpl-b li{margin:2px 0}

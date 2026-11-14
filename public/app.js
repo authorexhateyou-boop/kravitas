@@ -91,6 +91,7 @@ const MODES = {
   edit: { label: 'Edit' }, // the editor has its own main card (no composer)
   ideas: { label: 'Ideas' }, // brainstorm dump → prompts, saved to the library
   schedule: { label: 'Schedule', page: true },
+  templates: { label: 'Templates', page: true },
   media: { label: 'All media' }, chars: { label: 'Characters' }, products: { label: 'Products' }, // library pages in the sidebar
 };
 const TOOL_MODE = Object.fromEntries(Object.entries(MODES).filter(([, v]) => v.tool).map(([m, v]) => [v.tool, m]));
@@ -145,7 +146,7 @@ const DEFAULTS = {
   talk: () => ({ prompt: '', friendId: null, image: null, textMode: 'script', tier: startTier(), lang: 'ms', voice: 'mm:Lively_Girl', captions: true, seconds: 8 }),
   story: () => ({ prompt: '', friendId: null, scenes: 4, tier: 'motion', aspect: '9:16', style: 'cinematic', lang: 'en', voice: 'el:Aria', model: 'h3-turbo', captions: true }),
   voice: () => ({ prompt: '', kind: 'tts', voice: 'el:Aria', voiceEngine: 'v3', emotion: 'neutral', speed: 1, lang: 'ms', length: 30 }),
-  home: () => ({}), schedule: () => ({}),
+  home: () => ({}), schedule: () => ({}), templates: () => ({}),
 };
 
 const PLACEHOLDER = {
