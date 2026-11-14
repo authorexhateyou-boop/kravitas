@@ -692,6 +692,20 @@
       if (/wordprocessingml|\.docx$/i.test(m[1] + name)) throw err('Word files are read in the full version. For this preview, paste the text or save it as PDF.');
       throw err(`${name}: use an image, PDF, Word (.docx) or text file`);
     }
+    if (p === '/api/series' && method === 'GET') return st.series || [];
+    if (p === '/api/series' && method === 'POST') {
+      if (!String(body.name || '').trim()) throw err('Give the series a name');
+      const row = { id: id(), name: String(body.name).slice(0, 80), look: String(body.look || '').slice(0, 800), friendId: body.friendId || null, productId: body.productId || null, aspect: body.aspect || '9:16', lang: body.lang || 'ms', episodes: (body.episodes || []).slice(0, 1).map((e, k) => ({ n: k + 1, title: String(e.title || '').slice(0, 120), recap: String(e.recap || '').slice(0, 900) })), created: Date.now() };
+      (st.series ||= []).unshift(row); save(); return row;
+    }
+    { const m = p.match(/^\/api\/series\/([^/]+)\/episodes(?:\/(\d+))?$/);
+      if (m && method === 'POST') {
+        const cur = (st.series || []).find((x) => x.id === m[1]); if (!cur) throw err('Series not found');
+        if (m[2]) cur.episodes = cur.episodes.map((e) => (e.n === +m[2] ? { ...e, title: body.title ?? e.title, recap: body.recap ?? e.recap } : e));
+        else cur.episodes.push({ n: cur.episodes.length + 1, title: String(body.title || '').slice(0, 120), recap: String(body.recap || '').slice(0, 900) });
+        save(); return cur;
+      } }
+    if (p.startsWith('/api/series/') && method === 'DELETE') { st.series = (st.series || []).filter((x) => x.id !== p.split('/').pop()); save(); return { ok: true }; }
     if (p === '/api/ideas' && method === 'GET') return st.ideas || [];
     if (p === '/api/ideas' && method === 'POST') {
       const row = { id: id(), mode: ['ad', 'video', 'image'].includes(body.mode) ? body.mode : 'ad', title: String(body.title || body.prompt || 'Idea').slice(0, 80), prompt: String(body.prompt || '').slice(0, 2000), why: String(body.why || '').slice(0, 300), hook: String(body.hook || '').slice(0, 300), settings: body.settings || {}, productId: body.productId || null, friendId: body.friendId || null, lang: body.lang || 'ms', createdAt: Date.now() };

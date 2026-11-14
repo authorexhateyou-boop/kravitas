@@ -339,6 +339,32 @@ app.post('/api/ideas', limit('create', 60, 60), wrap(async (req, res) => {
   });
   res.json(row);
 }));
+// ---------- series: a saved character/look plus the episodes so far ----------
+const cleanEp = (e, n) => ({ n, title: str(e?.title, 120), recap: str(e?.recap, 900) });
+app.get('/api/series', wrap(async (req, res) => res.json(await store.list('series', req.uid))));
+app.post('/api/series', limit('create', 30, 60), wrap(async (req, res) => {
+  const b = req.body || {};
+  const name = str(b.name, 80).trim();
+  if (!name) throw fail('Give the series a name');
+  const row = await store.insert('series', req.uid, {
+    id: newId(), name, look: str(b.look, 800), friendId: b.friendId ? str(b.friendId, 60) : null, productId: b.productId ? str(b.productId, 60) : null,
+    aspect: ASPECTS.includes(b.aspect) ? b.aspect : '9:16', lang: str(b.lang || 'ms', 10), episodes: (Array.isArray(b.episodes) ? b.episodes : []).slice(0, 1).map((e, k) => cleanEp(e, k + 1)), created: Date.now(),
+  });
+  res.json(row);
+}));
+app.post('/api/series/:id/episodes', limit('create', 60, 60), wrap(async (req, res) => {
+  const cur = await store.get('series', req.uid, req.params.id);
+  if (!cur) throw fail('Series not found', 404);
+  const eps = [...(cur.episodes || []), cleanEp(req.body, (cur.episodes || []).length + 1)].slice(0, 60);
+  res.json(await store.update('series', req.uid, cur.id, { episodes: eps }));
+}));
+app.post('/api/series/:id/episodes/:n', limit('create', 120, 60), wrap(async (req, res) => {
+  const cur = await store.get('series', req.uid, req.params.id);
+  if (!cur) throw fail('Series not found', 404);
+  const eps = (cur.episodes || []).map((e) => (e.n === +req.params.n ? cleanEp({ title: req.body?.title ?? e.title, recap: req.body?.recap ?? e.recap }, e.n) : e));
+  res.json(await store.update('series', req.uid, cur.id, { episodes: eps }));
+}));
+app.delete('/api/series/:id', wrap(async (req, res) => { await store.remove('series', req.uid, req.params.id); res.json({ ok: true }); }));
 app.delete('/api/ideas/:id', wrap(async (req, res) => { await store.remove('ideas', req.uid, req.params.id); res.json({ ok: true }); }));
 app.put('/api/brand', limit('create', 30, 60), wrap(async (req, res) => {
   const brand = str(req.body?.brand, 1500);
@@ -401,6 +427,7 @@ app.post('/api/panels/plan', limit('plan', 30, 60), wrap(async (req, res) => {
   const ctx = { charge(c) { spent += c; } };
   try {
     const plan = await planPanels(ctx, { prompt, lang: b.lang, panels: n, product: L.product(b.productId), friend: L.friend(b.friendId), brand: L.brand, notes: str(b.notes, 3000) });
+    if (b.look) plan.look = str(b.look, 800); // series: the saved look wins so the character does not drift between episodes
     plan.panels = await Promise.all(plan.panels.map(async (x) => ({ ...x, image: await drawPanel(ctx, { kind: 'sketch', visual: x.visual, look: plan.look, aspect }), kind: 'sketch' })));
     res.json({ ...plan, aspect, cost });
   } catch (e) {
