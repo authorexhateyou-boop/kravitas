@@ -288,7 +288,7 @@ const REF_ACCEPT = '.png,.jpg,.jpeg,.webp,.pdf,.docx,.txt,.md,.csv,image/png,ima
 const IDEA_MODE = { ad: 'Ad', video: 'Video', image: 'Image' };
 const IDEA_EX = ['serum vit c rm29, flash sale weekend, target mak-mak 30-45, kawan cakap kulit cerah dlm seminggu, vibe santai, free shipping', 'new kopi brand, kopitiam vibes but modern, students + office workers, launch next month, nak content yg relatable', 'tudung bawal satin 15 colours, raya collection, price RM35, ready stock, before/after styling'];
 function ideasInput(extra = {}) {
-  return { mode: 'any', writer: IDEAS.writer || 'flash', prompt: IDEAS.dump, productId: IDEAS.productId, friendId: IDEAS.friendId, lang: IDEAS.lang, refs: IDEAS.refs.map(({ kind, url, name, text }) => ({ kind, url, name, text })), ...extra };
+  return { mode: 'any', writer: IDEAS.writer || 'flash', effort: IDEAS.effort || 'balanced', prompt: IDEAS.dump, productId: IDEAS.productId, friendId: IDEAS.friendId, lang: IDEAS.lang, refs: IDEAS.refs.map(({ kind, url, name, text }) => ({ kind, url, name, text })), ...extra };
 }
 function ideaKey(x) { return `${x.mode}|${x.title}|${x.prompt}`; }
 async function ideasRun(box) {
@@ -367,6 +367,7 @@ async function attachRefs(files, done) {
   }
 }
 function renderIdeas(box) {
+  { const w = (S.app.catalog?.writers || {})[IDEAS.writer]; if (w && w.plan !== 'free' && !canUse(w.plan)) IDEAS.writer = 'flash'; } // a plan change can lock the chosen writer
   if (IDEAS.sb) return renderSb(box);
   const r = IDEAS.result;
   const pr = productById(IDEAS.productId), fr = friendById(IDEAS.friendId);
@@ -401,7 +402,7 @@ function renderIdeas(box) {
             ${r ? '<button type="button" class="ib" id="id-new" title="Start a new idea" aria-label="New idea"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4"/></svg></button>' : ''}
             <span class="sp"></span>
             ${OWNER_LOCAL && (S.app.mock || !S.app.keySet) ? '<span class="demo-dot" title="Demo mode: the AI cannot read your images or really follow your text until the AI is connected in Settings.">Demo</span>' : ''}
-            <label class="mdl" title="The AI that writes your ideas. Better ones unlock with your plan."><span class="v">${esc(llmName())} ▾</span><select id="id-writer" aria-label="AI writer">${Object.entries(S.app.catalog?.writers || { flash: { name: llmName(), plan: 'free' } }).map(([k, w]) => `<option value="${k}" ${k === IDEAS.writer ? 'selected' : ''}>${esc(w.name)}${w.note ? ' · ' + esc(w.note) : ''}${(w.plan !== 'free' && !canUse(w.plan)) ? ' 🔒 ' + (PLAN_LABEL[w.plan] || w.plan) : ''}</option>`).join('')}</select></label>
+            <button type="button" class="mdl" id="id-model" title="Choose the AI model and how hard it thinks" aria-label="AI model"><span class="v">${esc(llmName())} ▾</span></button>
             <button class="send" id="id-go" ${IDEAS.busy ? 'disabled' : ''} title="${r ? 'Send (✦ 1)' : 'Turn into prompts (✦ 2)'}" aria-label="${r ? 'Send' : 'Turn into prompts'}">${IDEAS.busy && !r ? '<i class="spin"></i>' : '<svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>'}</button>
           </div>
         </div>
@@ -416,11 +417,7 @@ function renderIdeas(box) {
   if ($('#id-dump')) grow($('#id-dump'));
   on('#id-prod', 'onchange', (e) => { if (e.target.value === '__new') { e.target.value = IDEAS.productId || ''; return productModal(); } IDEAS.productId = e.target.value || null; });
   on('#id-face', 'onchange', (e) => { if (e.target.value === '__new') { e.target.value = IDEAS.friendId || ''; return friendModal(); } IDEAS.friendId = e.target.value || null; });
-  on('#id-writer', 'onchange', (e) => {
-    const w = (S.app.catalog?.writers || {})[e.target.value];
-    if (w && w.plan !== 'free' && !canUse(w.plan)) { toast(`${w.name} needs the ${PLAN_LABEL[w.plan] || w.plan} plan`, true); e.target.value = IDEAS.writer; return; }
-    IDEAS.writer = e.target.value; const v = e.target.parentElement.querySelector('.v'); if (v) v.textContent = llmName() + ' ▾';
-  });
+  on('#id-model', 'onclick', (e) => { e.stopPropagation(); window.openModelPicker(e.currentTarget, 'ideas'); });
   on('#id-lang', 'onchange', (e) => { IDEAS.lang = e.target.value; const v = e.target.parentElement.querySelector('.v'); if (v) v.textContent = LANG_SHORT[IDEAS.lang] || 'BM'; });
   on('#id-go', 'onclick', send);
   if (IDEAS.autorun) { IDEAS.autorun = false; setTimeout(() => ideasRun(box), 0); }

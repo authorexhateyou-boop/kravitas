@@ -353,7 +353,7 @@ function cardHTML(j) {
     const cur = j.steps.find((s) => s.status === 'running') || j.steps[j.steps.length - 1];
     const pct = j.steps.length ? Math.round((j.steps.filter((s) => s.status === 'done').length / (j.steps.length + 1)) * 100) : 5;
     const st = j.status === 'error' ? `Failed: ${j.error || ''}` : j.status === 'running' ? `${cur?.label || 'Starting'}…${cur?.note ? ' · ' + cur.note : ''}` : j.outputs.some((o) => o.type === 'audio') ? '🎧 Audio ready · tap to play' : '📝 Script ready';
-    return `<div class="card ${j.status === 'running' ? 'run' : j.status === 'error' ? 'err' : ''}" data-job="${j.id}"><div class="box" style="aspect-ratio:${ratio}"><span class="tag">${label}</span><b>${esc(j.title)}</b><span class="st">${esc(st)}</span>${j.status === 'running' ? `<div class="bar"><i style="width:${pct}%"></i></div>` : ''}</div></div>`;
+    return `<div class="card ${j.status === 'running' ? 'run' : j.status === 'error' ? 'err' : ''}" data-job="${j.id}"><div class="box" style="aspect-ratio:${ratio}"><span class="tag">${label}</span><b>${esc(j.title)}</b><span class="st">${esc(st)}</span>${j.status === 'error' && j.input ? `<button class="btn retry" data-retry="${j.id}">↻ Try again</button>` : ''}${j.status === 'running' ? `<div class="bar"><i style="width:${pct}%"></i></div>` : ''}</div></div>`;
   }
   const media = t.type === 'video' ? `<video src="${t.url}#t=0.3" muted loop playsinline preload="metadata"></video>` : `<img src="${t.url}" loading="lazy" alt="">`;
   return `<div class="card" data-job="${j.id}" data-t="${t.type}" data-fav="${favSet().has(j.id) ? 1 : 0}"><button class="fav ${favSet().has(j.id) ? 'on' : ''}" data-favbtn="${j.id}" aria-label="Save to favourites" title="Favourite">★</button>${media}<span class="tag">${label}</span>${j.mock ? '<span class="tag demo">demo</span>' : ''}<div class="ov">${esc(j.title)}</div></div>`;
@@ -466,7 +466,7 @@ function renderComposer(keepFocus) {
   if (pr) refs.push(`<span class="ref"><img src="${pr.image}">${esc(pr.name)}<button data-unref="productId">×</button></span>`);
   const needs = m === 'ad' && !pr ? '<button class="add req" data-attach>＋ Product</button>' : m === 'talk' && !fr && !f.image ? '<button class="add req" data-attach>＋ Who talks</button>' : '';
   const P = (k, l) => pill(k, l, pillOptions(k), f[k]);
-  const MCHIP = () => `<button class="pill mchip" data-open="models" title="The AI model this uses. Tap to see all models."><span class="k">◆</span>${esc(modelInfo().name)}</button>`;
+  const MCHIP = () => `<button class="pill mchip" data-pill="voiceModel" title="The AI model this uses. Tap to change it."><span class="k">◆</span>${esc(modelInfo().name)}</button>`;
   const VBOARD = '<button class="pill" data-vboard title="Plan the video scene by scene with pictures before you pay for it">🎞 Storyboard</button>';
   if (m === 'ad' && !ADV) f.approve = true; // simple mode always shows the script first
   const simple = {
@@ -565,11 +565,15 @@ async function generate() {
 function openPop(anchor, html, onPick) {
   const pop = $('#pop');
   pop.innerHTML = html;
-  pop.hidden = false;
+  pop.hidden = false; pop.style.maxHeight = Math.max(200, innerHeight - 16) + 'px';
   const r = anchor.getBoundingClientRect();
   const w = pop.offsetWidth, h = pop.offsetHeight;
   pop.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left)) + 'px';
-  pop.style.top = (r.top - h - 8 > 8 ? r.top - h - 8 : r.bottom + 8) + 'px';
+  pop.style.maxHeight = Math.max(200, innerHeight - 16) + 'px'; pop.style.overflowY = 'auto';
+  const h2 = Math.min(h, innerHeight - 16);
+  let top = r.top - h2 - 8 > 8 ? r.top - h2 - 8 : r.bottom + 8;
+  top = Math.max(8, Math.min(top, innerHeight - h2 - 8));
+  pop.style.top = top + 'px';
   pop.onclick = (e) => { const it = e.target.closest('[data-v]'); if (it) { onPick(it.dataset.v, e); } };
 }
 const closePop = () => { $('#pop').hidden = true; };
@@ -581,7 +585,8 @@ function pillMenu(anchor, key) {
   openPop(anchor, Object.entries(opts).map(([v, l]) => {
     const need = needFor(key, /^\d+$/.test(v) ? +v : v);
     const locked = need && !canUse(need);
-    return `<button class="it ${v === cur ? 'on' : ''} ${locked ? 'locked' : ''}" data-v="${esc(v)}"><span>${esc(l)}${locked ? ` <em class="lock">🔒 ${PLAN_LABEL[need]}</em>` : ''}${sub[v] ? `<small>${sub[v]}</small>` : ''}</span></button>`;
+    if (locked) return `<div class="it locked" aria-disabled="true" title="Included in the ${PLAN_LABEL[need]} plan"><span>${esc(l)}${sub[v] ? `<small>${sub[v]}</small>` : ''}</span><em class="lockbadge"><svg class="lk" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>${PLAN_LABEL[need]}</em></div>`;
+    return `<button class="it ${v === cur ? 'on' : ''}" data-v="${esc(v)}"><span>${esc(l)}${sub[v] ? `<small>${sub[v]}</small>` : ''}</span></button>`;
   }).join(''), (v) => {
     const need = needFor(key, /^\d+$/.test(v) ? +v : v);
     if (need && !canUse(need)) { closePop(); toast(`${opts[v]} is on the ${PLAN_LABEL[need]} plan`); return accountModal(); }
@@ -922,9 +927,9 @@ function renderAll() {
   renderFeed();
 }
 
-document.addEventListener('click', (e) => {
+document.addEventListener('click', async (e) => {
   const t = e.target;
-  if (!$('#pop').hidden && !t.closest('#pop') && !t.closest('[data-pill],[data-attach]')) closePop();
+  if (!$('#pop').hidden && !(e.composedPath ? e.composedPath().some((n) => n.id === 'pop') : t.closest('#pop')) && !t.closest('[data-pill],[data-attach],#id-model')) closePop();
   const mode = t.closest('[data-mode]');
   if (mode) { e.preventDefault(); setMode(mode.dataset.mode); renderAll(); return; }
   if (t.closest('[data-open="models"]')) return modelsModal();
@@ -933,7 +938,11 @@ document.addEventListener('click', (e) => {
   if (nw) return nw.dataset.new === 'friend' ? friendModal() : productModal();
   if (t.closest('[data-close]') || t.id === 'modal') return closeModal();
   const pl = t.closest('[data-pill]');
-  if (pl) return pillMenu(pl, pl.dataset.pill);
+  if (pl) {
+    const k = pl.dataset.pill;
+    if (k === 'voiceModel' || (k === 'model' && S.mode === 'video') || k === 'tier' || k === 'quality') return window.openModelPicker(pl, S.mode);
+    return pillMenu(pl, k);
+  }
   const tg = t.closest('[data-toggle]');
   if (tg) { F()[tg.dataset.toggle] = !F()[tg.dataset.toggle]; return renderComposer(); }
   const at = t.closest('[data-attach]');
@@ -972,6 +981,14 @@ document.addEventListener('click', (e) => {
     if (S.mode === 'image' && !f.productId && ['studio', 'life', 'flat', 'festive'].includes(p.id)) f.productId = S.products[0]?.id || null;
     S.preset[S.mode] = p.id;
     renderPresets(); renderComposer(true);
+    return;
+  }
+  const rt = t.closest('[data-retry]');
+  if (rt) {
+    const old = S.jobs.find((x) => x.id === rt.dataset.retry); if (!old) return;
+    rt.disabled = true; rt.textContent = 'Starting…';
+    try { const job = await api('/api/jobs', { tool: old.tool, input: old.input }); S.jobs.unshift(job); renderFeed(); poll(); load().then(() => renderFeed()); }
+    catch (err) { toast(err.message, true); if (err.code === 'credits' || err.code === 'plan') accountModal(); rt.disabled = false; rt.textContent = '↻ Try again'; }
     return;
   }
   const fb = t.closest('[data-favbtn]');

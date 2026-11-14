@@ -310,7 +310,7 @@ app.post('/api/brainstorm', limit('brainstorm', 30, 60), wrap(async (req, res) =
   try {
     const w = WRITERS[req.body.writer];
     if (w && !allowed(await planOf(req.uid), w.plan)) throw planFail(w.name, w.plan);
-    res.json(await brainstorm({ mode, prompt: String(prompt || '').slice(0, 4000), friend, product, image: img, lang, chat, previous, brand, refs, model: w && w.id !== WRITERS.flash.id ? w.id : null }));
+    res.json(await brainstorm({ mode, prompt: String(prompt || '').slice(0, 4000), friend, product, image: img, lang, chat, previous, brand, refs, effort: ['quick', 'balanced', 'deep'].includes(req.body.effort) ? req.body.effort : 'balanced', model: w && w.id !== WRITERS.flash.id ? w.id : null }));
   } catch (e) {
     await store.adjust(req.uid, cost, 'Refund (brainstorm failed)', null, true);
     throw e;
