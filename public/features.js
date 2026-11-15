@@ -295,22 +295,29 @@ function ideaKey(x) { return `${x.mode}|${x.title}|${x.prompt}`; }
 const ASK = { platform: [['tiktok', 'TikTok'], ['reels', 'Instagram Reels'], ['shorts', 'YouTube Shorts'], ['facebook', 'Facebook']], tone: [['funny', 'Funny'], ['emotional', 'Emotional'], ['hardsell', 'Hard sell'], ['chill', 'Chill'], ['dramatic', 'Dramatic']], length: [['15', '15 seconds'], ['30', '30 seconds'], ['60', '60 seconds']] };
 // Fallback questions, used when the smart ones cannot be fetched.
 const STATIC_QS = () => [
-  { id: 'platform', q: 'Where will it be posted?', options: ['TikTok', 'Instagram Reels', 'YouTube Shorts', 'Facebook'] },
-  { id: 'tone', q: 'What tone?', options: ['Funny', 'Emotional', 'Hard sell', 'Chill', 'Dramatic'] },
-  { id: 'length', q: 'How long?', options: ['15 seconds', '30 seconds', '60 seconds'] },
+  { id: 'kind', q: 'What do you want Kravitas to make?', options: ['Image', 'Video', 'Ad (video with voice)', 'Not sure, suggest'] },
+  { id: 'background', q: 'What should the background be?', options: ['Clean studio', 'Real-life setting', 'Outdoors', 'Colourful or abstract', 'Keep it like my reference'] },
+  { id: 'platform', q: 'Where will it be posted?', options: ['TikTok', 'Instagram Reels', 'YouTube Shorts', 'Shopee or Lazada listing', 'Facebook'] },
+  { id: 'tone', q: 'What tone?', options: ['Funny', 'Emotional', 'Hard sell', 'Chill and aesthetic', 'Premium'] },
 ];
+const qHas = (x, o) => { const v = (IDEAS.qa || {})[x.id]; return Array.isArray(v) ? v.includes(o) : v === o; };
 function askCard() {
-  if (!IDEAS.qs) return '<div class="id-think"><i></i><b>Kravitas is reading your notes…</b><small>Working out what it needs to ask so the ideas fit.</small><button class="link" id="ask-skip">Skip the questions</button></div>';
+  if (!IDEAS.qs) return '<div class="id-think"><i></i><b>Kravitas is reading your notes and pictures…</b><small>Working out what it needs to ask so the ideas fit.</small><button class="link" id="ask-skip">Skip the questions</button></div>';
   const a = IDEAS.qa || {};
-  return `<div class="id-ask"><b>A few quick questions</b><small>Pick what fits, type your own, or skip. This only helps Kravitas aim better. It's free.</small>
-    ${IDEAS.qs.map((x) => { const typed = a[x.id] && !x.options.includes(a[x.id]); return `<div class="id-askrow"><span>${esc(x.q)}</span><div>${x.options.map((o) => `<button class="chip ${a[x.id] === o ? 'on' : ''}" data-ask="${esc(x.id)}" data-v="${esc(o)}">${esc(o)}</button>`).join('')}<input class="id-other ${typed ? 'on' : ''}" data-other="${esc(x.id)}" placeholder="Other…" maxlength="80" value="${typed ? esc(a[x.id]) : ''}"></div></div>`; }).join('')}
-    <div class="id-askgo"><button class="btn pri" id="ask-go">Make ideas</button><button class="link" id="ask-skip">Skip the questions</button></div></div>`;
+  return `<div class="id-survey"><div class="id-sv-head"><b>A few quick questions</b><small>Tick what fits, add your own, or skip. This is free and only helps Kravitas aim better.</small></div>
+    ${IDEAS.qs.map((x, n) => { const cur = a[x.id]; const typed = IDEAS.qtyped?.[x.id] || '';
+      return `<div class="id-q"><h4>${n + 1}. ${esc(x.q)}${x.multi ? ' <em>pick any</em>' : ''}</h4>
+        ${x.options.map((o) => `<button class="id-opt ${qHas(x, o) ? 'on' : ''} ${x.multi ? 'multi' : ''}" data-ask="${esc(x.id)}" data-v="${esc(o)}" role="${x.multi ? 'checkbox' : 'radio'}" aria-checked="${qHas(x, o)}"><i></i><span>${esc(o)}</span></button>`).join('')}
+        <label class="id-opt other ${typed ? 'on' : ''}"><i></i><input data-other="${esc(x.id)}" placeholder="Something else…" maxlength="100" value="${esc(typed)}"></label></div>`; }).join('')}
+    <div class="id-q"><h4>${IDEAS.qs.length + 1}. Anything else Kravitas should know?</h4><textarea id="ask-notes" rows="3" maxlength="500" placeholder="Colours, must-haves, things to avoid, a reference link…">${esc(IDEAS.qnotes || '')}</textarea><small class="id-hint">You can still add more reference pictures with the + button below before you continue.</small></div>
+    <button class="btn pri id-sv-go" id="ask-go">Make my ideas →</button><button class="link id-sv-skip" id="ask-skip">Skip the questions</button></div>`;
 }
-const briefText = () => { const a = IDEAS.qa || {}; const lines = (IDEAS.qs || []).filter((x) => a[x.id]).map((x) => `- ${x.q} ${a[x.id]}`); return lines.length ? `\n\n[The user answered Kravitas's questions. Follow these answers.]\n${lines.join('\n')}` : ''; };
+const ansText = (v) => (Array.isArray(v) ? v.join(', ') : v);
+const briefText = () => { const a = IDEAS.qa || {}; const lines = (IDEAS.qs || []).filter((x) => ansText(a[x.id])).map((x) => `- ${x.q} ${ansText(a[x.id])}`); if (IDEAS.qnotes?.trim()) lines.push(`- Extra notes: ${IDEAS.qnotes.trim()}`); return lines.length ? `\n\n[The user answered Kravitas's questions. Follow these answers.]\n${lines.join('\n')}` : ''; };
 async function ideasRun(box, force) {
   if (!IDEAS.dump.trim() && !IDEAS.productId && !IDEAS.friendId && !IDEAS.refs.length) { toast('Dump some ideas first, or add a product or a reference', true); return $('#id-dump')?.focus(); }
   if (!force && !IDEAS.skipAsk && !IDEAS.result) {
-    IDEAS.asking = true; IDEAS.qs = null; IDEAS.qa = {}; const token = (IDEAS.askToken = Date.now()); renderIdeas(box);
+    IDEAS.asking = true; IDEAS.qs = null; IDEAS.qa = {}; IDEAS.qtyped = {}; IDEAS.qnotes = ''; const token = (IDEAS.askToken = Date.now()); renderIdeas(box);
     let qs;
     try { qs = (await api('/api/brainstorm/questions', { prompt: IDEAS.dump, productId: IDEAS.productId, friendId: IDEAS.friendId, lang: IDEAS.lang, refs: IDEAS.refs.map(({ kind, url }) => ({ kind, url })) })).questions; } catch (e) { qs = STATIC_QS(); }
     if (IDEAS.askToken !== token || !IDEAS.asking) return; // the user skipped or left while we were thinking
@@ -438,13 +445,24 @@ function renderIdeas(box) {
   const send = () => { if (IDEAS.busy) return; if (IDEAS.result) { const v = (IDEAS.msg || '').trim(); if (!v) return toast('Tell Kravitas what to change first', true); IDEAS.msg = ''; ideasRefine(box, v); } else ideasRun(box); };
   on('#id-dump', 'oninput', (e) => { if (IDEAS.result) IDEAS.msg = e.target.value; else IDEAS.dump = e.target.value; grow(e.target); });
   on('#id-dump', 'onkeydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
-  on('#id-new', 'onclick', () => { IDEAS.skipAsk = false; IDEAS.qs = null; IDEAS.qa = {}; IDEAS.asking = false; IDEAS.result = null; IDEAS.chat = []; IDEAS.msg = ''; IDEAS.dump = ''; renderIdeas(box); });
+  on('#id-new', 'onclick', () => { IDEAS.skipAsk = false; IDEAS.qs = null; IDEAS.qa = {}; IDEAS.qtyped = {}; IDEAS.qnotes = ''; IDEAS.asking = false; IDEAS.result = null; IDEAS.chat = []; IDEAS.msg = ''; IDEAS.dump = ''; renderIdeas(box); });
   if ($('#id-dump')) grow($('#id-dump'));
   on('#id-prod', 'onchange', (e) => { if (e.target.value === '__new') { e.target.value = IDEAS.productId || ''; return productModal(); } IDEAS.productId = e.target.value || null; });
   on('#id-face', 'onchange', (e) => { if (e.target.value === '__new') { e.target.value = IDEAS.friendId || ''; return friendModal(); } IDEAS.friendId = e.target.value || null; });
   on('#id-model', 'onclick', (e) => { e.stopPropagation(); window.openModelPicker(e.currentTarget, 'ideas'); });
-  box.querySelectorAll('[data-ask]').forEach((b) => (b.onclick = () => { const k = b.dataset.ask, v = b.dataset.v; IDEAS.qa = IDEAS.qa || {}; IDEAS.qa[k] = IDEAS.qa[k] === v ? '' : v; renderIdeas(box); }));
-  box.querySelectorAll('[data-other]').forEach((inp) => (inp.oninput = () => { IDEAS.qa = IDEAS.qa || {}; IDEAS.qa[inp.dataset.other] = inp.value.trim(); inp.classList.toggle('on', !!inp.value.trim()); inp.parentElement.querySelectorAll('.chip.on').forEach((c) => c.classList.remove('on')); }));
+  box.querySelectorAll('[data-ask]').forEach((b) => (b.onclick = () => {
+    const k = b.dataset.ask, v = b.dataset.v, q = IDEAS.qs.find((x) => x.id === k); IDEAS.qa = IDEAS.qa || {}; IDEAS.qtyped = IDEAS.qtyped || {};
+    if (q?.multi) { const cur = Array.isArray(IDEAS.qa[k]) ? IDEAS.qa[k] : []; IDEAS.qa[k] = cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v]; }
+    else { IDEAS.qa[k] = IDEAS.qa[k] === v ? '' : v; IDEAS.qtyped[k] = ''; }
+    renderIdeas(box);
+  }));
+  box.querySelectorAll('[data-other]').forEach((inp) => (inp.oninput = () => {
+    const k = inp.dataset.other, q = IDEAS.qs.find((x) => x.id === k), val = inp.value.trim(); IDEAS.qa = IDEAS.qa || {}; IDEAS.qtyped = IDEAS.qtyped || {}; IDEAS.qtyped[k] = val;
+    if (q?.multi) { const cur = (Array.isArray(IDEAS.qa[k]) ? IDEAS.qa[k] : []).filter((x) => q.options.includes(x)); IDEAS.qa[k] = val ? [...cur, val] : cur; }
+    else { IDEAS.qa[k] = val; inp.closest('.id-q').querySelectorAll('.id-opt.on:not(.other)').forEach((c) => { c.classList.remove('on'); c.setAttribute('aria-checked', 'false'); }); }
+    inp.closest('.id-opt').classList.toggle('on', !!val);
+  }));
+  const nt = box.querySelector('#ask-notes'); if (nt) nt.oninput = () => { IDEAS.qnotes = nt.value; };
   on('#ask-go', 'onclick', () => ideasRun(box, true));
   on('#ask-skip', 'onclick', () => { IDEAS.skipAsk = true; IDEAS.qs = null; IDEAS.qa = {}; IDEAS.asking = false; ideasRun(box, true); });
   on('#id-lang', 'onchange', (e) => { IDEAS.lang = e.target.value; const v = e.target.parentElement.querySelector('.v'); if (v) v.textContent = LANG_SHORT[IDEAS.lang] || 'BM'; });

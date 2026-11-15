@@ -738,13 +738,15 @@
       return planBoard(body.prompt, body.scenes);
     }
     if (p === '/api/brainstorm/questions') {
-      await sleep(600);
+      await sleep(700);
       const t = String(body.prompt || ''), said = /\b(image|photo|poster|picture|packshot|thumbnail|video|clip|reel|ad|iklan|ugc|story|gambar)\b/i.test(t);
       const q = [];
       if (!said) q.push({ id: 'kind', q: 'What do you want Kravitas to make?', options: ['Image', 'Video', 'Ad (video with voice)', 'Not sure, suggest'] });
       if (/hoodie|shirt|tee|dress|tudung|jacket|cap\b/i.test(t)) q.push({ id: 'show', q: 'How should it be shown?', options: ['On a model', 'Flat on a table', 'Mockup front and back'] });
+      q.push({ id: 'background', q: 'What should the background be?', options: ['Clean studio', 'Real-life setting', 'Outdoors', 'Colourful or abstract', 'Keep it like my reference'] });
       q.push({ id: 'platform', q: 'Where will it be posted?', options: ['TikTok', 'Instagram Reels', 'Shopee listing', 'Facebook'] });
-      return { questions: q.slice(0, 4) };
+      q.push({ id: 'keep', q: 'What must stay exactly the same as your reference?', multi: true, options: ['Logo', 'Colours', 'Shape or cut', 'Text'] });
+      return { questions: q.slice(0, 5) };
     }
     if (p === '/api/panels/voice') {
       const text = String(body.text || '').trim(); if (!text) throw err('Write what is said in this panel first');
