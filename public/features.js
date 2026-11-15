@@ -812,7 +812,8 @@ function renderMain() {
   if (S.mode === 'ideas') return renderIdeas(box);
   box.innerHTML = `<div class="fl-head"><h1>${FL_TITLE[S.mode] || ''}</h1><p>${HERO[S.mode]?.[1] || ''}</p></div>
     <div class="fl-gal" id="fl-gal">${galleryHTML()}</div>
-    <div class="composer inline" id="composer"></div>
+    <div class="cmp-dock"><div class="cmp-extras" id="cmp-extras" hidden></div>
+    <div class="composer inline" id="composer"></div></div>
     <div class="id-ex fl-ex"><small>Try:</small>${(FL_EX[S.mode] || []).map((x, i) => `<button data-flex="${i}">${esc(x)}</button>`).join('')}</div>`;
   if (REFS_OK.has(S.mode)) { box.ondragover = (e) => { e.preventDefault(); box.classList.add('drop'); }; box.ondragleave = () => box.classList.remove('drop'); box.ondrop = (e) => { e.preventDefault(); box.classList.remove('drop'); attachRefs([...(e.dataTransfer?.files || [])], () => renderComposer()); }; } else box.ondragover = box.ondrop = null;
   box.querySelectorAll('[data-flex]').forEach((b) => (b.onclick = () => { F().prompt = FL_EX[S.mode][+b.dataset.flex]; renderComposer(true); }));
