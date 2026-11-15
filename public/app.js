@@ -567,15 +567,18 @@ async function generate() {
 function openPop(anchor, html, onPick) {
   const pop = $('#pop');
   pop.innerHTML = html;
-  pop.hidden = false; pop.style.maxHeight = Math.max(200, innerHeight - 16) + 'px';
-  const r = anchor.getBoundingClientRect();
-  const w = pop.offsetWidth, h = pop.offsetHeight;
+  pop.hidden = false; pop.style.maxHeight = 'none'; pop.style.overflowY = 'auto';
+  const ar = anchor.getBoundingClientRect(), cr = (anchor.closest('#composer') || anchor).getBoundingClientRect();
+  const r = { left: ar.left, top: Math.min(ar.top, cr.top), bottom: Math.max(ar.bottom, cr.bottom) };
+  const w = pop.offsetWidth, h = pop.offsetHeight; // natural size
   pop.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left)) + 'px';
-  pop.style.maxHeight = Math.max(200, innerHeight - 16) + 'px'; pop.style.overflowY = 'auto';
-  const h2 = Math.min(h, innerHeight - 16);
-  let top = r.top - h2 - 8 > 8 ? r.top - h2 - 8 : r.bottom + 8;
-  top = Math.max(8, Math.min(top, innerHeight - h2 - 8));
-  pop.style.top = top + 'px';
+  // Sit above or below the button it opened from, whichever has more room, and never cover it. Tall menus scroll inside.
+  const above = r.top - 16, below = innerHeight - r.bottom - 16;
+  const up = h <= above ? true : h <= below ? false : above >= below;
+  const room = Math.max(160, up ? above : below);
+  pop.style.maxHeight = room + 'px';
+  const h2 = pop.offsetHeight; // size after the limit
+  pop.style.top = (up ? Math.max(8, r.top - h2 - 8) : Math.min(innerHeight - h2 - 8, r.bottom + 8)) + 'px';
   pop.onclick = (e) => { const it = e.target.closest('[data-v]'); if (it) { onPick(it.dataset.v, e); } };
 }
 const closePop = () => { $('#pop').hidden = true; };

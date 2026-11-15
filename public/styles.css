@@ -832,8 +832,8 @@ label.add.plus{cursor:pointer}label.add.plus.off{opacity:.4;pointer-events:none}
 .id-panels li b{flex:none;width:18px;height:18px;border-radius:50%;background:#2c2c30;color:#fff;font-size:11px;display:inline-flex;align-items:center;justify-content:center}
 .btn.ghost{background:transparent}
 
-.madegrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:4px 8px 8px}
-.madegrid .mg{padding:0;border-radius:10px;overflow:hidden;aspect-ratio:1;width:auto;display:block}.madegrid .mg img{width:100%;height:100%;object-fit:cover;display:block}
+.madegrid{display:grid;grid-template-columns:repeat(4,64px);gap:6px;padding:4px 8px 8px}
+.madegrid .mg{padding:0;border-radius:10px;overflow:hidden;width:64px;height:64px;display:block}.madegrid .mg img{width:64px;height:64px;max-width:none;object-fit:cover;display:block}
 .ws-model{display:none !important}
 
 @media (max-width:560px){
@@ -943,3 +943,9 @@ button.ib{background:none;border:0;font:inherit}button.ib:hover{background:#2c2c
 .id-survey textarea:focus{outline:none;border-color:#777}
 .id-sv-go{width:100%;margin-top:16px;padding:13px;font-size:15px}.id-sv-skip{align-self:center;margin-top:10px}
 @media(max-width:600px){.id-survey{padding:16px 14px;border-radius:14px}.id-opt{font-size:14px}}
+
+/* A popup is never wider than a phone-sized card, whatever pictures it holds. */
+.pop{max-width:min(380px,calc(100vw - 16px));box-sizing:border-box}
+.pop img{max-width:100%}
+.pop .it img{flex:none}
+.pop .it{min-width:0}.pop .it>span,.pop .it>div{min-width:0;overflow-wrap:anywhere}
