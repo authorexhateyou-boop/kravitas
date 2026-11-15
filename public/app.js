@@ -1053,6 +1053,8 @@ document.addEventListener('mouseout', (e) => { const v = e.target.closest('.card
         } catch (e) { toast(e.message, true); }
       } else toast('Checkout cancelled');
     }
+    if (q.get('mode') && MODES[q.get('mode')] && !q.has('idea')) { S.mode = q.get('mode'); history.replaceState(null, '', location.pathname); }
+    if (q.get('topup')) { history.replaceState(null, '', location.pathname); setTimeout(() => accountModal(), 600); }
     if (q.has('idea')) {
       IDEAS.dump = (q.get('idea') || '').slice(0, 4000);
       if (LANG[q.get('lang')]) IDEAS.lang = q.get('lang');

@@ -19,7 +19,7 @@
         '<div class="cred">' + Number(p.credits).toLocaleString('en-MY') + ' tokens</div>' +
         '<div class="est">≈ ' + Math.floor(p.credits / 9) + ' Motion ads or ' + Math.floor(p.credits / 32) + ' Lite ads</div>' +
         '<ul>' + (p.features || []).map(function (f) { return '<li>' + esc(f) + '</li>'; }).join('') + '</ul>' +
-        '<a class="btn" href="' + studio + '" data-studio>Choose ' + esc(p.name) + '</a></div>';
+        '<a class="btn" href="' + studio + '" data-studio>Start with ' + esc(p.name) + ' →</a></div>';
     }).join('');
   }
   function models() {

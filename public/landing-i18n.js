@@ -1,5 +1,8 @@
 // Landing-page strings for the EN ⇄ BM switch (merged into i18n.js's dictionary).
 window.KV_DICT = {
+  'What you can make': 'Apa yang boleh dibuat', 'Made for Malaysian sellers and creators.': 'Dibuat untuk penjual dan kreator Malaysia.', 'Pick a goal. Kravitas sets up the right tool, format and voice.': 'Pilih matlamat. Kravitas sediakan alat, format dan suara yang sesuai.',
+  'UGC product ads': 'Iklan produk UGC', 'Product images': 'Gambar produk', 'AI video': 'Video AI', 'Micro drama': 'Drama mikro', 'Try it →': 'Cuba →', 'See how it works': 'Lihat cara ia berfungsi',
+  'Describe it': 'Terangkan', 'Check the plan': 'Semak pelan', 'Post it': 'Siarkan', '40 free tokens': '40 token percuma', 'No sign-up': 'Tanpa daftar', 'Bahasa Melayu voices': 'Suara Bahasa Melayu', 'From RM39/month': 'Dari RM39/bulan', 'See pricing →': 'Lihat harga →',
   'How it works': 'Cara ia berfungsi', 'Pricing': 'Harga', 'Open studio': 'Buka studio', 'Sections': 'Bahagian',
   'Turn an idea into a ready-to-post ad. Prompts, storyboard, video, voice and scheduling in one studio, in Bahasa Melayu and English.': 'Tukar idea jadi iklan sedia siar. Prompt, papan cerita, video, suara dan jadual dalam satu studio, dalam Bahasa Melayu dan Inggeris.',
   'Create with Kravitas': 'Cipta dengan Kravitas', 'Create': 'Cipta', 'See pricing': 'Lihat harga',

@@ -1233,18 +1233,18 @@ async function postModal(j, video) {
 function creditsModal(a, ledger) {
   const plans = CFG.plans || [], packs = CFG.packs || [];
   const perAd = 32; // Lite talking ad
-  const m = modal(`<h2>Plans & credits</h2>
+  const m = modal(`<h2>Top up tokens</h2>
     <p style="font-size:38px;font-weight:800;letter-spacing:-.04em;margin:6px 0 2px">✦ ${a.credits.toLocaleString()}</p>
-    <p class="muted" style="margin:0">Motion ad ≈ 9 credits · Lite talking ad ≈ ${perAd} · Fast ≈ 49 · an image 6–16 · a voice-over 1–3.</p>
-    ${CFG.payments ? `<label class="l" style="margin-top:20px">Monthly plans</label>
+    <p class="muted" style="margin:0">Motion ad ≈ 9 tokens · Lite talking ad ≈ ${perAd} · Fast ≈ 49 · an image 6–16 · a voice-over 1–3.</p>
+    ${CFG.payments ? `<label class="l" style="margin-top:20px">Top up now · one-off, no subscription</label>
+    <div class="packs">${packs.map((p) => `<button class="pack" data-pack="${esc(p.id)}">${p.tag ? `<span class="ptag">${esc(p.tag)}</span>` : ''}<b>${p.credits.toLocaleString()}</b><small>tokens</small><span class="price">${RM(p.price)}</span></button>`).join('')}</div>
+    <label class="l" style="margin-top:22px">Or save more with a monthly plan</label>
     <div class="plans">${plans.map((p) => `<div class="plan ${a.plan === p.id ? 'cur' : ''}">${p.tag ? `<span class="ptag">${esc(p.tag)}</span>` : ''}<b>${esc(p.name)}</b>
-      <div class="pp">${RM(p.price)}<small>/month</small></div><div class="pc">${p.credits.toLocaleString()} credits / month</div>
+      <div class="pp">${RM(p.price)}<small>/month</small></div><div class="pc">${p.credits.toLocaleString()} tokens / month</div>
       <small class="muted">≈ ${Math.floor(p.credits / perAd)} Lite ads or ${Math.floor(p.credits / 9)} Motion ads</small>
       ${p.features?.length ? `<ul class="pf">${p.features.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}
       ${a.plan === p.id ? '<span class="btn">Current plan</span>' : `<button class="btn pri" data-plan="${esc(p.id)}">Subscribe</button>`}</div>`).join('')}</div>
-    ${a.plan ? '<p class="hint"><a href="#" id="portal">Manage or cancel your plan</a></p>' : '<p class="hint">Cancel anytime. Unused credits stay on your account.</p>'}
-    <label class="l" style="margin-top:18px">One-off top-ups</label>
-    <div class="packs">${packs.map((p) => `<button class="pack" data-pack="${esc(p.id)}">${p.tag ? `<span class="ptag">${esc(p.tag)}</span>` : ''}<b>${p.credits.toLocaleString()}</b><small>credits</small><span class="price">${RM(p.price)}</span></button>`).join('')}</div>
+    ${a.plan ? '<p class="hint"><a href="#" id="portal">Manage or cancel your plan</a></p>' : '<p class="hint">Cancel anytime. Unused tokens stay on your account.</p>'}
     <p class="hint">Secure checkout by Stripe: card, FPX online banking, GrabPay.</p>` : '<p class="hint" style="margin-top:14px">Plans are coming soon.</p>'}
     ${a.mode === 'preview' ? '<p class="hint">Preview: Subscribe simulates the plan (no payment) so you can try its features. Top-ups are off. <a href="#" id="reset">Reset preview data</a></p>' : ''}
     <p class="hint">Guest account on this browser. Account ID: <code style="user-select:all">${esc(a.userId)}</code></p>
@@ -1252,7 +1252,7 @@ function creditsModal(a, ledger) {
     <p class="hint" style="margin-top:14px"><a href="terms" target="_blank">Terms</a> · <a href="privacy" target="_blank">Privacy</a></p>`, 'wide');
   $('#reset', m) && ($('#reset', m).onclick = (e) => { e.preventDefault(); confirmBox('Clear all preview friends, products and creations?', 'Clear').then((ok) => ok && window.PreviewAPI.reset()); });
   $('#portal', m) && ($('#portal', m).onclick = async (e) => { e.preventDefault(); try { location.href = (await api('/api/billing/portal', {})).url; } catch (err) { toast(err.message, true); } });
-  const go = (body) => async (e) => { e.target.disabled = true; try { location.href = (await api('/api/checkout', body)).url; } catch (err) { toast(err.message, true); e.target.disabled = false; } };
+  const go = (body) => async (e) => { const t = e.currentTarget; t.disabled = true; try { location.href = (await api('/api/checkout', body)).url; } catch (err) { toast(err.message, true); t.disabled = false; } };
   m.querySelectorAll('[data-plan]').forEach((b) => (b.onclick = go({ plan: b.dataset.plan })));
   m.querySelectorAll('[data-pack]').forEach((b) => (b.onclick = go({ pack: b.dataset.pack })));
 }

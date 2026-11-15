@@ -147,6 +147,20 @@ footer{border-top:1px solid var(--line);padding:26px 0;font-size:13px;color:var(
   .promo-bar{padding:10px 14px;font-size:13px}
 }
 @media (max-width:380px){.nav .logo{font-size:13px;letter-spacing:.16em}.promo-pill{display:none}}
+
+.btn{cursor:pointer}.btn:active{transform:translateY(1px) scale(.98)}.btn:focus-visible,.case:focus-visible,a:focus-visible{outline:2px solid #ffd60a;outline-offset:3px}
+.btn.big{padding:16px 32px;font-size:16px}.btn .arr{transition:transform .2s}.btn:hover .arr{transform:translateX(4px)}
+.btn:not(.ghost):not(.sm):hover{box-shadow:0 8px 30px rgba(255,255,255,.22)}
+.trust{list-style:none;margin:22px 0 0;padding:0;display:flex;gap:8px 18px;justify-content:center;flex-wrap:wrap;font-size:13.5px;color:#c7c7cc}.trust li::before{content:"✓ ";color:#ffd60a}
+.cases{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:48px;text-align:left}
+.case{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:24px;background:var(--card);padding:24px;text-decoration:none;transition:transform .2s,border-color .2s,background .2s}
+.case:hover{transform:translateY(-4px);border-color:#fff;background:#17171a}.case i{font-style:normal;font-size:30px}.case b{font-size:18px;font-weight:600;margin-top:10px}.case small{color:var(--mut);font-size:13.5px;line-height:1.45}.case span{margin-top:auto;padding-top:16px;font-size:13.5px;font-weight:600;color:#ffd60a}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:960px;margin:0 auto;text-align:left}
+.stp{border-top:1px solid var(--line);padding:22px 4px 0}.stp b{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#fff;color:#000;font-size:14px}.stp h3{margin:14px 0 4px;font-size:20px;font-weight:600}.stp p{margin:0;color:var(--mut);font-size:15px}
+.stick{display:none}
+.fine a{color:#ffd60a}
+@media (max-width:900px){.cases{grid-template-columns:1fr 1fr}.steps{grid-template-columns:1fr}.stick{display:block;position:fixed;left:0;right:0;bottom:0;z-index:50;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(transparent,#000 40%);transform:translateY(120%);transition:transform .25s}.stick.on{transform:none}.stick .btn{width:100%;justify-content:center}footer{padding-bottom:90px}}
+@media (max-width:480px){.cases{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -154,7 +168,7 @@ footer{border-top:1px solid var(--line);padding:26px 0;font-size:13px;color:var(
 <header class="nav" id="nav">
   <div class="wrap">
     <a class="logo" href="#top">Kravitas</a>
-    <nav aria-label="Sections"><a href="#how">How it works</a><a href="#models">Models</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></nav>
+    <nav aria-label="Sections"><a href="#make">What you can make</a><a href="#how">How it works</a><a href="#models">Models</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></nav>
     <a class="promo-pill" href="#pricing" id="promo-pill"><span aria-hidden="true">♛</span><span class="pp-l">Pricing</span><span id="promo-pill-t">-40%</span></a>
     <button class="uil" type="button" data-uilang aria-label="Language">EN · BM</button>
     <a class="btn sm" href="/studio" data-studio><span class="cta-l">Create with Kravitas</span><span class="cta-s">Create</span></a>
@@ -167,13 +181,38 @@ footer{border-top:1px solid var(--line);padding:26px 0;font-size:13px;color:var(
     <div class="hero-in">
       <h1>Kravitas</h1>
       <p class="lead">Turn an idea into a ready-to-post ad. Prompts, storyboard, video, voice and scheduling in one studio, in Bahasa Melayu and English.</p>
-      <div class="cta"><a class="btn" href="/studio" data-studio>Open studio</a><a class="btn ghost" href="#pricing">See pricing</a></div>
-      <p class="note">40 free tokens to try it. No sign-up needed. Plans from RM39 a month.</p>
+      <div class="cta"><a class="btn big" href="/studio" data-studio>Start free <span class="arr" aria-hidden="true">→</span></a><a class="btn ghost big" href="#how">See how it works</a></div>
+      <ul class="trust"><li>40 free tokens</li><li>No sign-up</li><li>Bahasa Melayu voices</li><li>From RM39/month</li></ul>
     </div>
     <a class="scroll" href="#how">Scroll</a>
   </section>
 
-  <section class="block center" id="how" style="padding-top:40px">
+  <section class="block center" id="make" style="padding-bottom:0">
+    <div class="wrap">
+      <span class="kicker">What you can make</span>
+      <h2 class="big">Made for Malaysian sellers and creators.</h2>
+      <p class="sub">Pick a goal. Kravitas sets up the right tool, format and voice.</p>
+      <div class="cases">
+        <a class="case" href="/studio?mode=ad" data-studio><i>🛍</i><b>UGC product ads</b><small>TikTok Shop and Shopee, with Malay voice-over</small><span>Try it →</span></a>
+        <a class="case" href="/studio?mode=image" data-studio><i>🖼</i><b>Product images</b><small>Packshots, lifestyle shots, YouTube thumbnails</small><span>Try it →</span></a>
+        <a class="case" href="/studio?mode=video" data-studio><i>🎬</i><b>AI video</b><small>Camera moves, motion ads, short clips</small><span>Try it →</span></a>
+        <a class="case" href="/studio?mode=ideas" data-studio><i>🎭</i><b>Micro drama</b><small>Storyboard a series with the same character</small><span>Try it →</span></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="block center" id="steps" style="padding-bottom:0">
+    <div class="wrap">
+      <div class="steps">
+        <div class="stp"><b>1</b><h3>Describe it</h3><p>Type your product or drop a photo or file.</p></div>
+        <div class="stp"><b>2</b><h3>Check the plan</h3><p>Review the prompts and storyboard before spending tokens.</p></div>
+        <div class="stp"><b>3</b><h3>Post it</h3><p>Download, or schedule to TikTok, Instagram and more.</p></div>
+      </div>
+      <a class="btn big" href="/studio" data-studio style="margin-top:40px">Start free <span class="arr" aria-hidden="true">→</span></a>
+    </div>
+  </section>
+
+  <section class="block center" id="how" style="padding-top:100px">
     <div class="wrap">
       <span class="kicker">The studio</span>
       <h2 class="big">Start with an idea.<br>Kravitas does the rest.</h2>
@@ -222,6 +261,7 @@ footer{border-top:1px solid var(--line);padding:26px 0;font-size:13px;color:var(
       <h2 class="big">The right model for each job.</h2>
       <p class="sub">Kravitas picks the model for you and always shows which one it is using. Better plans unlock better models.</p>
       <div class="models"><span>MiniMax H3 Turbo</span><span>Kling 3.0</span><span>Seedance 2.0</span><span>OmniHuman 1.5</span><span>VEED Fabric</span><span>Nano Banana 2</span><span>Seedream 4</span><span>FLUX Schnell</span><span>ElevenLabs</span><span>MiniMax Speech</span></div>
+      <p style="margin-top:30px"><a class="btn ghost" href="#pricing">See pricing →</a></p>
       <details class="mt-wrap"><summary>See every model, plan by plan</summary><div class="mt-scroll"><table class="mt" id="models-table"></table></div></details>
     </div>
   </section>
@@ -233,7 +273,7 @@ footer{border-top:1px solid var(--line);padding:26px 0;font-size:13px;color:var(
       <p class="sub">Tokens refill every month. A Motion ad costs about 9 tokens and a Lite AI-video ad about 32.</p>
       <div class="promo-bar" id="promo-bar"></div>
       <div class="plans" id="plans"></div>
-      <p class="fine">Prices in Malaysian ringgit. Cancel anytime; unused tokens stay on your account. Secure checkout by Stripe. One-off top-ups from RM25.</p>
+      <p class="fine">Prices in Malaysian ringgit. Cancel anytime; unused tokens stay on your account. Secure checkout by Stripe. Need more? <a href="/studio?topup=1" data-studio>Top up tokens from RM25</a> any time.</p>
     </div>
   </section>
 
@@ -255,8 +295,10 @@ footer{border-top:1px solid var(--line);padding:26px 0;font-size:13px;color:var(
   <section class="final">
     <div class="film" aria-hidden="true"></div><div class="grain" aria-hidden="true"></div>
     <h2>Make your first ad today.</h2>
-    <a class="btn" href="/studio" data-studio>Create with Kravitas</a>
+    <a class="btn big" href="/studio" data-studio>Start free <span class="arr" aria-hidden="true">→</span></a>
+    <p class="note" style="position:relative;z-index:2;margin-top:16px;color:#9b9b9f;font-size:13px">40 free tokens. No card needed.</p>
   </section>
+  <div class="stick" id="stick"><a class="btn big" href="/studio" data-studio>Start free →</a></div>
 </main>
 
 <footer>
@@ -267,6 +309,6 @@ footer{border-top:1px solid var(--line);padding:26px 0;font-size:13px;color:var(
 <script src="i18n.js"></script>
 <script src="modeldata.js"></script>
 <script src="landing.js"></script>
-<script>(function(){var n=document.getElementById('nav');function f(){n.classList.toggle('solid',scrollY>40)}addEventListener('scroll',f,{passive:true});f()})();</script>
+<script>(function(){var n=document.getElementById('nav');function f(){n.classList.toggle('solid',scrollY>40)}var st=document.getElementById('stick');function g(){n.classList.toggle('solid',scrollY>40);if(st)st.classList.toggle('on',scrollY>innerHeight*.8)}addEventListener('scroll',g,{passive:true});g()})();</script>
 </body>
 </html>
