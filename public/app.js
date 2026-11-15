@@ -106,7 +106,7 @@ const PRESETS = {
     { id: 'life', e: '🛋️', t: 'Lifestyle', d: 'Cosy home scene', set: { style: 'photo', aspect: '4:5', prompt: 'the product in a bright cosy Malaysian home, natural morning light' } },
     { id: 'flat', e: '📐', t: 'Flat lay', d: 'Top-down props', set: { style: 'studio', aspect: '1:1', prompt: 'top-down flat lay of the product with complementary props, clean and aesthetic' } },
     { id: 'hold', e: '🤳', t: 'Friend holds it', d: 'Selfie with product', set: { style: 'ugc', aspect: '9:16', prompt: 'holding the product near their face, smiling at the camera, selfie style' } },
-    { id: 'thumb', e: '😱', t: 'Thumbnail', d: 'Bold cover', set: { style: 'photo', aspect: '9:16', prompt: 'excited shocked expression holding the product, bold high-contrast thumbnail' } },
+    { id: 'thumb', e: '😱', t: 'YouTube thumbnail', d: 'Wide 16:9 cover', set: { style: 'photo', aspect: '16:9', prompt: 'YouTube thumbnail, close-up face with an excited shocked expression, the subject large on one side, empty space on the other for big text, bold high-contrast colours' } },
     { id: 'festive', e: '🌙', t: 'Festive promo', d: 'Raya / sale mood', set: { style: 'cinematic', aspect: '4:5', prompt: 'the product in a festive sale setting with ketupat and warm pelita lights' } },
   ],
   ad: [
