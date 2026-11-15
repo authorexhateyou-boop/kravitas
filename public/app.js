@@ -1054,6 +1054,7 @@ document.addEventListener('mouseout', (e) => { const v = e.target.closest('.card
       } else toast('Checkout cancelled');
     }
     if (q.get('mode') && MODES[q.get('mode')] && !q.has('idea')) { S.mode = q.get('mode'); history.replaceState(null, '', location.pathname); }
+    if (q.get('login')) { history.replaceState(null, '', location.pathname); setTimeout(() => window.authModal && S.app && S.app.mode !== 'local' && authModal('login'), 600); }
     if (q.get('topup')) { history.replaceState(null, '', location.pathname); setTimeout(() => accountModal(), 600); }
     if (q.has('idea')) {
       IDEAS.dump = (q.get('idea') || '').slice(0, 4000);

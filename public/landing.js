@@ -1,3 +1,4 @@
+document.documentElement.classList.add('js');
 // Plans come from the server (so prices stay in one place); this list is the fallback.
 (function () {
   var FALLBACK = [
@@ -34,12 +35,14 @@
   }
   (function () {
     var t = document.getElementById('promo-pill-t'), bar = document.getElementById('promo-bar'), pill = document.getElementById('promo-pill');
-    if (!PROMO.off) { if (pill) pill.style.display = 'none'; return; }
+    var top = document.getElementById('promo-top'), tt = document.getElementById('promo-top-t');
+    if (!PROMO.off) { if (pill) pill.style.display = 'none'; if (top) top.style.display = 'none'; if (bar) bar.style.display = 'none'; return; }
+    if (tt) tt.textContent = 'Launch offer: ' + PROMO.off + '% off every plan';
     if (t) t.textContent = '-' + PROMO.off + '%';
     if (bar) bar.textContent = 'Launch offer: ' + PROMO.off + '% off every plan. Prices shown are already discounted.';
   })();
   models();
-  var studio = document.querySelector('[data-studio]').getAttribute('href');
+  var studio = document.querySelector('.btn[data-studio]').getAttribute('href');
   var form = document.getElementById('try');
   if (form) {
     form.addEventListener('submit', function (e) {
@@ -48,7 +51,7 @@
       var lang = form.querySelector('[name=lang]').value;
       var base = studio.split('#')[0];
       var url = base + (base.indexOf('?') > -1 ? '&' : '?') + 'idea=' + encodeURIComponent(idea) + '&lang=' + encodeURIComponent(lang) + (idea ? '&go=1' : '');
-      var a = document.querySelector('[data-studio]');
+      var a = document.querySelector('.btn[data-studio]');
       if (a.getAttribute('target') === '_blank') window.open(url, '_blank', 'noopener'); else location.href = url;
     });
     var ta = document.getElementById('try-idea');
@@ -58,4 +61,11 @@
   fetch('/api/config').then(function (r) { return r.ok ? r.json() : null; }).then(function (c) {
     if (c && Array.isArray(c.plans) && c.plans.length) draw(c.plans.slice().sort(function (a, b) { return a.price - b.price; }));
   }).catch(function () {});
+})();
+
+// page behaviour (kept here because the server's security policy blocks inline scripts)
+(function(){var n=document.getElementById('nav'),st=document.getElementById('stick');function g(){n.classList.toggle('solid',scrollY>60);if(st)st.classList.toggle('on',scrollY>innerHeight*.9)}addEventListener('scroll',g,{passive:true});g();
+var rv=[].slice.call(document.querySelectorAll('.rv'));if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{rootMargin:'0px 0px -8% 0px'});rv.forEach(function(el,i){el.style.transitionDelay=(i%3)*70+'ms';io.observe(el)})}else rv.forEach(function(el){el.classList.add('in')});
+var fc=document.getElementById('fchips');fc.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var f=b.getAttribute('data-f');[].forEach.call(fc.children,function(x){x.setAttribute('aria-pressed',x===b)});[].forEach.call(document.querySelectorAll('#lib .lc'),function(c){c.hidden=f!=='all'&&c.getAttribute('data-cat')!==f;c.classList.add('in')})});
+var ta=document.getElementById('try-idea');document.getElementById('try-ex').addEventListener('click',function(e){var b=e.target.closest('[data-ex]');if(!b)return;ta.value=b.getAttribute('data-ex');ta.focus()});
 })();

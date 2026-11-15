@@ -161,17 +161,79 @@ footer{border-top:1px solid var(--line);padding:26px 0;font-size:13px;color:var(
 .fine a{color:#ffd60a}
 @media (max-width:900px){.cases{grid-template-columns:1fr 1fr}.steps{grid-template-columns:1fr}.stick{display:block;position:fixed;left:0;right:0;bottom:0;z-index:50;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(transparent,#000 40%);transform:translateY(120%);transition:transform .25s}.stick.on{transform:none}.stick .btn{width:100%;justify-content:center}footer{padding-bottom:90px}}
 @media (max-width:480px){.cases{grid-template-columns:1fr}}
+
+/* ---------- v3 layout ---------- */
+.js .rv{opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .6s ease}.js .rv.in{opacity:1;transform:none}
+.topbar{display:block;text-align:center;text-decoration:none;background:#ffd60a;color:#000;font-size:13.5px;font-weight:600;padding:9px 16px}.topbar b{font-weight:800}.topbar span{margin-left:8px;text-decoration:underline}
+.nav{position:sticky;top:0;inset:auto;background:rgba(0,0,0,.82);backdrop-filter:blur(14px);border-bottom:1px solid transparent}.nav.solid{border-bottom-color:var(--line)}
+.nav nav{margin:0 auto}.nav .signin{text-decoration:none;font-size:14px;font-weight:600;color:#d0d0d4;white-space:nowrap}.nav .signin:hover{color:#fff}
+.hero{min-height:0;display:block;place-items:normal;padding:64px 24px 56px}.hero::after{height:30%}.hero-in{margin:0 auto}
+.badge-pill{display:inline-flex;align-items:center;gap:8px;border:1px solid #333338;background:rgba(255,255,255,.04);border-radius:999px;padding:7px 14px;font-size:13px;color:#d6d6da;text-decoration:none}.badge-pill i{width:7px;height:7px;border-radius:50%;background:#ffd60a;box-shadow:0 0 0 4px rgba(255,214,10,.18)}
+.hero h1{margin:22px 0 0;font-weight:500;font-size:clamp(38px,5.6vw,76px);line-height:1.02;letter-spacing:-.05em}.hero h1 em{font-style:normal;color:#8e8e96}
+.hero .lead{margin-top:22px;max-width:640px;font-size:clamp(16px,1.6vw,19px);color:#c7c7cc}
+.hero .cta{margin-top:30px}
+.compat{margin:22px 0 0;font-size:13px;color:var(--mut)}.compat b{color:#d6d6da;font-weight:600}
+/* chatbox under the hero */
+.trybox{position:relative;z-index:2;padding:36px 0 0}
+.trybox .f-chat{position:static;transform:none;width:100%;max-width:760px;margin:0 auto;background:#1b1b1e;border:1px solid #34343a;border-radius:26px;padding:16px 16px 14px;box-shadow:0 30px 90px rgba(0,0,0,.7),0 0 0 6px rgba(255,255,255,.03);transition:border-color .2s,box-shadow .2s}
+.trybox .f-chat:focus-within{border-color:#fff;box-shadow:0 30px 90px rgba(0,0,0,.7),0 0 0 6px rgba(255,255,255,.08)}
+.trybox textarea{font-size:16px;min-height:64px}
+.f-go{padding:10px 18px;font-size:13.5px}
+.try-ex{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;max-width:760px;margin:14px auto 0}
+.try-ex span{font-size:12.5px;color:var(--mut);align-self:center}
+.try-ex button{font:inherit;font-size:12.5px;color:#d6d6da;background:none;border:1px solid #2f2f33;border-radius:999px;padding:6px 12px;cursor:pointer;transition:border-color .15s,color .15s}.try-ex button:hover{border-color:#fff;color:#fff}
+/* library grid */
+.lib-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;text-align:left}
+.lib-head .big{font-size:clamp(30px,4.4vw,56px)}
+.fchips{display:flex;gap:8px;flex-wrap:wrap;margin-top:28px}
+.fchips button{font:inherit;font-size:13.5px;font-weight:600;color:#c7c7cc;background:none;border:1px solid #2f2f33;border-radius:999px;padding:8px 14px;cursor:pointer;transition:all .15s}.fchips button small{opacity:.55;margin-left:6px;font-weight:500}
+.fchips button:hover{border-color:#fff;color:#fff}.fchips button[aria-pressed=true]{background:#fff;color:#000;border-color:#fff}
+.lib{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px;text-align:left}
+.lc{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:22px;background:var(--card);overflow:hidden;text-decoration:none;transition:transform .25s,border-color .25s}
+.lc[hidden]{display:none}.lc:hover{transform:translateY(-4px);border-color:#5a5a62}
+.cv{position:relative;aspect-ratio:16/10;background:radial-gradient(120% 90% at 30% 20%,#232327,#0c0c0e);display:grid;place-items:center;overflow:hidden;border-bottom:1px solid var(--line)}
+.lc .tag{position:absolute;left:12px;top:12px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:rgba(0,0,0,.6);border:1px solid #3a3a40;border-radius:999px;padding:3px 9px}
+.lc .cost{position:absolute;right:12px;top:12px;font-size:11.5px;font-weight:700;background:#ffd60a;color:#000;border-radius:999px;padding:3px 9px}
+.lb{padding:16px 18px 18px;display:flex;flex-direction:column;gap:4px;flex:1}.lb b{font-size:17px;font-weight:600}.lb small{color:var(--mut);font-size:13.5px;line-height:1.45}.lb span{margin-top:auto;padding-top:12px;font-size:13.5px;font-weight:600;color:#fff}.lb span i{font-style:normal;display:inline-block;transition:transform .2s}.lc:hover .lb span i{transform:translateX(4px)}.lc:hover .lb span{color:#ffd60a}
+/* card art */
+.ph{width:27%;aspect-ratio:9/16;border:2px solid #4a4a52;border-radius:12px;position:relative;background:linear-gradient(170deg,#3a3a42,#17171a)}
+.ph::before{content:"";position:absolute;left:50%;top:26%;width:38%;aspect-ratio:1;border-radius:50%;background:#d8d8de;transform:translateX(-50%)}
+.ph::after{content:"";position:absolute;left:14%;right:14%;bottom:14%;height:7%;border-radius:9px;background:#fff;box-shadow:0 -12px 0 -1px #8a8a92}
+.ph .bk{position:absolute;right:-10px;bottom:30%;width:22px;height:22px;border-radius:50%;background:#ffd60a;border:3px solid #0c0c0e}
+.ph.b{transform:rotate(-7deg) translateX(-34%);opacity:.55}.ph.c{position:absolute;transform:rotate(6deg) translateX(34%)}
+.pk{width:26%;aspect-ratio:3/5;border-radius:12px 12px 8px 8px;background:linear-gradient(160deg,#f2f2f5,#8d8d96);position:relative;box-shadow:0 18px 30px rgba(0,0,0,.6)}.pk::before{content:"";position:absolute;left:30%;right:30%;top:-12%;height:13%;background:#5c5c64;border-radius:4px 4px 0 0}
+.mv .pk{animation:bob 3.2s ease-in-out infinite}@keyframes bob{50%{transform:translateY(-7px) rotate(3deg)}}
+.mv i{position:absolute;height:2px;background:#5a5a62;border-radius:2px;left:14%}.mv i:nth-child(2){top:38%;width:14%}.mv i:nth-child(3){top:50%;width:20%;left:9%}.mv i:nth-child(4){top:62%;width:12%}
+.rm{position:absolute;right:22%;top:24%;background:#fff;color:#000;font-weight:800;font-size:13px;border-radius:999px;padding:4px 11px;transform:rotate(8deg)}
+.eps{display:flex;gap:8px;width:72%}.eps div{flex:1;aspect-ratio:9/14;border-radius:10px;border:1px solid #3d3d44;background:linear-gradient(165deg,#34343b,#121214);position:relative}.eps div:nth-child(2){transform:translateY(-8px);background:linear-gradient(165deg,#d9d9de,#6d6d75)}.eps b{position:absolute;left:6px;bottom:6px;font-size:10px;background:#000;color:#fff;border-radius:999px;padding:1px 7px}
+.shot{width:62%;aspect-ratio:16/9;border:1px solid #4a4a52;border-radius:12px;background:linear-gradient(140deg,#2d2d33,#101012);position:relative;display:grid;place-items:center}.shot::before{content:"";border-left:18px solid #fff;border-top:11px solid transparent;border-bottom:11px solid transparent;margin-left:5px}.shot::after{content:"";position:absolute;inset:-16px -22px auto -22px;height:60%;border:2px dashed #5a5a62;border-bottom:0;border-radius:50% 50% 0 0}
+.sbd{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:76%}.sbd div{aspect-ratio:3/4;border-radius:8px;border:1px solid #3d3d44;background:repeating-linear-gradient(135deg,#1c1c20 0 6px,#141416 6px 12px);position:relative}.sbd div.k{background:linear-gradient(160deg,#d9d9de,#6d6d75)}.sbd b{position:absolute;left:5px;top:5px;font-size:9.5px;background:#fff;color:#000;border-radius:999px;padding:0 6px}
+.pshot{width:100%;height:100%;display:grid;place-items:center;background:radial-gradient(60% 60% at 50% 60%,#3a3a42,#0c0c0e)}.pshot::after{content:"";position:absolute;bottom:17%;width:34%;height:6%;border-radius:50%;background:rgba(0,0,0,.6);filter:blur(6px)}
+.th{width:66%;aspect-ratio:16/9;border-radius:10px;background:linear-gradient(120deg,#e9e9ee 0 46%,#26262b 46%);position:relative;overflow:hidden;border:1px solid #4a4a52}.th::before{content:"";position:absolute;left:11%;top:22%;width:24%;aspect-ratio:1;border-radius:50%;background:#55555d;box-shadow:0 44px 0 14px #55555d}.th b{position:absolute;right:7%;top:24%;font-size:clamp(15px,2vw,24px);font-weight:900;line-height:1;color:#ffd60a;text-align:right;letter-spacing:-.03em}
+.wave{display:flex;align-items:center;gap:5px;height:46%}.wave i{width:5px;border-radius:4px;background:#fff;height:30%;animation:wv 1.2s ease-in-out infinite}.wave i:nth-child(2n){animation-delay:.15s;background:#9a9aa2}.wave i:nth-child(3n){animation-delay:.3s}.wave i:nth-child(5n){animation-delay:.45s}@keyframes wv{50%{height:100%}}
+.lib-foot{margin-top:34px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+/* three moves */
+.moves{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:48px;text-align:left}
+.mvc{border:1px solid var(--line);border-radius:24px;background:var(--card);padding:26px}.mvc u{text-decoration:none;font-size:12px;letter-spacing:.2em;color:var(--mut)}.mvc h3{margin:44px 0 6px;font-size:24px;font-weight:500;letter-spacing:-.02em}.mvc p{margin:0;color:#b5b5bb;font-size:15px}
+.block{padding:96px 0}
+/* footer */
+footer{padding:54px 0 30px}footer .wrap{display:block}
+.fcols{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:28px;text-align:left}.fcols h4{margin:0 0 12px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#fff;font-weight:600}.fcols a{display:block;text-decoration:none;padding:4px 0;color:var(--mut)}.fcols a:hover{color:#fff}.fcols p{margin:10px 0 0;max-width:300px}
+.fbase{margin-top:38px;padding-top:20px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+@media (max-width:900px){.lib{grid-template-columns:1fr 1fr}.moves{grid-template-columns:1fr}.mvc h3{margin-top:18px}.fcols{grid-template-columns:1fr 1fr}.nav .signin{display:none}.hero{padding:44px 18px 40px}.block{padding:70px 0}}
+@media (max-width:560px){.lib{grid-template-columns:1fr}.trybox{padding:28px 0 0}.trybox .f-chat{border-radius:22px;padding:12px}.trybox textarea{min-height:92px}.fchips{flex-wrap:nowrap;overflow-x:auto;margin-right:-18px;padding-right:18px;scrollbar-width:none}.fchips button{flex:none}.topbar{font-size:12.5px}}
+@media (prefers-reduced-motion:reduce){.js .rv{opacity:1;transform:none;transition:none}.wave i,.mv .pk{animation:none}}
 </style>
 </head>
 <body>
-
+<a class="topbar" href="#pricing" id="promo-top"><b id="promo-top-t">Launch offer: 40% off every plan</b><span>Claim →</span></a>
 <header class="nav" id="nav">
   <div class="wrap">
     <a class="logo" href="#top">Kravitas</a>
     <nav aria-label="Sections"><a href="#make">What you can make</a><a href="#how">How it works</a><a href="#models">Models</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></nav>
-    <a class="promo-pill" href="#pricing" id="promo-pill"><span aria-hidden="true">♛</span><span class="pp-l">Pricing</span><span id="promo-pill-t">-40%</span></a>
     <button class="uil" type="button" data-uilang aria-label="Language">EN · BM</button>
-    <a class="btn sm" href="/studio" data-studio><span class="cta-l">Create with Kravitas</span><span class="cta-s">Create</span></a>
+    <a class="signin" href="/studio?login=1" data-studio>Sign in</a>
+    <a class="btn sm" href="/studio" data-studio><span class="cta-l">Start free</span><span class="cta-s">Start</span></a>
   </div>
 </header>
 
@@ -179,57 +241,53 @@ footer{border-top:1px solid var(--line);padding:26px 0;font-size:13px;color:var(
   <section class="hero">
     <div class="film" aria-hidden="true"></div><div class="grain" aria-hidden="true"></div>
     <div class="hero-in">
-      <h1>Kravitas</h1>
-      <p class="lead">Turn an idea into a ready-to-post ad. Prompts, storyboard, video, voice and scheduling in one studio, in Bahasa Melayu and English.</p>
-      <div class="cta"><a class="btn big" href="/studio" data-studio>Start free <span class="arr" aria-hidden="true">→</span></a><a class="btn ghost big" href="#how">See how it works</a></div>
-      <ul class="trust"><li>40 free tokens</li><li>No sign-up</li><li>Bahasa Melayu voices</li><li>From RM39/month</li></ul>
+      <a class="badge-pill" href="#make"><i></i>9 things to make · Bahasa Melayu voices</a>
+      <h1>Ads, videos and micro drama. <em>From one prompt.</em></h1>
+      <p class="lead">Kravitas is the AI studio for Malaysian sellers and creators. Type what you sell and get a ready-to-post TikTok Shop or Shopee ad.</p>
+      <div class="cta"><a class="btn big" href="/studio" data-studio>Start free <span class="arr" aria-hidden="true">→</span></a><a class="btn ghost big" href="#make">Browse what you can make</a></div>
+      <p class="compat">40 free tokens, no sign-up. Runs on <b>Kling 3.0</b>, <b>Seedance 2.0</b>, <b>Nano Banana 2</b> and <b>ElevenLabs</b>.</p>
     </div>
-    <a class="scroll" href="#how">Scroll</a>
-  </section>
-
-  <section class="block center" id="make" style="padding-bottom:0">
-    <div class="wrap">
-      <span class="kicker">What you can make</span>
-      <h2 class="big">Made for Malaysian sellers and creators.</h2>
-      <p class="sub">Pick a goal. Kravitas sets up the right tool, format and voice.</p>
-      <div class="cases">
-        <a class="case" href="/studio?mode=ad" data-studio><i>🛍</i><b>UGC product ads</b><small>TikTok Shop and Shopee, with Malay voice-over</small><span>Try it →</span></a>
-        <a class="case" href="/studio?mode=image" data-studio><i>🖼</i><b>Product images</b><small>Packshots, lifestyle shots, YouTube thumbnails</small><span>Try it →</span></a>
-        <a class="case" href="/studio?mode=video" data-studio><i>🎬</i><b>AI video</b><small>Camera moves, motion ads, short clips</small><span>Try it →</span></a>
-        <a class="case" href="/studio?mode=ideas" data-studio><i>🎭</i><b>Micro drama</b><small>Storyboard a series with the same character</small><span>Try it →</span></a>
+  <div class="trybox" role="group" aria-label="Try Kravitas">
+    <form class="f-chat" id="try" action="/studio" method="get" data-studio-form>
+      <textarea name="idea" id="try-idea" rows="2" maxlength="2000" placeholder="Create your prompts here… e.g. serum vit C RM29, flash sale this weekend, buyers are women 20 to 35" aria-label="Your idea"></textarea>
+      <div class="f-row">
+        <label class="chip sel"><select name="lang" aria-label="Language"><option value="ms">Bahasa Melayu</option><option value="en">English</option><option value="manglish">Manglish</option></select></label>
+        <span class="chip ghost" title="Add your product and character in the studio">＋ Product · Character</span>
+        <button class="f-go" type="submit">Turn into prompts ✦ 2</button>
       </div>
-    </div>
+    </form>
+    <div class="try-ex" id="try-ex"><span>Try:</span><button type="button" data-ex="Tudung bawal satin, 15 warna, koleksi raya, RM35">Tudung raya RM35</button><button type="button" data-ex="Sambal bilis homemade, pedas manis, RM12 sebotol, COD seluruh Malaysia">Sambal homemade</button><button type="button" data-ex="Micro drama 3 episodes: a kopitiam owner discovers her new waiter is a food critic">Micro drama idea</button></div>
+  </div>
   </section>
 
-  <section class="block center" id="steps" style="padding-bottom:0">
+
+  <section class="block" id="make" style="padding-top:70px">
     <div class="wrap">
-      <div class="steps">
-        <div class="stp"><b>1</b><h3>Describe it</h3><p>Type your product or drop a photo or file.</p></div>
-        <div class="stp"><b>2</b><h3>Check the plan</h3><p>Review the prompts and storyboard before spending tokens.</p></div>
-        <div class="stp"><b>3</b><h3>Post it</h3><p>Download, or schedule to TikTok, Instagram and more.</p></div>
+      <div class="lib-head rv"><div><span class="kicker">What you can make</span><h2 class="big">Nine things, one studio.</h2></div><p class="sub" style="margin:0;max-width:380px">Pick one. Kravitas opens the right tool with the format and voice already set.</p></div>
+      <div class="fchips rv" id="fchips" role="group" aria-label="Filter"><button type="button" data-f="all" aria-pressed="true">All<small>9</small></button><button type="button" data-f="ads" aria-pressed="false">Ads<small>3</small></button><button type="button" data-f="video" aria-pressed="false">Video<small>3</small></button><button type="button" data-f="image" aria-pressed="false">Image<small>2</small></button><button type="button" data-f="voice" aria-pressed="false">Voice<small>1</small></button></div>
+      <div class="lib" id="lib">
+        <a class="lc rv" data-cat="ads" href="/studio?mode=ad" data-studio><div class="cv" aria-hidden="true"><div class="ph"><span class="bk"></span></div><span class="tag">Ad</span><span class="cost">✦ 32</span></div><div class="lb"><b>UGC product ads</b><small>A creator holds your product and talks about it, with a Malay voice-over and captions.</small><span>Try it <i>→</i></span></div></a>
+        <a class="lc rv" data-cat="ads" href="/studio?mode=ad" data-studio><div class="cv" aria-hidden="true"><div class="mv" style="display:contents"><div class="pk"></div><i></i><i></i><i></i></div><span class="tag">Ad</span><span class="cost">✦ 9</span></div><div class="lb"><b>Motion ads</b><small>Your product photo animated with voice and captions. The cheapest way to post daily.</small><span>Try it <i>→</i></span></div></a>
+        <a class="lc rv" data-cat="ads" href="/studio?mode=ad" data-studio><div class="cv" aria-hidden="true"><div class="ph"><span class="bk"></span></div><span class="rm">RM29</span><span class="tag">Ad</span></div><div class="lb"><b>Affiliate review ads</b><small>Honest-review style clips for TikTok Shop and Shopee affiliate links.</small><span>Try it <i>→</i></span></div></a>
+        <a class="lc rv" data-cat="video" href="/studio?mode=ideas" data-studio><div class="cv" aria-hidden="true"><div class="eps"><div><b>EP 1</b></div><div><b>EP 2</b></div><div><b>EP 3</b></div></div><span class="tag">Video</span></div><div class="lb"><b>Micro drama</b><small>Short episodes with the same character and look, planned as a series.</small><span>Try it <i>→</i></span></div></a>
+        <a class="lc rv" data-cat="video" href="/studio?mode=video" data-studio><div class="cv" aria-hidden="true"><div class="shot"></div><span class="tag">Video</span></div><div class="lb"><b>AI video shots</b><small>Orbit, push-in and other camera moves from a prompt or a start image.</small><span>Try it <i>→</i></span></div></a>
+        <a class="lc rv" data-cat="video" href="/studio?mode=ideas" data-studio><div class="cv" aria-hidden="true"><div class="sbd"><div class="k"><b>1</b></div><div class="k"><b>2</b></div><div><b>3</b></div><div><b>4</b></div></div><span class="tag">Video</span></div><div class="lb"><b>Storyboard to video</b><small>Sketch every scene first, reorder the panels, then render only what you like.</small><span>Try it <i>→</i></span></div></a>
+        <a class="lc rv" data-cat="image" href="/studio?mode=image" data-studio><div class="cv" aria-hidden="true"><div class="pshot"><div class="pk"></div></div><span class="tag">Image</span><span class="cost">✦ 6</span></div><div class="lb"><b>Product images</b><small>Clean packshots and lifestyle photos from one product picture.</small><span>Try it <i>→</i></span></div></a>
+        <a class="lc rv" data-cat="image" href="/studio?mode=image" data-studio><div class="cv" aria-hidden="true"><div class="th"><b>WOW<br>RM29</b></div><span class="tag">Image</span><span class="cost">✦ 6</span></div><div class="lb"><b>YouTube thumbnails</b><small>Wide 16:9 covers with a close-up face and room for big text.</small><span>Try it <i>→</i></span></div></a>
+        <a class="lc rv" data-cat="voice" href="/studio?mode=voice" data-studio><div class="cv" aria-hidden="true"><div class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="tag">Voice</span><span class="cost">✦ 1</span></div><div class="lb"><b>Malay voice-overs</b><small>Natural Bahasa Melayu, English or Manglish voices for any clip.</small><span>Try it <i>→</i></span></div></a>
       </div>
-      <a class="btn big" href="/studio" data-studio style="margin-top:40px">Start free <span class="arr" aria-hidden="true">→</span></a>
+      <div class="lib-foot rv"><a class="btn" href="/studio" data-studio>Open the studio <span class="arr" aria-hidden="true">→</span></a><a class="btn ghost" href="#pricing">See pricing</a></div>
     </div>
   </section>
 
-  <section class="block center" id="how" style="padding-top:100px">
+  <section class="block center" id="how" style="padding-top:20px">
     <div class="wrap">
-      <span class="kicker">The studio</span>
-      <h2 class="big">Start with an idea.<br>Kravitas does the rest.</h2>
-      <p class="sub">Type what you sell, or drop in a product sheet. You get prompts, a storyboard to check, then the finished video.</p>
-      <div class="frame" aria-label="The Kravitas studio">
-        <div class="f-side" aria-hidden="true"><small>Create</small><span class="on">Ideas</span><span>Ad</span><span>Image</span><span>Video</span><span>Voice</span><span>Edit</span><span>Schedule</span><small>Library</small><span>All media</span><span>Characters</span></div>
-        <div class="f-main">
-          <div class="f-empty"><i>✿</i><b>What do you want to make?</b></div>
-          <form class="f-chat" id="try" action="/studio" method="get" data-studio-form>
-            <textarea name="idea" id="try-idea" rows="2" maxlength="2000" placeholder="Create your prompts here… e.g. serum vit C RM29, flash sale this weekend, buyers are women 20 to 35" aria-label="Your idea"></textarea>
-            <div class="f-row">
-              <label class="chip sel"><select name="lang" aria-label="Language"><option value="ms">Bahasa Melayu</option><option value="en">English</option><option value="manglish">Manglish</option></select></label>
-              <span class="chip ghost" title="Add your product and character in the studio">＋ Product · Character</span>
-              <button class="f-go" type="submit">Turn into prompts ✦ 2</button>
-            </div>
-          </form></div>
-        </div>
+      <span class="kicker">How it works</span>
+      <h2 class="big rv">Three moves.</h2>
+      <div class="moves">
+        <div class="mvc rv"><u>01 / 03</u><h3>Describe it</h3><p>Type what you sell, or drop in photos, a PDF or a Word file. Kravitas asks a few quick questions if it needs more.</p></div>
+        <div class="mvc rv"><u>02 / 03</u><h3>Check the plan</h3><p>Read the hooks and prompts, and see the storyboard, before you spend tokens on the final video.</p></div>
+        <div class="mvc rv"><u>03 / 03</u><h3>Post it</h3><p>Download it, or schedule it to TikTok, Instagram, Facebook, YouTube and Threads.</p></div>
       </div>
     </div>
   </section>
@@ -302,13 +360,20 @@ footer{border-top:1px solid var(--line);padding:26px 0;font-size:13px;color:var(
 </main>
 
 <footer>
-  <div class="wrap"><span>© Kravitas</span><span><a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></span></div>
+  <div class="wrap">
+    <div class="fcols">
+      <div><a class="logo" href="#top" style="color:#fff">Kravitas</a><p>The AI studio for Malaysian sellers and creators.</p></div>
+      <div><h4>Product</h4><a href="#make">What you can make</a><a href="#how">How it works</a><a href="#models">Models</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></div>
+      <div><h4>Studio</h4><a href="/studio?mode=ideas" data-studio>Ideas</a><a href="/studio?mode=ad" data-studio>Ad</a><a href="/studio?mode=image" data-studio>Image</a><a href="/studio?mode=video" data-studio>Video</a><a href="/studio?mode=voice" data-studio>Voice</a></div>
+      <div><h4>Legal</h4><a href="/terms">Terms</a><a href="/privacy">Privacy</a></div>
+    </div>
+    <div class="fbase"><span>© Kravitas</span><span>Prices in Malaysian ringgit</span></div>
+  </div>
 </footer>
 
 <script src="landing-i18n.js"></script>
 <script src="i18n.js"></script>
 <script src="modeldata.js"></script>
 <script src="landing.js"></script>
-<script>(function(){var n=document.getElementById('nav');function f(){n.classList.toggle('solid',scrollY>40)}var st=document.getElementById('stick');function g(){n.classList.toggle('solid',scrollY>40);if(st)st.classList.toggle('on',scrollY>innerHeight*.8)}addEventListener('scroll',g,{passive:true});g()})();</script>
 </body>
 </html>
