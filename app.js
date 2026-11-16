@@ -104,7 +104,7 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), wrap(
 
 app.use(express.json({ limit: '25mb' }));
 if (MODE === 'local') app.use('/media', express.static(path.join(ROOT, 'data', 'media'), { maxAge: '7d' }));
-app.use(express.static(path.join(ROOT, 'public')));
+app.use(express.static(path.join(ROOT, 'public'), { setHeaders: (res, f) => { if (/\.(html|js|css)$/.test(f)) res.setHeader('Cache-Control', 'no-cache'); } }));
 app.get('/vendor/supabase.js', (req, res) => res.sendFile(path.join(ROOT, 'node_modules', '@supabase', 'supabase-js', 'dist', 'umd', 'supabase.js')));
 
 // ---------- public config (no auth) ----------
