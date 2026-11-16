@@ -414,7 +414,8 @@ function renderIdeas(box) {
           <div><h3>Hooks</h3><ul class="hooks">${r.hooks.map((x, i) => `<li><span>${esc(x)}</span><button class="link" data-hook="${i}">Copy</button></li>`).join('')}</ul></div>
         </div>
         <div class="id-head"><h3>Ideas</h3><label class="id-all"><input type="checkbox" id="id-showall" ${IDEAS_DETAIL ? 'checked' : ''}> Show details and prompts</label></div>
-        <div class="id-ideas ${IDEAS_DETAIL ? 'all' : ''}">${r.ideas.map((x, i) => `<div class="id-idea"><div class="id-top"><span class="mtag">${IDEA_MODE[x.mode] || x.mode}</span><b>${esc(x.title)}</b></div><p class="why">${esc(x.why)}</p><div class="id-acts"><button class="btn pri" data-sb="${i}">🎞 Storyboard <small>✦ ${sbPlanCost()}</small></button><button class="btn ghost id-tog" data-tog="${i}" aria-expanded="false">Details ▾</button></div><div class="id-more">${(x.panels || []).length ? `<ol class="id-panels">${x.panels.map((t, n) => `<li><b>${n + 1}</b><span>${esc(t)}</span></li>`).join('')}</ol>` : ''}<p class="id-lbl">Prompt it will use</p><p class="pr">${esc(x.prompt)}</p>${Object.keys(x.settings || {}).length ? `<div class="chips">${Object.entries(x.settings).map(([k, v]) => `<span class="chip">${esc(k)}: ${esc(v)}</span>`).join('')}</div>` : ''}<div class="id-acts"><button class="btn" data-sbreal="${i}" title="Draw real images for every panel straight away">🎞 Real images <small>✦ ${sbPlanCost() + SB_N * sbKeyCost() - SB_N * (px().imageSchnell || 1)}</small></button><button class="btn" data-gen="${i}" title="Open it ready and start making it. You confirm the cost first.">Generate now</button><button class="btn ghost" data-use="${i}" title="Open it in ${IDEA_MODE[x.mode] || 'the tool'} to adjust first">Edit →</button><button class="btn" data-save="${i}" ${IDEAS.savedIds.has(ideaKey(x)) ? 'disabled' : ''}>${IDEAS.savedIds.has(ideaKey(x)) ? '✓ Saved' : 'Save'}</button></div></div></div>`).join('')}</div>
+        <div class="id-flow" aria-label="Your workflow"><span class="on">✨ Ideas</span><i>→</i><button data-mode="image">🖼 Image</button><i>→</i><button data-mode="video">🎬 Video</button><i>→</i><button data-mode="voice">🎙 Voice</button><i>→</i><button data-mode="edit">✂ Edit</button><i>→</i><button data-mode="schedule">📅 Schedule</button></div>
+        <div class="id-ideas ${IDEAS_DETAIL ? 'all' : ''}">${r.ideas.map((x, i) => `<div class="id-idea"><div class="id-top"><span class="mtag">${IDEA_MODE[x.mode] || x.mode}</span><b>${esc(x.title)}</b></div><p class="why">${esc(x.why)}</p><div class="id-acts"><button class="btn pri" data-sb="${i}">🎞 Storyboard <small>✦ ${sbPlanCost()}</small></button><button class="btn" data-use="${i}" title="Open it in ${IDEA_MODE[x.mode] || 'the tool'} with this prompt filled in">Open in ${IDEA_MODE[x.mode] || 'tool'} →</button><button class="btn ghost id-tog" data-tog="${i}" aria-expanded="false">Details ▾</button></div><div class="id-more">${(x.panels || []).length ? `<ol class="id-panels">${x.panels.map((t, n) => `<li><b>${n + 1}</b><span>${esc(t)}</span></li>`).join('')}</ol>` : ''}<p class="id-lbl">Prompt it will use</p><p class="pr">${esc(x.prompt)}</p>${Object.keys(x.settings || {}).length ? `<div class="chips">${Object.entries(x.settings).map(([k, v]) => `<span class="chip">${esc(k)}: ${esc(v)}</span>`).join('')}</div>` : ''}<div class="id-acts"><button class="btn" data-sbreal="${i}" title="Draw real images for every panel straight away">🎞 Real images <small>✦ ${sbPlanCost() + SB_N * sbKeyCost() - SB_N * (px().imageSchnell || 1)}</small></button><button class="btn" data-gen="${i}" title="Open it ready and start making it. You confirm the cost first.">Generate now</button><button class="btn" data-save="${i}" ${IDEAS.savedIds.has(ideaKey(x)) ? 'disabled' : ''}>${IDEAS.savedIds.has(ideaKey(x)) ? '✓ Saved' : 'Save'}</button></div></div></div>`).join('')}</div>
         <div class="id-acts" style="margin-top:8px"><button class="btn" id="id-saveall">Save all ${r.ideas.length}</button></div>
         <div class="b-chat">
           <h3>Refine with Kravitas</h3>
@@ -580,9 +581,52 @@ async function sbMake(box) {
   try {
     const job = await api('/api/jobs', { tool: 'story', input: sbJobInput() });
     S.jobs.unshift(job); renderFeed(); poll();
-    toast('Making your video. Watch it under Recent.');
+    b.jobId = job.id; b.step = 4; renderSb(box); window.scrollTo({ top: 0, behavior: 'smooth' });
     sbRefresh();
   } catch (e) { toast(e.message, true); if (e.code === 'credits' || e.code === 'plan') accountModal(); }
+}
+const SB_STEPS = ['Story', 'Images', 'Voice & video', 'Edit', 'Schedule'];
+const SB_HELP = {
+  1: 'Step 1 of 5. Check the story and the line each panel says. Sketches are cheap, so fix things here before spending on anything else.',
+  2: 'Step 2 of 5. Turn the sketches into real images with your character and product. Skip panels you are happy with as sketches.',
+  3: 'Step 3 of 5. Listen to the voices, add music if you like, then make the video.',
+  4: 'Step 4 of 5. Your video is on its way. When it is ready you can trim, add captions or music in the Editor.',
+  5: 'Step 5 of 5. Post it now or pick a time.',
+};
+function sbSteps(b) {
+  const st = b.step || 1, reach = b.jobId ? 5 : 3;
+  return `<ol class="sb2-steps" aria-label="Progress">${SB_STEPS.map((t, i) => { const n = i + 1; return `<li class="${n === st ? 'on' : ''} ${n < st ? 'done' : ''}"><button type="button" ${n <= reach ? `data-stepgo="${n}"` : 'disabled'} ${n === st ? 'aria-current="step"' : ''}><i>${n < st ? '✓' : n}</i><span>${t}</span></button></li>`; }).join('')}</ol>`;
+}
+function sbGo(box, n) {
+  const b = IDEAS.sb; if (!b) return;
+  if (n === 5) { const j = S.jobs.find((x) => x.id === b.jobId), v = j && [...(j.outputs || [])].reverse().find((o) => o.type === 'video'); if (!v) return toast('Wait for the video to finish first', true); b.step = 4; renderSb(box); return postModal(j, v); }
+  b.step = Math.max(1, Math.min(n, b.jobId ? 5 : 3)); renderSb(box); window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+let sbWatchT;
+function sbWatch(box) {
+  clearTimeout(sbWatchT);
+  sbWatchT = setTimeout(() => {
+    const b = IDEAS.sb; if (!b || (b.step || 1) < 4 || !document.body.contains($('#sb-fin'))) return;
+    const j = S.jobs.find((x) => x.id === b.jobId);
+    if (j && j.status === 'running') { sbWatch(box); return; }
+    $('#sb-fin').innerHTML = sbFinHTML(b); $('#sb-fin').querySelectorAll('[data-fin]').forEach((el) => (el.onclick = () => sbFinAct(box, el.dataset.fin)));
+  }, 2500);
+}
+function sbFinHTML(b) {
+  if (!b.jobId) return '';
+  const j = S.jobs.find((x) => x.id === b.jobId), v = j && [...(j.outputs || [])].reverse().find((o) => o.type === 'video');
+  if (!j || j.status === 'running') return '<div class="id-think"><i></i><b>Making your video…</b><small>This takes a few minutes. You can leave this page, it will also appear under Recent.</small></div>';
+  if (j.status === 'failed' || !v) return `<p class="sb2-help">${esc(j.error || 'The video did not finish.')} Your tokens are refunded. Go back and try again.</p><button class="btn" data-fin="again">← Back to step 3</button>`;
+  return `<video class="sb2-vid" controls playsinline src="${v.url}"></video>
+    <div class="sb2-finacts"><button class="btn pri" data-fin="edit">✂ Open in Editor</button><button class="btn pri" data-fin="post">📅 Post or schedule</button><a class="btn" href="${v.url}" download>⬇ Download</a><button class="btn ghost" data-fin="again">↻ Make another version</button></div>
+    <p class="sb2-help">Next: trim it, add music or captions in the Editor, or post it straight away.</p>`;
+}
+function sbFinAct(box, a) {
+  const b = IDEAS.sb, j = S.jobs.find((x) => x.id === b.jobId), v = j && [...(j.outputs || [])].reverse().find((o) => o.type === 'video');
+  if (a === 'again') { b.step = 3; b.jobId = null; return renderSb(box); }
+  if (!v) return;
+  if (a === 'edit') { EDIT.clips = []; editAdd(v, j); return setMode('edit'); }
+  if (a === 'post') return postModal(j, v);
 }
 function renderSb(box) {
   const b = IDEAS.sb;
@@ -590,43 +634,54 @@ function renderSb(box) {
   const keyed = b.panels.filter((x) => x.kind === 'keyframe').length;
   const loading = b.busy === 'plan';
   const [aw, ah] = b.aspect.split(':').map(Number);
-  box.innerHTML = `<div class="sb2">
+  const st = b.step || 1;
+  box.innerHTML = `<div class="sb2" data-step="${st}">
     <div class="sb2-top"><button class="link" id="sb-back">← Back to ideas</button><span class="mtag">Storyboard</span></div>
+    ${sbSteps(b)}
     <input class="in sb2-title" id="sb-title" maxlength="120" value="${esc(b.title)}" ${loading ? 'disabled' : ''}>
-    <p class="sb2-help">Check the story and the character here before you spend on video. Sketches are cheap. Turn the panels you like into real keyframes with your character and product, and the video is made from those.</p>
+    <p class="sb2-help sb2-stephelp">${SB_HELP[st]}</p>
     ${loading ? `<div class="id-think"><i></i><b>Planning your shots and sketching them…</b><small>This takes about 20 seconds.</small></div>` : `
-    <label class="l" for="sb-look">Same in every panel <small class="muted">· character, product, setting · edit it, then redraw</small></label>
-    <textarea class="in" id="sb-look" rows="3" maxlength="800">${esc(b.look)}</textarea>
-    <div class="sb2-strip">${b.panels.map((x, k) => `<div class="sb2-p ${x.busy ? 'busy' : ''}" draggable="true" data-pi="${k}">
+    <label class="l" data-s="1" for="sb-look">Same in every panel <small class="muted">· character, product, setting · edit it, then redraw</small></label>
+    <textarea class="in" data-s="1" id="sb-look" rows="3" maxlength="800">${esc(b.look)}</textarea>
+    <div class="sb2-strip" data-s="1 2 3">${b.panels.map((x, k) => `<div class="sb2-p ${x.busy ? 'busy' : ''}" draggable="true" data-pi="${k}">
         <div class="sb2-img" style="aspect-ratio:${aw}/${ah}">${x.image ? `<img src="${x.image}" alt="Panel ${k + 1}">` : `<div class="sb2-empty">Empty panel<br><small>Upload or draw</small></div>`}<span class="sb2-n">⠿ ${k + 1}</span>${x.stale ? '<span class="sb2-stale">Changed · redraw</span>' : ''}<span class="sb2-badge ${x.kind}">${x.kind === 'keyframe' ? 'Keyframe ✓' : 'Sketch'}</span>${x.busy ? `<div class="sb2-wait"><i class="spin"></i><small>${x.busy === 'keyframe' ? 'Drawing keyframe…' : 'Sketching…'}</small></div>` : ''}</div>
-        <textarea class="in" data-vis="${k}" rows="3" maxlength="600" aria-label="What happens in panel ${k + 1}">${esc(x.visual)}</textarea>
-        <input class="in" data-nar="${k}" maxlength="400" value="${esc(x.narration)}" aria-label="Line spoken in panel ${k + 1}" placeholder="What is said">
-        <div class="sb2-vo">${x.vbusy ? '<small><i class="spin"></i> Recording…</small>' : voiceOk(x, b) ? `<audio controls preload="none" src="${x.voice.url}"></audio><button class="btn ghost" data-hear="${k}" title="Record again">↻</button>` : `<button class="btn" data-hear="${k}">🔊 Hear it <small>✦ ~2</small></button>${x.voice ? '<small class="sb2-stale2">Words changed</small>' : ''}`}</div>
-        <div class="sb2-pa">
-          ${x.kind === 'keyframe' ? `<button class="btn" data-redraw="${k}">Redraw <small>✦ ${sbKeyCost()}</small></button>` : `<button class="btn" data-redraw="${k}">Redraw <small>✦ ${px().imageSchnell || 1}</small></button><button class="btn pri" data-key="${k}">Real keyframe <small>✦ ${sbKeyCost()}</small></button>`}
-          <button class="btn" data-up="${k}" title="Use your own picture">Upload</button>${b.panels.length > 2 ? `<button class="btn" data-pdel="${k}" aria-label="Remove panel">✕</button>` : ''}
+        <textarea class="in" data-s="1" data-vis="${k}" rows="3" maxlength="600" aria-label="What happens in panel ${k + 1}">${esc(x.visual)}</textarea>
+        <input class="in" data-s="1 3" data-nar="${k}" maxlength="400" value="${esc(x.narration)}" aria-label="Line spoken in panel ${k + 1}" placeholder="What is said">
+        <div class="sb2-vo" data-s="3">${x.vbusy ? '<small><i class="spin"></i> Recording…</small>' : voiceOk(x, b) ? `<audio controls preload="none" src="${x.voice.url}"></audio><button class="btn ghost" data-hear="${k}" title="Record again">↻</button>` : `<button class="btn" data-hear="${k}">🔊 Hear it <small>✦ ~2</small></button>${x.voice ? '<small class="sb2-stale2">Words changed</small>' : ''}`}</div>
+        <div class="sb2-pa" data-s="2">
+          ${x.kind === 'keyframe' ? `<button class="btn" data-redraw="${k}">Redraw <small>✦ ${sbKeyCost()}</small></button>` : `<button class="btn pri" data-key="${k}">Make real image <small>✦ ${sbKeyCost()}</small></button>`}
+          <details class="sb2-more"><summary aria-label="More for panel ${k + 1}">⋯</summary><div>${x.kind === 'keyframe' ? '' : `<button class="btn" data-redraw="${k}">Redraw sketch <small>✦ ${px().imageSchnell || 1}</small></button>`}<button class="btn" data-up="${k}" title="Use your own picture">Upload my own</button>${b.panels.length > 2 ? `<button class="btn" data-pdel="${k}">Remove panel</button>` : ''}</div></details>
         </div></div>`).join('')}</div>
-    <div class="sb2-chat"><input class="in" id="sb-ed" maxlength="600" placeholder='Tell Kravitas what to change, e.g. "make scene 2 funnier"' ${b.busy ? 'disabled' : ''}><button class="btn pri" id="sb-edgo">Change <small>✦ ${px().llm || 1}</small></button></div>
-    <div class="sb2-chips">${['Stronger hook in scene 1', 'Make it funnier', 'Shorter spoken lines', 'Add a twist at the end', 'More urgent call to action'].map((x, i) => `<button class="chip" data-edchip="${i}">${x}</button>`).join('')}</div>
-    ${b.panels.some((x) => x.stale) ? `<button class="btn" id="sb-stale">Redraw the ${b.panels.filter((x) => x.stale).length} changed panel${b.panels.filter((x) => x.stale).length === 1 ? '' : 's'} <small>✦ ${b.panels.filter((x) => x.stale).reduce((n, x) => n + (x.kind === 'keyframe' ? sbKeyCost() : (px().imageSchnell || 1)), 0)}</small></button>` : ''}
-    <div class="sb2-series">${b.series ? `<span class="mtag">🎭 ${esc(b.series.name)} · Episode ${b.series.n}</span><button class="btn" id="sb-next">Next episode →</button>` : `<button class="btn" id="sb-series" title="Keep this character and look for the next episodes">🎭 Save as a series</button><span class="sb2-help">Keeps this character and look, so episode 2 stays consistent.</span>`}</div>
-    <div class="sb2-add"><button class="btn" id="sb-add">＋ Add panel</button><span class="sb2-help">Drag panels by the number to reorder them.</span><button class="btn" id="sb-hearall">🔊 Record all voices</button><button class="btn" id="sb-playall">▶ Play in order</button><input type="file" id="sb-file" accept="image/*" hidden></div>
-    <div class="sb2-music"><button class="btn" id="sb-music">${b.music ? '♪ Change soundtrack' : '♪ Add a soundtrack'}</button><input type="file" id="sb-mfile" accept="audio/*" hidden>
+    <div class="sb2-chat" data-s="1"><input class="in" id="sb-ed" maxlength="600" placeholder='Tell Kravitas what to change, e.g. "make scene 2 funnier"' ${b.busy ? 'disabled' : ''}><button class="btn pri" id="sb-edgo">Change <small>✦ ${px().llm || 1}</small></button></div>
+    <div class="sb2-chips" data-s="1">${['Stronger hook in scene 1', 'Make it funnier', 'Shorter spoken lines', 'Add a twist at the end', 'More urgent call to action'].map((x, i) => `<button class="chip" data-edchip="${i}">${x}</button>`).join('')}</div>
+    ${b.panels.some((x) => x.stale) ? `<button class="btn" data-s="2" id="sb-stale">Redraw the ${b.panels.filter((x) => x.stale).length} changed panel${b.panels.filter((x) => x.stale).length === 1 ? '' : 's'} <small>✦ ${b.panels.filter((x) => x.stale).reduce((n, x) => n + (x.kind === 'keyframe' ? sbKeyCost() : (px().imageSchnell || 1)), 0)}</small></button>` : ''}
+    <div class="sb2-series" data-s="1">${b.series ? `<span class="mtag">🎭 ${esc(b.series.name)} · Episode ${b.series.n}</span><button class="btn" id="sb-next">Next episode →</button>` : `<button class="btn" id="sb-series" title="Keep this character and look for the next episodes">🎭 Save as a series</button><span class="sb2-help">Keeps this character and look, so episode 2 stays consistent.</span>`}</div>
+    <div class="sb2-add" data-s="1"><button class="btn" id="sb-add">＋ Add panel</button><span class="sb2-help">Drag panels by the number to reorder them.</span><input type="file" id="sb-file" accept="image/*" hidden></div>
+    <div class="sb2-add" data-s="3"><button class="btn" id="sb-hearall">🔊 Record all voices</button><button class="btn" id="sb-playall">▶ Play in order</button></div>
+    <div class="sb2-music" data-s="3"><button class="btn" id="sb-music">${b.music ? '♪ Change soundtrack' : '♪ Add a soundtrack'}</button><input type="file" id="sb-mfile" accept="audio/*" hidden>
       ${b.music ? `<span class="sb2-help">${esc(b.music.name)}</span><label class="sb2-vol">Volume <input type="range" id="sb-mvol" min="5" max="60" value="${b.music.vol}"></label><button class="link" id="sb-mrm">Remove</button>` : '<span class="sb2-help">Optional. Your own track plays under the voice-over. MP3, WAV or M4A, up to 3 MB.</span>'}</div>
     <div class="sb2-bar">
-      <div><label class="l" for="sb-kq">Image model</label><select class="in" id="sb-kq"><option value="lite" ${(b.kq || 'lite') === 'lite' ? 'selected' : ''}>Standard · Seedream 4 (cheaper)</option><option value="full" ${b.kq === 'full' ? 'selected' : ''} ${canUse('creator') ? '' : 'disabled'}>Best · Nano Banana 2${canUse('creator') ? '' : ' · 🔒 Creator'}</option></select>
-        <label class="l" for="sb-tier">Video quality</label>
+      <div data-s="2"><label class="l" for="sb-kq">Image model</label><select class="in" id="sb-kq"><option value="lite" ${(b.kq || 'lite') === 'lite' ? 'selected' : ''}>Standard · Seedream 4 (cheaper)</option><option value="full" ${b.kq === 'full' ? 'selected' : ''} ${canUse('creator') ? '' : 'disabled'}>Best · Nano Banana 2${canUse('creator') ? '' : ' · 🔒 Creator'}</option></select></div>
+      <div data-s="3"><label class="l" for="sb-tier">Video quality</label>
         <select class="in" id="sb-tier">${Object.keys(tiers).map((k) => { const need = tiers[k].plan, lock = need && !canUse(need); return `<option value="${k}" ${k === b.tier ? 'selected' : ''}>${esc(TIER_NAME[k] || tiers[k].label)} · ${esc(TIER_DESC[k] || '')}${lock ? ` · 🔒 ${PLAN_LABEL[need]}` : ''}</option>`; }).join('')}</select></div>
-      <div class="sb2-go">
-        ${keyed < b.panels.length ? `<button class="btn" id="sb-all">Real keyframes for all <small>✦ ${(b.panels.length - keyed) * sbKeyCost()}</small></button>` : ''}
-        <button class="go" id="sb-make">Make the video <span class="c" id="sb-est">${b.est != null ? `✦ ${b.est}` : '✦ …'}</span></button>
-      </div>
     </div>
-    <p class="sb2-note">${keyed ? `${keyed} of ${b.panels.length} panels are real keyframes.` : 'All panels are still sketches.'} Panels left as sketches are painted as real images when you make the video, so you only pay for them once.</p>`}
+    <div class="sb2-fin" id="sb-fin" data-s="4 5">${sbFinHTML(b)}</div>
+    <div class="sb2-nav" data-s="1 2 3">
+      <button class="btn ghost" id="sb-prev" ${st === 1 ? 'hidden' : ''}>← Back</button><span class="sp"></span>
+      ${keyed < b.panels.length ? `<button class="btn" id="sb-all" data-s="2">Make all real images <small>✦ ${(b.panels.length - keyed) * sbKeyCost()}</small></button>` : ''}
+      <button class="btn pri" id="sb-nextstep" data-s="1 2">${st === 1 ? 'Next: Images →' : 'Next: Voice & video →'}</button>
+      <button class="go" id="sb-make" data-s="3">Make the video <span class="c" id="sb-est">${b.est != null ? `✦ ${b.est}` : '✦ …'}</span></button>
+    </div>
+    <p class="sb2-note" data-s="2 3">${keyed ? `${keyed} of ${b.panels.length} panels are real keyframes.` : 'All panels are still sketches.'} Panels left as sketches are painted as real images when you make the video, so you only pay for them once.</p>`}
   </div>`;
   if (loading) return;
   const on = (sel, fn) => box.querySelectorAll(sel).forEach((el) => fn(el));
-  $('#sb-back').onclick = () => { IDEAS.sb = null; renderIdeas(box); };
+  $('#sb-back').onclick = () => { IDEAS.sb = null; clearTimeout(sbWatchT); renderIdeas(box); };
+  on('[data-stepgo]', (el) => (el.onclick = () => sbGo(box, +el.dataset.stepgo)));
+  $('#sb-prev').onclick = () => sbGo(box, (b.step || 1) - 1);
+  $('#sb-nextstep') && ($('#sb-nextstep').onclick = () => sbGo(box, (b.step || 1) + 1));
+  on('[data-fin]', (el) => (el.onclick = () => sbFinAct(box, el.dataset.fin)));
+  if ((b.step || 1) >= 4) sbWatch(box);
   $('#sb-title').oninput = (e) => { b.title = e.target.value; };
   $('#sb-look').oninput = (e) => { b.look = e.target.value; };
   on('[data-vis]', (el) => (el.oninput = () => { const pn = b.panels[+el.dataset.vis]; pn.visual = el.value; if (pn.image && !pn.stale) { pn.stale = true; const t = el.closest('.sb2-p').querySelector('.sb2-img'); if (t && !t.querySelector('.sb2-stale')) t.insertAdjacentHTML('beforeend', '<span class="sb2-stale">Changed · redraw</span>'); } }));
