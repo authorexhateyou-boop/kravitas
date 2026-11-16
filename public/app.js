@@ -475,10 +475,10 @@ function renderComposer(keepFocus) {
   const needs = m === 'ad' && !pr ? '<button class="add req" data-attach>＋ Product</button>' : m === 'talk' && !fr && !f.image ? '<button class="add req" data-attach>＋ Who talks</button>' : '';
   const P = (k, l) => pill(k, l, pillOptions(k), f[k]);
   const MCHIP = () => `<button class="pill mchip" data-pill="voiceModel" title="The AI model this uses. Tap to change it."><span class="k">◆</span>${esc(modelInfo().name)}</button>`;
-  const VBOARD = '<button class="pill" data-vboard title="Plan the video scene by scene with pictures before you pay for it">🎞 Storyboard</button>';
+  const VBOARD = '<button class="ib2 vb" data-vboard title="Storyboard: plan the video scene by scene with pictures before you pay for it" aria-label="Storyboard"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="7" height="6" rx="1.5"/><rect x="14" y="5" width="7" height="6" rx="1.5"/><rect x="3" y="14" width="7" height="6" rx="1.5"/><rect x="14" y="14" width="7" height="6" rx="1.5"/></svg></button>';
   if (m === 'ad' && !ADV) f.approve = true; // simple mode always shows the script first
   const simple = {
-    video: [P('model', '◆'), P('camera', '🎥'), P('aspect', ''), VBOARD],
+    video: [P('model', ''), P('camera', ''), P('aspect', '')],
     image: [P('quality', '◆'), P('count', '×'), P('style', '')],
     ad: [P('tier', '◆'), P('lang', ''), P('format', '')],
     talk: [P('lang', '')],
@@ -486,7 +486,7 @@ function renderComposer(keepFocus) {
     voice: [MCHIP(), P('kind', ''), ...(f.kind === 'tts' ? [P('voice', '🎙'), P('lang', '')] : [P('length', '⏱')])],
   };
   const pills = ADV ? {
-    video: [P('model', '◆'), P('aspect', ''), P('duration', ''), P('camera', '🎥'), f.startImage ? '' : P('style', ''), f.model !== 'h3-turbo' ? toggle('audio', 'Sound', f.audio) : '', VBOARD],
+    video: [P('model', ''), P('camera', ''), P('aspect', ''), P('duration', ''), f.startImage ? '' : P('style', ''), f.model !== 'h3-turbo' ? toggle('audio', 'Sound', f.audio) : ''],
     image: [P('quality', '◆'), P('aspect', ''), P('count', '×'), P('style', '')],
     ad: [P('format', ''), P('tier', '◆'), P('variants', '×'), P('angle', ''), P('platform', ''), P('lang', ''), P('seconds', ''), P('voice', '🎙'), toggle('approve', 'Approve first', f.approve), toggle('captions', 'Captions', f.captions)],
     talk: [P('textMode', ''), P('tier', '◆'), P('lang', ''), P('voice', '🎙'), f.textMode === 'topic' ? P('seconds', '') : '', toggle('captions', 'Captions', f.captions)],
@@ -502,7 +502,7 @@ function renderComposer(keepFocus) {
   const ex = $('#cmp-extras'); if (ex) { ex.innerHTML = extras; ex.hidden = !extras; }
   $('#composer').innerHTML = `
     <textarea class="prompt" id="prompt" rows="1" placeholder="${esc(prompt)}">${esc(f.prompt)}</textarea>
-    <div class="bar2"><div class="bl">${m === 'voice' ? '' : `<button class="ib2 plus" data-attach title="Add a product, character, photo or file" aria-label="Attach"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>`}${pills}${m === 'voice' ? '' : `<button class="ib2" data-brain title="${IDEAS.refs.length && REFS_OK.has(m) ? 'Write a prompt from your files' : 'Get hooks and ideas'} (2 tokens)" aria-label="Ideas"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg></button>`}</div><div class="br"><span class="cap" id="cap"></span><button class="ib2 tune ${ADV ? 'on' : ''}" data-more title="${ADV ? 'Fewer options' : 'More options'}" aria-label="More options"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button><button class="send" id="go" title="Generate" aria-label="Generate"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button><span class="c est-hid" id="est"></span></div></div>
+    <div class="bar2"><div class="bl">${m === 'voice' ? '' : `<button class="ib2 plus" data-attach title="Add a product, character, photo or file" aria-label="Attach"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>`}${pills}${m === 'voice' ? '' : `<button class="ib2" data-brain title="${IDEAS.refs.length && REFS_OK.has(m) ? 'Write a prompt from your files' : 'Get hooks and ideas'} (2 tokens)" aria-label="Ideas"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg></button>`}${m === 'video' ? VBOARD : ''}</div><div class="br"><span class="cap" id="cap"></span><button class="ib2 tune ${ADV ? 'on' : ''}" data-more title="${ADV ? 'Fewer options' : 'More options'}" aria-label="More options"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button><button class="send" id="go" title="Generate" aria-label="Generate"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button><span class="c est-hid" id="est"></span></div></div>
     ${REFS_OK.has(m) ? `<input type="file" id="cp-file" accept="${REF_ACCEPT}" multiple hidden>` : ''}`;
   $('#cp-file')?.addEventListener('change', (e) => attachRefs([...e.target.files], () => renderComposer()));
   document.querySelectorAll('#cmp-extras [data-cpun]').forEach((b) => (b.onclick = () => { IDEAS.refs.splice(+b.dataset.cpun, 1); renderComposer(); }));
@@ -522,8 +522,9 @@ function capLine(cost) {
   const have = S.app.credits || 0, f = F();
   const per = S.mode === 'image' ? cost / Math.max(1, f.count || 1) : cost;
   const n = per > 0 ? Math.floor(have / per) : 0;
-  el.textContent = cost ? `✦ ${cost} · ≈ ${n.toLocaleString()} ${S.mode === 'image' ? 'images' : CAP_NOUN[S.mode] || 'more'} left` : '';
-  el.title = cost ? `This costs ✦ ${cost}. Your ✦ ${have.toLocaleString()} balance covers about ${n.toLocaleString()} like it.` : '';
+  el.textContent = cost ? `✦ ${cost}` : '';
+  el.classList.toggle('low', cost > have);
+  el.title = cost ? `This costs ✦ ${cost} tokens. Your ✦ ${have.toLocaleString()} covers about ${n.toLocaleString()} ${S.mode === 'image' ? 'images' : CAP_NOUN[S.mode] || 'more'} like this.` : '';
   if (go) { go.title = cost ? `Generate (✦ ${cost})` : 'Generate'; go.classList.toggle('low', cost > have); }
 }
 let estT;
