@@ -777,14 +777,17 @@ function jobModal(id) {
       </div>
       <div class="acts">
         ${first ? `<a class="btn pri" id="dl" href="${dl(first.url)}" download>⬇ Download</a>` : ''}
-        ${j.text ? '<button class="btn" id="cp">Copy text</button>' : ''}
-        ${first?.type === 'image' && j.tool !== 'avatarGen' ? '<button class="btn" id="imgedit">✏ Edit this image</button><button class="btn" id="anim">🎬 Animate</button>' : ''}<button class="btn" id="favm">${favSet().has(j.id) ? '★ Saved' : '☆ Favourite'}</button>${first?.type === 'video' ? '<button class="btn" id="contin" title="Start the next shot where this one ended">⏭ Continue from last frame</button>' : ''}
+        ${first?.type === 'image' && j.tool !== 'avatarGen' ? '<button class="btn" id="imgedit">✏ Edit this image</button><button class="btn" id="anim">🎬 Animate</button>' : ''}
         ${j.status === 'done' && media.some((o) => o.type === 'image' || o.type === 'video') ? '<button class="btn" id="toedit">✂ Edit & add sound</button>' : ''}
         ${j.tool === 'avatarGen' && !j.input?.preset && j.status === 'done' ? '<button class="btn pri" id="saveav">＋ Save as friend</button>' : ''}
         ${media.some((o) => o.type === 'video') && j.status === 'done' ? '<button class="btn" id="post">📤 Post / schedule</button>' : ''}
-        
-        <button class="btn" id="reuse">↺ Reuse settings</button>
-        <button class="btn danger" id="del">🗑 Delete</button>
+        <details class="sb2-more mm"><summary aria-label="More actions">⋯</summary><div>
+          <button class="btn" id="favm">${favSet().has(j.id) ? '★ Saved' : '☆ Favourite'}</button>
+          ${first?.type === 'video' ? '<button class="btn" id="contin" title="Start the next shot where this one ended">⏭ Continue from last frame</button>' : ''}
+          ${j.text ? '<button class="btn" id="cp">Copy text</button>' : ''}
+          <button class="btn" id="reuse">↺ Reuse settings</button>
+          <button class="btn danger" id="del">🗑 Delete</button>
+        </div></details>
       </div>
     </div>`, 'big');
   let cur = first;

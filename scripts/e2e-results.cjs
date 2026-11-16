@@ -19,7 +19,7 @@ await open(id);await p.click('#anim');await p.waitForTimeout(900);ok('Animate ->
 // edit & add sound
 await open(id);await p.click('#toedit');await p.waitForTimeout(900);ok('Edit & add sound -> Edit mode with clip',await p.evaluate(()=>S.mode==='edit'&&EDIT.clips.length>=1));
 // favourite / reuse / copy
-await open(id);await p.click('#favm');await p.waitForTimeout(300);ok('Favourite toggles',/Saved/.test(await p.textContent('#favm')));
+await open(id);await p.click('.mm summary');await p.click('#favm');await p.waitForTimeout(300);ok('Favourite toggles',/Saved/.test(await p.textContent('#favm')));
 await p.click('#reuse');await p.waitForTimeout(700);ok('Reuse settings goes to tool',await p.evaluate(()=>S.mode==='image'),await p.evaluate(()=>S.mode));
 // video job: make one via video mode
 await p.locator('.ws-rail [data-mode="video"]').first().evaluate(e=>e.click());await p.waitForTimeout(400);await p.fill('#prompt','slow orbit around a hoodie');await p.waitForTimeout(500);await p.click('#go');
@@ -27,7 +27,7 @@ for(let i=0;i<25&&!(await p.evaluate(()=>S.jobs.some(j=>j.tool==='shot'&&j.statu
 const vid=await p.evaluate(()=>S.jobs.find(j=>j.tool==='shot'&&j.status==='done')?.id);ok('finished video job',!!vid);
 if(vid){await open(vid);console.log('video modal buttons:',JSON.stringify(await btns()));
  await p.click('#post');await p.waitForTimeout(700);ok('Post/schedule from video',await p.locator('.modal h2, #modal h2').count()>0);await p.keyboard.press('Escape');await p.waitForTimeout(300);
- await open(vid);await p.click('#contin');await p.waitForTimeout(900);ok('Continue from last frame -> video mode',await p.evaluate(()=>S.mode==='video'));
+ await open(vid);await p.click('.mm summary');await p.click('#contin');await p.waitForTimeout(900);ok('Continue from last frame -> video mode',await p.evaluate(()=>S.mode==='video'));
 }
 // Edit mode: add clip, render
 await p.locator('.ws-rail [data-mode="edit"]').first().evaluate(e=>e.click());await p.waitForTimeout(600);
