@@ -1017,3 +1017,5 @@ button.ib{background:none;border:0;font:inherit}button.ib:hover{background:#2c2c
 @media (max-width:700px){.sb2-strip{grid-template-columns:1fr 1fr;gap:8px}.sb2-nav{padding:8px}.sb2-nav .btn,.sb2-nav .go{padding:9px 12px;font-size:13px}.sb2-p .sb2-img{max-height:260px}}
 .acts .sb2-more.mm{margin-left:auto}.acts .sb2-more.mm summary{width:42px;height:40px}
 .acts .sb2-more.mm>div{bottom:auto;top:46px;min-width:200px}
+.sclen{display:block;margin-top:4px;font-size:12px;color:var(--muted)}.sclen.bad{color:#ff6b6b;font-weight:600}
+.flow-alt{flex-basis:100%;font-size:12.5px;color:var(--muted);margin-top:2px}.flow-alt button{background:none!important;border:0!important;padding:0 2px!important;text-decoration:underline;color:#d6d6da;font-size:12.5px}

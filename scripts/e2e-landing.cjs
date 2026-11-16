@@ -13,7 +13,7 @@ ok('no EN/BM toggle',await p.locator('[data-uilang]').count()===0);
 await p.click('#fchips [data-f=image]');ok('filter image -> 2 cards',await p.locator('#lib .lc:visible').count()===2);
 await p.click('#fchips [data-f=all]');ok('filter all -> 9',await p.locator('#lib .lc:visible').count()===9);
 // card links
-const hrefs=await p.$$eval('#lib .lc',a=>a.map(x=>x.getAttribute('href')));ok('9 grid cards link to a mode',hrefs.every(h=>/^\/studio\?mode=(ad|image|video|voice|ideas)$/.test(h)),hrefs.join(' '));
+const hrefs=await p.$$eval('#lib .lc',a=>a.map(x=>x.getAttribute('href')));ok('9 grid cards link to a mode',hrefs.every(h=>/^\/studio\?tpl=\w+$/.test(h)),hrefs.join(' '));
 // example chip + submit
 await p.click('#try-ex [data-ex]');ok('example chip fills box',(await p.inputValue('#try-idea')).length>10);
 const nav=p.waitForURL(/\/studio/);await p.click('.f-go');await nav;

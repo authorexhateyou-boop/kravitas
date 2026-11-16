@@ -457,6 +457,7 @@ const voiceSub = (k) => (k.startsWith('clone:') ? 'Cloned voice' : k.startsWith(
 const REFS_OK = new Set(['ad', 'video', 'image']);
 const FLOW = [['ideas', '✨', 'Ideas'], ['image', '🖼', 'Image'], ['video', '🎬', 'Video'], ['voice', '🎙', 'Voice'], ['edit', '✂', 'Edit'], ['schedule', '📅', 'Schedule']];
 function flowStrip(cur) {
+  if (cur === 'ad') return `<div class="id-flow" aria-label="Your workflow"><button type="button" data-mode="ideas" class="done">✨ Ideas</button><i>→</i><span class="on">🛍 Ad · image, voice and video in one go</span><i>→</i><button type="button" data-mode="edit">✂ Edit</button><i>→</i><button type="button" data-mode="schedule">📅 Schedule</button><small class="flow-alt">or step by step: <button type="button" data-mode="image">Image</button> → <button type="button" data-mode="video">Video</button> → <button type="button" data-mode="voice">Voice</button></small></div>`;
   const at = { ad: 'video', talk: 'video', story: 'video', shot: 'video' }[cur] || cur, i = FLOW.findIndex((x) => x[0] === at);
   return `<div class="id-flow" aria-label="Your workflow">${FLOW.map(([k, ic, l], n) => `${n ? '<i>→</i>' : ''}${n === i ? `<span class="on">${ic} ${l}</span>` : `<button type="button" data-mode="${k}" class="${n < i ? 'done' : ''}">${ic} ${l}</button>`}`).join('')}</div>`;
 }
@@ -768,7 +769,7 @@ function jobModal(id) {
       ${media.length > 1 ? `<div class="thumbs">${media.map((o, i) => `<button data-i="${i}" class="${i === 0 ? 'on' : ''}" title="${esc(o.label || '')}">${o.type === 'video' ? `<video src="${o.url}#t=0.3" muted preload="metadata"></video>` : o.type === 'audio' ? '<span class="ai">♪</span>' : `<img src="${o.url}">`}${o.label ? `<em>${esc(o.label)}</em>` : ''}</button>`).join('')}</div>` : ''}
       ${j.error ? `<div class="err">${esc(j.error)}</div>` : ''}
       ${j.status !== 'done' ? `<ul class="steps">${j.steps.map((s) => `<li class="${s.status}">${esc(s.label)}</li>`).join('')}</ul>` : ''}
-      ${review ? `<div class="review-box"><b>Review before rendering</b><small>Edit any script, then approve. Nothing is rendered until you do.</small>${j.draftData.plans.map((pl, k) => `<label>${j.draftData.plans.length > 1 ? `V${k + 1} · ${esc(j.draftData.angles?.[k] || '')}` : 'Script'}<textarea data-sc="${k}" rows="4">${esc(pl.script || '')}</textarea></label>`).join('')}<button class="btn pri" id="approve">Approve & render <span id="apc"></span></button></div>` : j.text ? `<div class="txt" id="jt">${esc(j.text)}</div>` : ''}
+      ${review ? `<div class="review-box"><b>Review before rendering</b><small>Edit any script, then approve. Nothing is rendered until you do.</small>${j.draftData.plans.map((pl, k) => `<label>${j.draftData.plans.length > 1 ? `V${k + 1} · ${esc(j.draftData.angles?.[k] || '')}` : 'Script'}<textarea data-sc="${k}" rows="4">${esc(pl.script || '')}</textarea><small class="sclen" data-scl="${k}"></small></label>`).join('')}<button class="btn pri" id="approve">Approve & render <span id="apc"></span></button></div>` : j.text ? `<div class="txt" id="jt">${esc(j.text)}</div>` : ''}
       <div class="editbox" id="eb" hidden>
         <b>What should change?</b><small>Kravitas keeps everything else the same.</small>
         <div class="chips">${['Change the colour to…', 'Remove the background', 'Make it brighter', 'Add the text “…”', 'Make it look more premium'].map((x) => `<button type="button" class="chip" data-ec="${esc(x)}">${esc(x)}</button>`).join('')}</div>
@@ -794,7 +795,11 @@ function jobModal(id) {
   if (review) {
     const body = () => ({ tool: 'ugc', input: { ...j.input, draft: false, fromDraft: j.id, scripts: [...m.querySelectorAll('[data-sc]')].map((t) => t.value) } });
     api('/api/estimate', body()).then(({ credits }) => { $('#apc', m).textContent = `✦ ${credits}`; }, () => {});
+    const tierMax = (S.app.catalog?.tiers?.[j.input?.tier]?.maxSec) || 0, talkingNeedsFit = j.input?.format === 'talking' && j.input?.tier !== 'motion';
+    const checkLen = () => { let over = false; m.querySelectorAll('[data-sc]').forEach((t) => { const w = t.value.trim().split(/\s+/).filter(Boolean).length, sec = Math.round(w / 2.6), el = m.querySelector(`[data-scl="${t.dataset.sc}"]`); const bad = talkingNeedsFit && tierMax && sec > tierMax + 1; over ||= bad; el.textContent = `≈ ${sec}s spoken${tierMax && talkingNeedsFit ? ` · this quality fits up to ${tierMax}s` : ''}${bad ? ' · shorten it or pick a higher quality' : ''}`; el.classList.toggle('bad', bad); }); return over; };
+    m.querySelectorAll('[data-sc]').forEach((t) => t.addEventListener('input', checkLen)); checkLen();
     $('#approve', m).onclick = async (e) => {
+      if (checkLen() && !confirm('A script looks too long for this quality and may fail. Render anyway?')) return;
       e.target.disabled = true;
       try {
         const job = await api('/api/jobs', body());
@@ -1062,6 +1067,7 @@ document.addEventListener('mouseout', (e) => { const v = e.target.closest('.card
       } else toast('Checkout cancelled');
     }
     if (q.get('mode') && MODES[q.get('mode')] && !q.has('idea')) { S.mode = q.get('mode'); history.replaceState(null, '', location.pathname); }
+    if (q.get('tpl')) { const id = q.get('tpl'); history.replaceState(null, '', location.pathname); setTimeout(() => window.useTemplateId && useTemplateId(id), 300); }
     if (q.get('login')) { history.replaceState(null, '', location.pathname); setTimeout(() => window.authModal && S.app && S.app.mode !== 'local' && authModal('login'), 600); }
     if (q.get('topup')) { history.replaceState(null, '', location.pathname); setTimeout(() => accountModal(), 600); }
     if (q.has('idea')) {
