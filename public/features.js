@@ -190,6 +190,7 @@ function renderEditor(box) {
   const vopts = voiceOptions();
   const j = EDIT.job && S.jobs.find((x) => x.id === EDIT.job);
   box.innerHTML = `
+    ${flowStrip('edit')}
     <div class="ed-grid">
       <div class="zz-stagewrap"><div class="zz-stage ed-stage" id="ed-stage" style="aspect-ratio:${EDIT.aspect.replace(':', '/')}">${editStage()}</div></div>
       <div class="ed-tracks">
@@ -866,6 +867,7 @@ function renderMain() {
   if (S.mode === 'edit') return renderEditor(box);
   if (S.mode === 'ideas') return renderIdeas(box);
   box.innerHTML = `<div class="fl-head"><h1>${FL_TITLE[S.mode] || ''}</h1><p>${HERO[S.mode]?.[1] || ''}</p></div>
+    ${flowStrip(S.mode)}
     <div class="fl-gal" id="fl-gal">${galleryHTML()}</div>
     <div class="cmp-dock"><div class="cmp-extras" id="cmp-extras" hidden></div>
     <div class="composer inline" id="composer"></div></div>
@@ -1216,7 +1218,7 @@ async function renderSchedule() {
       ${(p.results || []).filter((r) => r.url || r.error).map((r) => (r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">View post ↗</a>` : `<span class="perr">${esc(r.error)}</span>`)).join(' ')}</div>
       <span class="pst ${st.replace(' ', '-')}">${st}</span></div>`;
   };
-  el.innerHTML = `
+  el.innerHTML = `${flowStrip("schedule")}
     <div class="zz-sch-h"><p class="zz-lead" style="margin-top:0">Connect your accounts once, then post or schedule any video. TikTok and YouTube posts are labelled as AI-generated.</p>
       ${on ? '' : S.app.mode === 'preview' ? '' : '<div class="banner">Auto-posting switches on when POSTFORME_API_KEY is added on the server.</div>'}</div>
     <div class="accts">${Object.entries(PLATFORM_META).map(([k, p]) => {

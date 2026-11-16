@@ -455,6 +455,11 @@ function voiceOptions() {
 const voiceSub = (k) => (k.startsWith('clone:') ? 'Cloned voice' : k.startsWith('mm:') ? 'MiniMax · natural Bahasa Melayu' : 'ElevenLabs');
 
 const REFS_OK = new Set(['ad', 'video', 'image']);
+const FLOW = [['ideas', '✨', 'Ideas'], ['image', '🖼', 'Image'], ['video', '🎬', 'Video'], ['voice', '🎙', 'Voice'], ['edit', '✂', 'Edit'], ['schedule', '📅', 'Schedule']];
+function flowStrip(cur) {
+  const at = { ad: 'video', talk: 'video', story: 'video', shot: 'video' }[cur] || cur, i = FLOW.findIndex((x) => x[0] === at);
+  return `<div class="id-flow" aria-label="Your workflow">${FLOW.map(([k, ic, l], n) => `${n ? '<i>→</i>' : ''}${n === i ? `<span class="on">${ic} ${l}</span>` : `<button type="button" data-mode="${k}" class="${n < i ? 'done' : ''}">${ic} ${l}</button>`}`).join('')}</div>`;
+}
 function renderComposer(keepFocus) {
   if (!$('#composer') || !MODES[S.mode]?.tool) return;
   const f = F();

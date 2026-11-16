@@ -1013,3 +1013,5 @@ button.ib{background:none;border:0;font:inherit}button.ib:hover{background:#2c2c
 .id-flow span.on{background:#fff;color:#000;border-color:#fff}
 .id-flow button{cursor:pointer}.id-flow button:hover{border-color:#fff;color:#fff}
 @media (max-width:700px){.id-flow{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.id-flow>*{flex:none}}
+.id-flow button.done{color:#fff}.fl-head+.id-flow{margin:-2px 0 14px}
+@media (max-width:700px){.sb2-strip{grid-template-columns:1fr 1fr;gap:8px}.sb2-nav{padding:8px}.sb2-nav .btn,.sb2-nav .go{padding:9px 12px;font-size:13px}.sb2-p .sb2-img{max-height:260px}}
