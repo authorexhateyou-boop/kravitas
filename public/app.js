@@ -775,26 +775,23 @@ function jobModal(id) {
       ${j.error ? `<div class="err">${esc(j.error)}</div>` : ''}
       ${j.status !== 'done' ? `<ul class="steps">${j.steps.map((s) => `<li class="${s.status}">${esc(s.label)}</li>`).join('')}</ul>` : ''}
       ${review ? `<div class="review-box"><b>Review before rendering</b><small>Edit any script, then approve. Nothing is rendered until you do.</small>${j.draftData.plans.map((pl, k) => `<label>${j.draftData.plans.length > 1 ? `V${k + 1} · ${esc(j.draftData.angles?.[k] || '')}` : 'Script'}<textarea data-sc="${k}" rows="4">${esc(pl.script || '')}</textarea><small class="sclen" data-scl="${k}"></small></label>`).join('')}<button class="btn pri" id="approve">Approve & render <span id="apc"></span></button></div>` : j.text ? `<div class="txt" id="jt">${esc(j.text)}</div>` : ''}
-      <div class="editbox" id="eb" hidden>
-        <b>What should change?</b><small><b class="paint-tip">Tip:</b> tap or brush over the part of the picture you want changed, and only that part changes. Paint nothing to change the whole picture.</small>
-        <div class="paintbar"><span id="pnum">Nothing painted · whole picture</span><button type="button" class="chip" data-brush="0.035">Small brush</button><button type="button" class="chip on" data-brush="0.07">Big brush</button><button type="button" class="chip" id="pclear">Clear</button></div>
-        <div class="chips">${['Change the colour to…', 'Remove the background', 'Make it brighter', 'Add the text “…”', 'Make it look more premium'].map((x) => `<button type="button" class="chip" data-ec="${esc(x)}">${esc(x)}</button>`).join('')}</div>
-        <textarea id="ebt" rows="2" maxlength="300" placeholder="e.g. make the hoodie dark green"></textarea>
-        <div class="ebgo"><button class="btn pri" id="ebgo">Apply <small id="ebc1"></small></button><button class="btn" id="ebgo2" title="Slower and more faithful: best for logos, text and faces">Precise <small id="ebc2"></small></button></div>
-      </div>
-      <div class="acts">
-        ${first ? `<a class="btn pri" id="dl" href="${dl(first.url)}" download>⬇ Download</a>` : ''}
-        ${first?.type === 'image' && j.tool !== 'avatarGen' ? '<button class="btn" id="imgedit">✏ Edit this image</button><button class="btn" id="anim">🎬 Animate</button>' : ''}
-        ${j.status === 'done' && media.some((o) => o.type === 'image' || o.type === 'video') ? '<button class="btn" id="toedit">✂ Edit & add sound</button>' : ''}
-        ${j.tool === 'avatarGen' && !j.input?.preset && j.status === 'done' ? '<button class="btn pri" id="saveav">＋ Save as friend</button>' : ''}
-        ${media.some((o) => o.type === 'video') && j.status === 'done' ? '<button class="btn" id="post">📤 Post / schedule</button>' : ''}
-        <details class="sb2-more mm"><summary aria-label="More actions">⋯</summary><div>
+      <div class="icons">
+        ${first ? `<a class="ic" id="dl" href="${dl(first.url)}" download title="Download" aria-label="Download"><svg viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg></a>` : ''}
+        ${first?.type === 'image' && j.tool !== 'avatarGen' ? '<button class="ic" id="imgedit" title="Edit this image" aria-label="Edit this image"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4"/></svg></button>' : ''}
+        ${media.some((o) => o.type === 'video') && j.status === 'done' ? '<button class="ic" id="post" title="Post or schedule" aria-label="Post or schedule"><svg viewBox="0 0 24 24"><path d="M12 15V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v5h14v-5"/></svg></button>' : ''}
+        ${j.tool === 'avatarGen' && !j.input?.preset && j.status === 'done' ? '<button class="btn pri sm" id="saveav">＋ Save as friend</button>' : ''}
+        <details class="sb2-more mm"><summary aria-label="More actions" title="More">⋯</summary><div>
           <button class="btn" id="favm">${favSet().has(j.id) ? '★ Saved' : '☆ Favourite'}</button>
           ${first?.type === 'video' ? '<button class="btn" id="contin" title="Start the next shot where this one ended">⏭ Continue from last frame</button>' : ''}
           ${j.text ? '<button class="btn" id="cp">Copy text</button>' : ''}
           <button class="btn" id="reuse">↺ Reuse settings</button>
           <button class="btn danger" id="del">🗑 Delete</button>
         </div></details>
+      </div>
+      <div class="editbox" id="eb" hidden>
+        <div class="ebchat"><textarea id="ebt" rows="3" maxlength="300" placeholder="Describe the change. Paint on the picture to change just that area."></textarea>
+          <button class="ebsend" id="ebgo" title="Apply" aria-label="Apply"><small id="ebc1"></small><svg viewBox="0 0 24 24"><path d="M12 19V5m0 0l-6 6m6-6l6 6"/></svg></button></div>
+        <div class="pline" id="pline" hidden><span id="pnum">Only the painted area will change</span><button type="button" class="link" id="pclear">Clear</button></div>
       </div>
     </div>`, 'big');
   let cur = first;
@@ -824,9 +821,8 @@ function jobModal(id) {
     $('#jv', m).innerHTML = show(cur);
     $('#dl', m).href = dl(cur.url);
     m.querySelectorAll('.thumbs button').forEach((x) => x.classList.toggle('on', x === b));
-    const a = $('#anim', m); if (a) a.style.display = cur.type === 'image' ? '' : 'none';
     const ie = $('#imgedit', m); if (ie) ie.style.display = cur.type === 'image' ? '' : 'none';
-    if (cur.type !== 'image') $('#eb', m).hidden = true;
+    if (cur.type !== 'image') { $('#eb', m).hidden = true; paintOff(); }
   });
   $('#saveav', m) && ($('#saveav', m).onclick = () => saveAvatarFromJob(j, cur));
   $('#toedit', m) && ($('#toedit', m).onclick = () => { const o = cur && cur.type !== 'audio' ? cur : media.find((x) => x.type !== 'audio'); closeModal(); editAdd(o, j); setMode('edit'); renderAll(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
@@ -843,14 +839,14 @@ function jobModal(id) {
     } catch { toast('Could not grab the last frame. Download the video, take a screenshot of the end, and upload it as a start frame.', true); b.disabled = false; b.textContent = '⏭ Continue from last frame'; }
   });
   // ---- paint-to-select: strokes are kept in 0..1 image coordinates, turned into a black/white mask at the image's real size ----
-  const paint = { strokes: [], r: 0.07, cv: null };
+  const paint = { strokes: [], r: 0.06, cv: null };
   const paintOn = () => {
     const img = $('#jv img', m); if (!img || paint.cv) return;
     const jv = $('#jv', m); jv.style.position = 'relative';
     const cv = document.createElement('canvas'); cv.className = 'paintcv'; jv.appendChild(cv); paint.cv = cv;
     const fit = () => { const a = img.getBoundingClientRect(), b = jv.getBoundingClientRect(); Object.assign(cv.style, { left: a.left - b.left + 'px', top: a.top - b.top + 'px', width: a.width + 'px', height: a.height + 'px' }); cv.width = a.width; cv.height = a.height; draw(); };
-    const draw = () => { const g = cv.getContext('2d'); g.clearRect(0, 0, cv.width, cv.height); g.fillStyle = 'rgba(255,214,10,.45)'; paint.strokes.forEach(([x, y, r]) => { g.beginPath(); g.arc(x * cv.width, y * cv.height, r * cv.width, 0, 7); g.fill(); }); const n = paint.strokes.length; $('#pnum', m).textContent = n ? 'Only the yellow area will change' : 'Nothing painted · whole picture';
-      const c1 = $('#ebc1', m), p2 = $('#ebgo2', m); if (n) { c1.dataset.whole ??= c1.textContent; c1.textContent = `✦ ${S.app.catalog?.price?.imageFill || 10}`; p2.hidden = true; } else { if (c1.dataset.whole != null) c1.textContent = c1.dataset.whole; p2.hidden = false; } };
+    const draw = () => { const g = cv.getContext('2d'); g.clearRect(0, 0, cv.width, cv.height); g.fillStyle = 'rgba(255,214,10,.45)'; paint.strokes.forEach(([x, y, r]) => { g.beginPath(); g.arc(x * cv.width, y * cv.height, r * cv.width, 0, 7); g.fill(); }); const n = paint.strokes.length; 
+      const c1 = $('#ebc1', m); $('#pline', m).hidden = !n; if (n) { c1.dataset.whole ??= c1.textContent; c1.textContent = `✦ ${S.app.catalog?.price?.imageFill || 10}`; } else if (c1.dataset.whole != null) c1.textContent = c1.dataset.whole; };
     paint.draw = draw;
     let down = false;
     const at = (e) => { const r = cv.getBoundingClientRect(); paint.strokes.push([(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height, paint.r]); draw(); };
@@ -861,7 +857,6 @@ function jobModal(id) {
     addEventListener('resize', fit);
   };
   const paintOff = () => { paint.cv?.remove(); paint.cv = null; paint.strokes = []; };
-  m.querySelectorAll('[data-brush]').forEach((b) => (b.onclick = () => { paint.r = +b.dataset.brush; m.querySelectorAll('[data-brush]').forEach((x) => x.classList.toggle('on', x === b)); }));
   $('#pclear', m) && ($('#pclear', m).onclick = () => { paint.strokes = []; paint.draw?.(); });
   const maskUrl = async () => { // white = change, black = keep (FLUX Fill convention)
     const img = $('#jv img', m), W = img.naturalWidth, H = img.naturalHeight, c = document.createElement('canvas'); c.width = W; c.height = H;
@@ -870,13 +865,12 @@ function jobModal(id) {
     return (await api('/api/upload', { dataUrl: c.toDataURL('image/png') })).url;
   };
   $('#imgedit', m) && ($('#imgedit', m).onclick = async () => {
-    const box = $('#eb', m); box.hidden = !box.hidden; if (box.hidden) return paintOff();
+    const box = $('#eb', m); box.hidden = !box.hidden; $('#imgedit', m).classList.toggle('on', !box.hidden); if (box.hidden) return paintOff();
     paintOn();
     $('#ebt', m).focus();
     const est = (quality) => api('/api/estimate', { tool: 'image', input: { prompt: 'x', startImage: cur.url, quality, count: 1 } }).then((r) => `✦ ${r.credits}`, () => '');
-    $('#ebc1', m).textContent = await est('lite'); $('#ebc2', m).textContent = await est('full');
+    if (!paint.strokes.length) $('#ebc1', m).textContent = await est('lite');
   });
-  m.querySelectorAll('[data-ec]').forEach((b) => (b.onclick = () => { const t = $('#ebt', m); t.value = b.dataset.ec; t.focus(); const i = t.value.indexOf('…'); if (i >= 0) t.setSelectionRange(i, i + 1); }));
   const editGo = (quality) => async (e) => {
     const text = $('#ebt', m).value.trim();
     if (!text) { toast('Say what should change first', true); return $('#ebt', m).focus(); }
@@ -894,7 +888,7 @@ function jobModal(id) {
     } catch (err) { toast(err.message, true); e.currentTarget.disabled = false; if (err.code === 'credits' || err.code === 'plan') accountModal(); }
   };
   $('#ebgo', m) && ($('#ebgo', m).onclick = editGo('lite'));
-  $('#ebgo2', m) && ($('#ebgo2', m).onclick = editGo('full'));
+  $('#ebt', m) && $('#ebt', m).addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#ebgo', m).click(); } });
   $('#anim', m) && ($('#anim', m).onclick = () => { setMode('video'); F().startImage = cur.url; closeModal(); renderComposer(true); });
   $('#reuse', m).onclick = () => {
     const mode = TOOL_MODE[j.tool];

@@ -11,13 +11,11 @@ const open=async(id)=>{await p.evaluate(i=>jobModal(i),id);await p.waitForTimeou
 const btns=async()=>p.$$eval('.modal .acts button, .modal .acts a, #modal .acts button, #modal .acts a',e=>e.map(x=>x.textContent.trim().replace(/\s+/g,' ')));
 await open(id);const list=await btns();console.log('image modal buttons:',list.length,JSON.stringify(list));
 // edit this image
-await p.click('#imgedit');await p.waitForTimeout(500);ok('Edit this image shows the edit box',await p.locator('#ebt').isVisible());
+await p.click('#imgedit');await p.waitForTimeout(500);ok('Edit icon shows the edit chat + paint layer',await p.locator('#ebt').isVisible()&&await p.locator('.paintcv').count()===1);
 await p.fill('#ebt','make it dark green');await p.waitForTimeout(600);ok('edit cost shown',/\d/.test(await p.textContent('#ebc1')),await p.textContent('#ebc1'));
 await p.keyboard.press('Escape');await p.waitForTimeout(300);
-// animate
-await open(id);await p.click('#anim');await p.waitForTimeout(900);ok('Animate -> Video mode with start frame',await p.evaluate(()=>S.mode==='video'&&!!F().startImage),await p.evaluate(()=>S.mode+' start='+!!F().startImage));
-// edit & add sound
-await open(id);await p.click('#toedit');await p.waitForTimeout(900);ok('Edit & add sound -> Edit mode with clip',await p.evaluate(()=>S.mode==='edit'&&EDIT.clips.length>=1));
+// Animate / Edit & add sound buttons were removed on purpose (use Video and Edit)
+ok('no Animate/Edit & add sound buttons',await p.evaluate(()=>!document.querySelector('#anim,#toedit')));
 // favourite / reuse / copy
 await open(id);await p.click('.mm summary');await p.click('#favm');await p.waitForTimeout(300);ok('Favourite toggles',/Saved/.test(await p.textContent('#favm')));
 await p.click('#reuse');await p.waitForTimeout(700);ok('Reuse settings goes to tool',await p.evaluate(()=>S.mode==='image'),await p.evaluate(()=>S.mode));
