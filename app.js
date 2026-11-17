@@ -539,8 +539,9 @@ async function lookups(uid) {
 const str = (v, n) => String(v ?? '').slice(0, n);
 function cleanInput(input) {
   const i = { ...input };
-  for (const k of ['startImage', 'endImage', 'image', 'musicUrl']) if (i[k] && !store.isOwnUrl(i[k])) delete i[k];
+  for (const k of ['startImage', 'endImage', 'image', 'musicUrl', 'mask']) if (i[k] && !store.isOwnUrl(i[k])) delete i[k];
   delete i.refs;
+  i.refImages = Array.isArray(i.refImages) ? i.refImages.filter((u) => typeof u === 'string' && store.isOwnUrl(u)).slice(0, 3) : undefined;
   if (i.look != null) i.look = str(i.look, 800);
   for (const k of ['prompt', 'script', 'notes', 'topic', 'tone', 'text']) if (typeof i[k] === 'string') i[k] = i[k].slice(0, k === 'text' ? 5000 : 2000);
   if (i.musicVol != null) i.musicVol = Math.min(100, Math.max(5, +i.musicVol || 25));

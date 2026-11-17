@@ -466,7 +466,7 @@ function renderComposer(keepFocus) {
   if (f.image) refs.push(`<span class="ref"><img src="${f.image}">Photo<button data-unref="image">×</button></span>`);
   if (fr) refs.push(`<span class="ref"><img src="${fr.photos[0]}">${esc(fr.name)}<button data-unref="friendId">×</button></span>`);
   if (pr) refs.push(`<span class="ref"><img src="${pr.image}">${esc(pr.name)}<button data-unref="productId">×</button></span>`);
-  const needs = m === 'ad' && !pr ? '<button class="add req" data-attach>＋ Product</button>' : m === 'talk' && !fr && !f.image ? '<button class="add req" data-attach>＋ Who talks</button>' : '';
+  const needs = ''; // one "+" in the chatbox adds anything (product, person, image, video, document)
   const P = (k, l) => pill(k, l, pillOptions(k), f[k]);
   const MCHIP = () => `<button class="pill mchip" data-pill="voiceModel" title="The AI model this uses. Tap to change it."><span class="k">◆</span>${esc(modelInfo().name)}</button>`;
   const VBOARD = '<button class="ib2 vb" data-vboard title="Storyboard: plan the video scene by scene with pictures before you pay for it" aria-label="Storyboard"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="7" height="6" rx="1.5"/><rect x="14" y="5" width="7" height="6" rx="1.5"/><rect x="3" y="14" width="7" height="6" rx="1.5"/><rect x="14" y="14" width="7" height="6" rx="1.5"/></svg></button>';
@@ -488,20 +488,18 @@ function renderComposer(keepFocus) {
     voice: [MCHIP(), P('kind', ''), ...(f.kind === 'tts' ? [P('voice', '🎙'), String(f.voice).startsWith('el:') ? P('voiceEngine', '') : P('emotion', ''), P('lang', '')] : [P('length', '⏱')])],
   }[m].filter(Boolean).join('') : simple[m].filter(Boolean).join('');
   const more = `<button class="pill more" data-more>${ADV ? 'Fewer options' : 'More options'}</button>`;
-  const hint = !ADV && m === 'ad' ? `<p class="hint">${pr ? 'We write the hook and script and show them to you before making the video.' : 'Add your product, pick the language and hit Generate. You see the script before anything is made.'}</p>` : '';
+  const hint = '';
   const prompt = m === 'talk' && f.textMode === 'topic' ? 'What should they talk about?' : m === 'voice' && f.kind === 'sfx' ? 'Describe the sound… e.g. whoosh transition with a soft pop' : m === 'voice' && f.kind === 'music' ? 'Describe the track… e.g. upbeat lo-fi for a product video, no vocals' : PLACEHOLDER[m];
   const tags = m === 'voice' && f.kind === 'tts' && f.voiceEngine === 'v3' && String(f.voice).startsWith('el:')
     ? `<div class="tagrow">${['[excited]', '[whispers]', '[laughs]', '[sighs]', '[curious]', '[sarcastic]', '[pause]'].map((t) => `<button class="tagchip" data-tag="${t}">${t}</button>`).join('')}</div>` : '';
   // template character: swap it for the user's own friend, and nudge them to add their product
   if (f.tplChar && f.friendId && (f.prompt || '').includes(f.tplChar)) { f.prompt = f.prompt.replace(f.tplChar, 'the person in the reference photo'); f.tplChar = null; }
-  const tplNote = f.tpl && f.tplChar && (f.prompt || '').includes(f.tplChar)
-    ? `<div class="tplnote"><span>👤 Starring <b>${esc(f.tplCharName || 'the template character')}</b>, the template's character. Edit the words, or:</span><button class="btn sm" data-attach>Use my friend</button>${f.productId ? '' : '<button class="btn sm" data-attach>Add my product</button>'}<button class="btn sm ghost" data-tplclear>Remove character</button></div>`
-    : f.tpl && !f.productId && ['image', 'video'].includes(m) && /product/i.test(f.prompt || '') ? `<div class="tplnote"><span>📦 This template uses your product. Add a photo so it looks right.</span><button class="btn sm" data-attach>Add my product</button></div>` : '';
+  const tplNote = '';
   const extras = tplNote + (m === 'voice' ? tags : (refs.length || needs ? `<div class="refs">${refs.join('')}${needs}</div>` : '')) + hint;
   const ex = $('#cmp-extras'); if (ex) { ex.innerHTML = extras; ex.hidden = !extras; }
   $('#composer').innerHTML = `
     <textarea class="prompt" id="prompt" rows="1" placeholder="${esc(prompt)}">${esc(f.prompt)}</textarea>
-    <div class="bar2"><div class="bl">${m === 'voice' ? '' : `<button class="ib2 plus" data-attach title="Add a product, character, photo or file" aria-label="Attach"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>`}${pills}${m === 'voice' ? '' : `<button class="ib2" data-brain title="${IDEAS.refs.length && REFS_OK.has(m) ? 'Write a prompt from your files' : 'Get hooks and ideas'} (2 tokens)" aria-label="Ideas"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg></button>`}${m === 'video' ? VBOARD : ''}</div><div class="br"><span class="cap" id="cap"></span><button class="ib2 tune ${ADV ? 'on' : ''}" data-more title="${ADV ? 'Fewer options' : 'More options'}" aria-label="More options"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button><button class="send" id="go" title="Generate" aria-label="Generate"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button><span class="c est-hid" id="est"></span></div></div>
+    <div class="bar2"><div class="bl">${m === 'voice' ? '' : `<button class="ib2 plus" data-attach title="Add anything: a picture, PDF, Word file, product or person" aria-label="Attach"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>`}${pills}${m === 'voice' ? '' : `<button class="ib2" data-brain title="${IDEAS.refs.length && REFS_OK.has(m) ? 'Write a prompt from your files' : 'Get hooks and ideas'} (2 tokens)" aria-label="Ideas"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg></button>`}${m === 'video' ? VBOARD : ''}</div><div class="br"><span class="cap" id="cap"></span><button class="ib2 tune ${ADV ? 'on' : ''}" data-more title="${ADV ? 'Fewer options' : 'More options'}" aria-label="More options"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button><button class="send" id="go" title="Generate" aria-label="Generate"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button><span class="c est-hid" id="est"></span></div></div>
     ${REFS_OK.has(m) ? `<input type="file" id="cp-file" accept="${REF_ACCEPT}" multiple hidden>` : ''}`;
   $('#cp-file')?.addEventListener('change', (e) => attachRefs([...e.target.files], () => renderComposer()));
   document.querySelectorAll('#cmp-extras [data-cpun]').forEach((b) => (b.onclick = () => { IDEAS.refs.splice(+b.dataset.cpun, 1); renderComposer(); }));
@@ -530,7 +528,7 @@ let estT;
 function estimate() {
   clearTimeout(estT);
   estT = setTimeout(async () => {
-    try { const { credits } = await api('/api/estimate', { tool: MODES[S.mode].tool, input: payload() }); $('#est').textContent = `✦ ${credits}`; capLine(credits); } catch { $('#est').textContent = ''; capLine(0); }
+    try { const { credits } = await api('/api/estimate', { tool: MODES[S.mode].tool, input: payload() }); if (!$('#est')) return; $('#est').textContent = `✦ ${credits}`; capLine(credits); } catch { if ($('#est')) { $('#est').textContent = ''; capLine(0); } }
   }, 200);
 }
 
@@ -540,6 +538,14 @@ function payload() {
   if (S.mode === 'talk') { if (f.textMode === 'topic') { f.topic = f.prompt; f.script = ''; } else f.script = f.prompt; delete f.prompt; }
   if (S.mode === 'voice') { f.text = f.prompt; delete f.prompt; }
   if (S.mode === 'ad') { f.draft = !!f.approve; delete f.approve; }
+  // files added with "+": pictures become references, documents add their text as context
+  if (REFS_OK.has(S.mode) && IDEAS.refs.length) {
+    const imgs = IDEAS.refs.filter((r) => r.kind === 'image').map((r) => r.url), docs = IDEAS.refs.filter((r) => r.kind === 'doc' && r.text);
+    if (S.mode === 'video' && !f.startImage && imgs.length) f.startImage = imgs.shift();
+    if (imgs.length) f.refImages = imgs.slice(0, 3);
+    if (docs.length) { const key = S.mode === 'ad' ? 'notes' : 'prompt', room = S.mode === 'ad' ? 1400 : 600; f[key] = `${f[key] || ''}\n\nDetails from the attached file: ${docs.map((d) => d.text).join(' ').replace(/\s+/g, ' ').slice(0, room)}`.trim(); }
+  }
+  delete f.tpl; delete f.tplChar; delete f.tplCharName;
   return f;
 }
 function validate() {
@@ -619,17 +625,16 @@ function attachMenu(anchor) {
   const showProducts = m !== 'talk' && m !== 'story';
   const showUpload = m === 'video' || m === 'talk';
   const html = `
-    <div class="h">Friends & avatars</div>
-    <button class="it" data-v="new:avatars">🎭 Avatar library · pick an AI creator</button>
-    <button class="it" data-v="new:create-avatar">✨ Create your own AI avatar</button>
-    ${S.friends.map((f) => `<button class="it" data-v="f:${f.id}"><img src="${f.photos[0]}"><span>${esc(f.name)}</span><span class="x" data-del="f:${f.id}" title="Delete">🗑</span></button>`).join('')}
-    <button class="it" data-v="new:friend">＋ New friend</button>
-    ${showProducts ? `<hr><div class="h">Products</div>
+    ${REFS_OK.has(m) ? `<button class="it it-up" data-v="ref">⬆ <span>Add from your computer<small>Image, PDF, Word or text. Pictures are used as references${m === 'video' ? ' (the first one is the start frame)' : ''}.</small></span></button><hr>` : ''}
+    ${showUpload && !REFS_OK.has(m) ? `<button class="it it-up" data-v="upload">⬆ <span>Add a photo from your computer</span></button><hr>` : ''}
+    ${showProducts ? `<div class="h">Your products</div>
     ${S.products.map((p) => `<button class="it" data-v="p:${p.id}"><img src="${p.image}"><span>${esc(p.name)}<small>${esc(p.price)}</small></span><span class="x" data-del="p:${p.id}" title="Delete">🗑</span></button>`).join('')}
-    <button class="it" data-v="new:product">＋ New product</button>` : ''}
-    ${REFS_OK.has(m) ? `<hr><button class="it" data-v="ref">📎 Reference file · image, PDF, Word, text</button>` : ''}
-    ${showUpload ? `<hr><button class="it" data-v="upload">⬆ Upload ${m === 'talk' ? 'a photo' : 'a start frame'} from your computer</button>` : ''}
-    ${m === 'video' ? `<button class="it" data-v="upload-end">⬆ Upload an end frame · the shot lands on this picture (Kling)</button>` : ''}
+    <button class="it" data-v="new:product">＋ Save a product</button><hr>` : ''}
+    <div class="h">People</div>
+    ${S.friends.map((f) => `<button class="it" data-v="f:${f.id}"><img src="${f.photos[0]}"><span>${esc(f.name)}</span><span class="x" data-del="f:${f.id}" title="Delete">🗑</span></button>`).join('')}
+    <button class="it" data-v="new:avatars">🎭 Pick an AI creator</button>
+    <button class="it" data-v="new:friend">＋ Save a person</button>
+    ${m === 'video' ? `<hr><button class="it" data-v="upload-end">⬆ End frame · the shot lands on this picture (Kling)</button>` : ''}
     ${m === 'video' ? madeImages() : ''}`;
   openPop(anchor, html, async (v, e) => {
     const del = e.target.closest('[data-del]');
@@ -771,7 +776,8 @@ function jobModal(id) {
       ${j.status !== 'done' ? `<ul class="steps">${j.steps.map((s) => `<li class="${s.status}">${esc(s.label)}</li>`).join('')}</ul>` : ''}
       ${review ? `<div class="review-box"><b>Review before rendering</b><small>Edit any script, then approve. Nothing is rendered until you do.</small>${j.draftData.plans.map((pl, k) => `<label>${j.draftData.plans.length > 1 ? `V${k + 1} · ${esc(j.draftData.angles?.[k] || '')}` : 'Script'}<textarea data-sc="${k}" rows="4">${esc(pl.script || '')}</textarea><small class="sclen" data-scl="${k}"></small></label>`).join('')}<button class="btn pri" id="approve">Approve & render <span id="apc"></span></button></div>` : j.text ? `<div class="txt" id="jt">${esc(j.text)}</div>` : ''}
       <div class="editbox" id="eb" hidden>
-        <b>What should change?</b><small>Kravitas keeps everything else the same.</small>
+        <b>What should change?</b><small><b class="paint-tip">Tip:</b> tap or brush over the part of the picture you want changed, and only that part changes. Paint nothing to change the whole picture.</small>
+        <div class="paintbar"><span id="pnum">Nothing painted · whole picture</span><button type="button" class="chip" data-brush="0.035">Small brush</button><button type="button" class="chip on" data-brush="0.07">Big brush</button><button type="button" class="chip" id="pclear">Clear</button></div>
         <div class="chips">${['Change the colour to…', 'Remove the background', 'Make it brighter', 'Add the text “…”', 'Make it look more premium'].map((x) => `<button type="button" class="chip" data-ec="${esc(x)}">${esc(x)}</button>`).join('')}</div>
         <textarea id="ebt" rows="2" maxlength="300" placeholder="e.g. make the hoodie dark green"></textarea>
         <div class="ebgo"><button class="btn pri" id="ebgo">Apply <small id="ebc1"></small></button><button class="btn" id="ebgo2" title="Slower and more faithful: best for logos, text and faces">Precise <small id="ebc2"></small></button></div>
@@ -836,8 +842,36 @@ function jobModal(id) {
       setMode('video'); F().startImage = url; F().endImage = null; closeModal(); renderAll(); toast('Last frame is your next start frame');
     } catch { toast('Could not grab the last frame. Download the video, take a screenshot of the end, and upload it as a start frame.', true); b.disabled = false; b.textContent = '⏭ Continue from last frame'; }
   });
+  // ---- paint-to-select: strokes are kept in 0..1 image coordinates, turned into a black/white mask at the image's real size ----
+  const paint = { strokes: [], r: 0.07, cv: null };
+  const paintOn = () => {
+    const img = $('#jv img', m); if (!img || paint.cv) return;
+    const jv = $('#jv', m); jv.style.position = 'relative';
+    const cv = document.createElement('canvas'); cv.className = 'paintcv'; jv.appendChild(cv); paint.cv = cv;
+    const fit = () => { const a = img.getBoundingClientRect(), b = jv.getBoundingClientRect(); Object.assign(cv.style, { left: a.left - b.left + 'px', top: a.top - b.top + 'px', width: a.width + 'px', height: a.height + 'px' }); cv.width = a.width; cv.height = a.height; draw(); };
+    const draw = () => { const g = cv.getContext('2d'); g.clearRect(0, 0, cv.width, cv.height); g.fillStyle = 'rgba(255,214,10,.45)'; paint.strokes.forEach(([x, y, r]) => { g.beginPath(); g.arc(x * cv.width, y * cv.height, r * cv.width, 0, 7); g.fill(); }); const n = paint.strokes.length; $('#pnum', m).textContent = n ? 'Only the yellow area will change' : 'Nothing painted · whole picture';
+      const c1 = $('#ebc1', m), p2 = $('#ebgo2', m); if (n) { c1.dataset.whole ??= c1.textContent; c1.textContent = `✦ ${S.app.catalog?.price?.imageFill || 10}`; p2.hidden = true; } else { if (c1.dataset.whole != null) c1.textContent = c1.dataset.whole; p2.hidden = false; } };
+    paint.draw = draw;
+    let down = false;
+    const at = (e) => { const r = cv.getBoundingClientRect(); paint.strokes.push([(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height, paint.r]); draw(); };
+    cv.onpointerdown = (e) => { down = true; cv.setPointerCapture(e.pointerId); at(e); };
+    cv.onpointermove = (e) => { if (down) at(e); };
+    cv.onpointerup = () => (down = false);
+    if (img.complete) fit(); else img.onload = fit;
+    addEventListener('resize', fit);
+  };
+  const paintOff = () => { paint.cv?.remove(); paint.cv = null; paint.strokes = []; };
+  m.querySelectorAll('[data-brush]').forEach((b) => (b.onclick = () => { paint.r = +b.dataset.brush; m.querySelectorAll('[data-brush]').forEach((x) => x.classList.toggle('on', x === b)); }));
+  $('#pclear', m) && ($('#pclear', m).onclick = () => { paint.strokes = []; paint.draw?.(); });
+  const maskUrl = async () => { // white = change, black = keep (FLUX Fill convention)
+    const img = $('#jv img', m), W = img.naturalWidth, H = img.naturalHeight, c = document.createElement('canvas'); c.width = W; c.height = H;
+    const g = c.getContext('2d'); g.fillStyle = '#000'; g.fillRect(0, 0, W, H); g.fillStyle = '#fff';
+    paint.strokes.forEach(([x, y, r]) => { g.beginPath(); g.arc(x * W, y * H, r * W, 0, 7); g.fill(); });
+    return (await api('/api/upload', { dataUrl: c.toDataURL('image/png') })).url;
+  };
   $('#imgedit', m) && ($('#imgedit', m).onclick = async () => {
-    const box = $('#eb', m); box.hidden = !box.hidden; if (box.hidden) return;
+    const box = $('#eb', m); box.hidden = !box.hidden; if (box.hidden) return paintOff();
+    paintOn();
     $('#ebt', m).focus();
     const est = (quality) => api('/api/estimate', { tool: 'image', input: { prompt: 'x', startImage: cur.url, quality, count: 1 } }).then((r) => `✦ ${r.credits}`, () => '');
     $('#ebc1', m).textContent = await est('lite'); $('#ebc2', m).textContent = await est('full');
@@ -849,6 +883,11 @@ function jobModal(id) {
     if (cur?.type !== 'image') return;
     e.currentTarget.disabled = true;
     try {
+      if (paint.strokes.length) { // only the painted area changes
+        const job = await api('/api/jobs', { tool: 'image', input: { prompt: text, startImage: cur.url, mask: await maskUrl(), aspect: j.input?.aspect || '1:1', count: 1 } });
+        S.jobs.unshift(job); closeModal(); renderFeed(); poll(); load().then(() => renderFeed());
+        return toast('Changing only the area you painted…');
+      }
       const job = await api('/api/jobs', { tool: 'image', input: { prompt: `Edit the attached image: ${text}. Keep everything else exactly the same: same subject, composition, lighting and any logo or text.`, startImage: cur.url, aspect: j.input?.aspect || '9:16', style: '', count: 1, quality } });
       S.jobs.unshift(job); closeModal(); renderFeed(); poll(); load().then(() => renderFeed());
       toast('Editing your image…');
