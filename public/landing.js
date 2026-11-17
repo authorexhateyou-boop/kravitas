@@ -69,3 +69,17 @@ var rv=[].slice.call(document.querySelectorAll('.rv'));if('IntersectionObserver'
 var fc=document.getElementById('fchips');fc.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var f=b.getAttribute('data-f');[].forEach.call(fc.children,function(x){x.setAttribute('aria-pressed',x===b)});[].forEach.call(document.querySelectorAll('#lib .lc'),function(c){c.hidden=f!=='all'&&c.getAttribute('data-cat')!==f;c.classList.add('in')})});
 var ta=document.getElementById('try-idea');document.getElementById('try-ex').addEventListener('click',function(e){var b=e.target.closest('[data-ex]');if(!b)return;ta.value=b.getAttribute('data-ex');ta.focus()});
 })();
+
+// real template covers (public/tpl/<id>.jpg / .mp4, made by scripts/make-template-covers.mjs) replace the drawn card art when present
+[].forEach.call(document.querySelectorAll('#lib .lc'), function (card) {
+  var m = /tpl=(\w+)/.exec(card.getAttribute('href') || ''); if (!m) return;
+  var cv = card.querySelector('.cv'), id = m[1];
+  var im = new Image(); im.alt = ''; im.className = 'cv-real';
+  im.onload = function () { cv.appendChild(im); cv.classList.add('has-real'); };
+  im.src = 'tpl/' + id + '.jpg';
+  var v = document.createElement('video'); v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'metadata'; v.className = 'cv-real';
+  v.onloadeddata = function () { cv.appendChild(v); cv.classList.add('has-real'); };
+  v.src = 'tpl/' + id + '.mp4';
+  card.addEventListener('mouseenter', function () { if (v.parentNode) v.play().catch(function () {}); });
+  card.addEventListener('mouseleave', function () { if (v.parentNode) { v.pause(); v.currentTime = 0; } });
+});

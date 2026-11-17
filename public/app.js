@@ -498,7 +498,12 @@ function renderComposer(keepFocus) {
   const prompt = m === 'talk' && f.textMode === 'topic' ? 'What should they talk about?' : m === 'voice' && f.kind === 'sfx' ? 'Describe the sound… e.g. whoosh transition with a soft pop' : m === 'voice' && f.kind === 'music' ? 'Describe the track… e.g. upbeat lo-fi for a product video, no vocals' : PLACEHOLDER[m];
   const tags = m === 'voice' && f.kind === 'tts' && f.voiceEngine === 'v3' && String(f.voice).startsWith('el:')
     ? `<div class="tagrow">${['[excited]', '[whispers]', '[laughs]', '[sighs]', '[curious]', '[sarcastic]', '[pause]'].map((t) => `<button class="tagchip" data-tag="${t}">${t}</button>`).join('')}</div>` : '';
-  const extras = (m === 'voice' ? tags : (refs.length || needs ? `<div class="refs">${refs.join('')}${needs}</div>` : '')) + hint;
+  // template character: swap it for the user's own friend, and nudge them to add their product
+  if (f.tplChar && f.friendId && (f.prompt || '').includes(f.tplChar)) { f.prompt = f.prompt.replace(f.tplChar, 'the person in the reference photo'); f.tplChar = null; }
+  const tplNote = f.tpl && f.tplChar && (f.prompt || '').includes(f.tplChar)
+    ? `<div class="tplnote"><span>👤 Starring <b>${esc(f.tplCharName || 'the template character')}</b>, the template's character. Edit the words, or:</span><button class="btn sm" data-attach>Use my friend</button>${f.productId ? '' : '<button class="btn sm" data-attach>Add my product</button>'}<button class="btn sm ghost" data-tplclear>Remove character</button></div>`
+    : f.tpl && !f.productId && ['image', 'video'].includes(m) && /product/i.test(f.prompt || '') ? `<div class="tplnote"><span>📦 This template uses your product. Add a photo so it looks right.</span><button class="btn sm" data-attach>Add my product</button></div>` : '';
+  const extras = tplNote + (m === 'voice' ? tags : (refs.length || needs ? `<div class="refs">${refs.join('')}${needs}</div>` : '')) + hint;
   const ex = $('#cmp-extras'); if (ex) { ex.innerHTML = extras; ex.hidden = !extras; }
   $('#composer').innerHTML = `
     <textarea class="prompt" id="prompt" rows="1" placeholder="${esc(prompt)}">${esc(f.prompt)}</textarea>
@@ -992,6 +997,7 @@ document.addEventListener('click', async (e) => {
   }
   const tg = t.closest('[data-toggle]');
   if (tg) { F()[tg.dataset.toggle] = !F()[tg.dataset.toggle]; return renderComposer(); }
+  if (t.closest('[data-tplclear]')) { const f = F(); f.prompt = (f.prompt || '').replace(f.tplChar, 'a person'); f.tplChar = null; renderComposer(); return; }
   const at = t.closest('[data-attach]');
   if (at) return attachMenu(at);
   const un = t.closest('[data-unref]');

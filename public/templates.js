@@ -2,39 +2,79 @@
 // then you add your product and press Make. Nothing is spent until you do.
 (function () {
   const T = [
-    { id: 'flash', cat: 'Ads', e: '⚡', h: 8, title: 'Flash sale ad', sub: '11.11 style urgency, 8s', mode: 'ad', set: { angle: 'deal', format: 'showcase', seconds: 8, lang: 'ms', prompt: 'Diskaun 50% hari ni sahaja, stok terhad, percuma pos' },
+    { id: 'flash', char: 'aina', cat: 'Ads', e: '⚡', h: 8, title: 'Flash sale ad', sub: '11.11 style urgency, 8s', mode: 'ad', set: { angle: 'deal', format: 'showcase', seconds: 8, lang: 'ms', prompt: 'Diskaun 50% hari ni sahaja, stok terhad, percuma pos' },
       gets: ['A hook in the first 2 seconds', 'Voice-over in Bahasa Melayu', 'Captions burned in', 'Caption and hashtags'] },
-    { id: 'review', cat: 'Ads', e: '🛒', h: 28, title: 'Honest review', sub: 'Creator talks to camera', mode: 'ad', set: { angle: 'review', format: 'talking', seconds: 8, lang: 'ms', prompt: 'Dah cuba 2 minggu, ini apa yang saya betul-betul rasa' },
+    { id: 'review', char: 'aina', cat: 'Ads', e: '🛒', h: 28, title: 'Honest review', sub: 'Creator talks to camera', mode: 'ad', set: { angle: 'review', format: 'talking', seconds: 8, lang: 'ms', prompt: 'Dah cuba 2 minggu, ini apa yang saya betul-betul rasa' },
       gets: ['Casual, believable script', 'Friend or presenter speaks it', 'Works with your product photo', 'TikTok-ready 9:16'] },
-    { id: 'unbox', cat: 'Ads', e: '📦', h: 48, title: 'Unboxing', sub: 'First impressions', mode: 'ad', set: { angle: 'unboxing', format: 'showcase', seconds: 8, lang: 'ms', prompt: 'Baru sampai! Jom buka sama-sama' },
+    { id: 'unbox', char: 'meiling', cat: 'Ads', e: '📦', h: 48, title: 'Unboxing', sub: 'First impressions', mode: 'ad', set: { angle: 'unboxing', format: 'showcase', seconds: 8, lang: 'ms', prompt: 'Baru sampai! Jom buka sama-sama' },
       gets: ['Opening-the-box story', 'Close-ups of the product', 'Excited voice-over', 'Captions'] },
-    { id: 'ba', cat: 'Ads', e: '🪄', h: 160, title: 'Before and after', sub: 'The transformation', mode: 'ad', set: { angle: 'beforeafter', format: 'showcase', seconds: 8, lang: 'ms', prompt: 'Sebelum dan selepas guna selama 14 hari' },
+    { id: 'ba', char: 'meiling', cat: 'Ads', e: '🪄', h: 160, title: 'Before and after', sub: 'The transformation', mode: 'ad', set: { angle: 'beforeafter', format: 'showcase', seconds: 8, lang: 'ms', prompt: 'Sebelum dan selepas guna selama 14 hari' },
       gets: ['Clear before and after beats', 'Proof-style voice-over', 'Captions', 'Caption and hashtags'] },
     { id: 'motion', cat: 'Ads', e: '✨', h: 40, title: 'Motion ad', sub: 'Your photo animated, cheapest daily post', mode: 'ad', set: { angle: 'deal', format: 'showcase', tier: 'motion', seconds: 8, lang: 'ms', prompt: 'Stok baru sampai! Harga istimewa minggu ni sahaja, tekan bakul kuning sekarang.' },
       gets: ['Animated product photo', 'Bahasa Melayu voice-over', 'Captions burned in', 'About 9 tokens'] },
-    { id: 'affil', cat: 'Ads', e: '🔗', h: 200, title: 'Affiliate review', sub: 'Honest review for a TikTok Shop link', mode: 'ad', set: { angle: 'review', format: 'talking', seconds: 8, lang: 'ms', prompt: 'Aku dah guna seminggu, jujur memang berbaloi bawah RM30. Link ada kat bakul kuning.' },
+    { id: 'affil', char: 'hafiz', cat: 'Ads', e: '🔗', h: 200, title: 'Affiliate review', sub: 'Honest review for a TikTok Shop link', mode: 'ad', set: { angle: 'review', format: 'talking', seconds: 8, lang: 'ms', prompt: 'Aku dah guna seminggu, jujur memang berbaloi bawah RM30. Link ada kat bakul kuning.' },
       gets: ['Creator talks to camera', 'Works for any affiliate product', 'Script you can edit first', 'Captions and hashtags'] },
     { id: 'pack', cat: 'Photos', e: '✨', h: 210, title: 'Clean packshot', sub: 'Shopee and TikTok Shop listing', mode: 'image', set: { style: 'studio', aspect: '1:1', count: 1, prompt: 'the product on a seamless pastel background, soft shadows, premium e-commerce packshot' },
       gets: ['Square 1:1 for listings', 'Soft studio light', 'Your product stays accurate (add a product photo)', 'Cheap model by default'] },
-    { id: 'life', cat: 'Photos', e: '🛋️', h: 30, title: 'Lifestyle scene', sub: 'Product in a real home', mode: 'image', set: { style: 'photo', aspect: '4:5', count: 1, prompt: 'the product in a bright cosy Malaysian home, natural morning light' },
+    { id: 'life', char: 'rosnah', cat: 'Photos', e: '🛋️', h: 30, title: 'Lifestyle scene', sub: 'Product in a real home', mode: 'image', set: { style: 'photo', aspect: '4:5', count: 1, prompt: '{char} places the product on the kitchen counter of a bright cosy Malaysian terrace house, natural morning light' },
       gets: ['4:5 for Instagram and Facebook', 'Natural light', 'Feels like a real home', 'Add a friend to hold it'] },
-    { id: 'raya', cat: 'Photos', e: '🌙', h: 330, title: 'Festive promo', sub: 'Raya, CNY, Deepavali mood', mode: 'image', set: { style: 'cinematic', aspect: '4:5', count: 1, prompt: 'the product in a festive sale setting with ketupat and warm pelita lights' },
+    { id: 'raya', char: 'rosnah', cat: 'Photos', e: '🌙', h: 330, title: 'Festive promo', sub: 'Raya, CNY, Deepavali mood', mode: 'image', set: { style: 'cinematic', aspect: '4:5', count: 1, prompt: '{char} at a Hari Raya open house table with ketupat, kuih raya jars, warm pelita lights and the product in front, green and gold palette' },
       gets: ['Warm festive lighting', 'Space left for your text', '4:5 portrait', 'Swap the setting in the prompt'] },
-    { id: 'thumb', cat: 'Photos', e: '😱', h: 0, title: 'YouTube thumbnail', sub: 'Wide 16:9 cover with room for text', mode: 'image', set: { style: 'photo', aspect: '16:9', count: 1, prompt: 'YouTube thumbnail, close-up of a surprised face on one side, the product on the other, empty space for big bold text, bright high-contrast colours' },
+    { id: 'thumb', char: 'arjun', cat: 'Photos', e: '😱', h: 0, title: 'YouTube thumbnail', sub: 'Wide 16:9 cover with room for text', mode: 'image', set: { style: 'photo', aspect: '16:9', count: 1, prompt: 'YouTube thumbnail, close-up of {char} with a shocked face on the left, the product glowing on the right, empty space for big bold title text, bright yellow background, high contrast' },
       gets: ['16:9 for YouTube', 'Close-up face that grabs attention', 'Empty space for your title', 'Add your product or friend'] },
+    { id: 'ootd', cat: 'Social', e: '👗', h: 300, char: 'meiling', title: 'Outfit of the day', sub: 'Street-style fashion post', mode: 'image', set: { style: 'photo', aspect: '4:5', count: 1, prompt: '{char} poses on a sunny Kuala Lumpur street in an oversized beige blazer outfit, golden hour, street-style fashion photo' },
+      gets: ['4:5 for Instagram and TikTok photo posts', 'Golden-hour street style', 'Swap in your own model', 'Add your clothing as the product'] },
     { id: 'orbit', cat: 'Video', e: '🌀', h: 260, title: 'Product orbit shot', sub: 'Smooth camera around it', mode: 'video', set: { camera: 'orbit', model: 'h3-turbo', duration: 5, aspect: '9:16', style: 'cinematic', prompt: 'slow orbit around the product on a marble table, soft window light' },
       gets: ['5s vertical clip', 'Cheapest video model', 'Needs your product photo as the start frame', 'Change the camera any time'] },
-    { id: 'story', cat: 'Ideas', e: '🎞', h: 190, title: 'Hook to CTA storyboard', sub: 'Plan before you spend', mode: 'ideas', dump: 'Serum vit C RM29, kulit kusam dan berminyak, nak video TikTok 15 saat dengan hook kuat dan ajak beli di hujung',
+    { id: 'property', cat: 'Video', e: '🏡', h: 30, char: 'hafiz', title: 'Property tour', sub: 'Listing walkthrough for agents', mode: 'video', set: { camera: 'dolly-in', model: 'h3-turbo', duration: 5, aspect: '9:16', style: 'cinematic', prompt: '{char} as a property agent in a navy blazer welcomes viewers at the door of a modern double-storey terrace house, the camera glides through the open door into a bright living room, golden hour' },
+      gets: ['Smooth walkthrough clip', 'Agent greets at the door', 'Add your listing photo as the start frame', 'Vertical 9:16 for TikTok and Reels'] },
+    { id: 'story', char: 'hafiz', cat: 'Ideas', e: '🎞', h: 190, title: 'Hook to CTA storyboard', sub: 'Plan before you spend', mode: 'ideas', dump: 'Serum vit C RM29, kulit kusam dan berminyak, nak video TikTok 15 saat dengan hook kuat dan ajak beli di hujung',
       gets: ['5 ideas to choose from', 'A storyboard for the one you like', 'Cost shown before the video', 'Edit any panel first'] },
-    { id: 'drama', cat: 'Micro drama', e: '🎭', h: 350, title: 'Micro drama, episode 1', sub: 'A story that ends on a cliffhanger', mode: 'ideas', dump: 'Micro drama untuk TikTok, episod 1. Seorang gadis kampung baru bekerja di KL dan menemui surat rahsia di dalam beg majikannya. Mula dengan hook yang kuat, ketegangan naik, dan tamat dengan cliffhanger supaya orang tunggu episod 2. Watak sama dalam setiap babak.',
+    { id: 'drama', char: 'aina', cat: 'Micro drama', e: '🎭', h: 350, title: 'Micro drama, episode 1', sub: 'A story that ends on a cliffhanger', mode: 'ideas', dump: 'Micro drama untuk TikTok, episod 1. Seorang gadis kampung baru bekerja di KL dan menemui surat rahsia di dalam beg majikannya. Mula dengan hook yang kuat, ketegangan naik, dan tamat dengan cliffhanger supaya orang tunggu episod 2. Watak sama dalam setiap babak.',
       gets: ['A hook, rising tension, cliffhanger', 'Same character in every scene', 'Storyboard you can edit by chat', 'Cost shown before the video'] },
-    { id: 'trailer', cat: 'Cinematic', e: '🎬', h: 15, title: 'Film trailer', sub: 'Big mood, fast cuts', mode: 'ideas', dump: 'Trailer filem pendek 30 saat tentang seorang peniaga pasar malam yang mewarisi sebuah kedai lama. Suasana sinematik, muzik dramatik, ayat pendek yang berat. Tamat dengan tajuk filem.',
+    { id: 'trailer', char: 'hafiz', cat: 'Cinematic', e: '🎬', h: 15, title: 'Film trailer', sub: 'Big mood, fast cuts', mode: 'ideas', dump: 'Trailer filem pendek 30 saat tentang seorang peniaga pasar malam yang mewarisi sebuah kedai lama. Suasana sinematik, muzik dramatik, ayat pendek yang berat. Tamat dengan tajuk filem.',
       gets: ['Cinematic look', 'Short, heavy lines', 'Ends on a title card idea', 'Add your own soundtrack'] },
-    { id: 'explain', cat: 'Social', e: '🧠', h: 100, title: 'Explainer', sub: 'Teach one thing in 30 seconds', mode: 'ideas', dump: 'Video penerangan 30 saat: cara kerja faedah kompaun, dijelaskan mudah untuk orang muda Malaysia. Hook soalan di awal, tiga langkah mudah, ajak follow di hujung.',
+    { id: 'brand', cat: 'Cinematic', e: '☕', h: 25, char: 'arjun', title: 'Brand story film', sub: 'Why your small business exists', mode: 'ideas', dump: 'A 30 second brand film for a small Malaysian kopi business. The founder roasts beans before dawn, remembers learning from his grandfather, and serves the first cup to a regular. Warm, honest, ends with the brand name and a simple line.',
+      gets: ['Founder story in 3 to 5 scenes', 'Same character in every scene', 'Warm documentary look', 'Storyboard before you spend'] },
+    { id: 'explain', char: 'meiling', cat: 'Social', e: '🧠', h: 100, title: 'Explainer', sub: 'Teach one thing in 30 seconds', mode: 'ideas', dump: 'Video penerangan 30 saat: cara kerja faedah kompaun, dijelaskan mudah untuk orang muda Malaysia. Hook soalan di awal, tiga langkah mudah, ajak follow di hujung.',
       gets: ['Question hook', 'Three simple steps', 'Follow-us call to action', 'Plain language'] },
-    { id: 'bm', cat: 'Voice', e: '🇲🇾', h: 120, title: 'BM sales voice-over', sub: 'Natural Bahasa Melayu', keepLang: true, mode: 'voice', set: { kind: 'tts', voice: 'mm:Lively_Girl', emotion: 'happy', lang: 'ms', prompt: 'Assalamualaikum semua! Hari ni saya nak kongsi satu produk yang betul-betul berbaloi. Jom tengok sama-sama.' },
+    { id: 'bm', char: 'aina', cat: 'Voice', e: '🇲🇾', h: 120, title: 'BM sales voice-over', sub: 'Natural Bahasa Melayu', keepLang: true, mode: 'voice', set: { kind: 'tts', voice: 'mm:Lively_Girl', emotion: 'happy', lang: 'ms', prompt: 'Assalamualaikum semua! Hari ni saya nak kongsi satu produk yang betul-betul berbaloi. Jom tengok sama-sama.' },
       gets: ['MiniMax speech made for Malay', 'Happy, friendly tone', 'Edit the words freely', 'Download or use in an ad'] },
   ];
+
+  // ---- template cast: fictional Malaysian characters. Each template starts with one; swap in your own friend any time. ----
+  const CAST = {
+    aina: { name: 'Aina', d: 'Aina, a Malaysian Malay woman in her mid-20s with a warm round face, wearing a dusty-pink bawal tudung and a cream knit top' },
+    hafiz: { name: 'Hafiz', d: 'Hafiz, a Malaysian Malay man around 30 with short black hair, a neat short beard and a navy polo shirt' },
+    meiling: { name: 'Mei Ling', d: 'Mei Ling, a Malaysian Chinese woman in her late 20s with a shoulder-length bob and a white linen shirt' },
+    arjun: { name: 'Arjun', d: 'Arjun, a Malaysian Indian man in his late 20s with wavy hair, light stubble and an olive overshirt' },
+    rosnah: { name: 'Mak Cik Rosnah', d: 'Mak Cik Rosnah, a cheerful Malaysian Malay woman in her 50s wearing a floral baju kurung and a cream tudung' },
+  };
+  // ---- cover prompts: what each template card shows. scripts/make-template-covers.mjs turns these into public/tpl/<id>.jpg (+ .mp4). ----
+  // img = still for the card (16:9, no text in the picture); vid = how that still moves in the looping preview.
+  const COVER = {
+    flash: { img: '{char} holds a frosted glass serum bottle with a gold cap next to her face, excited smile, bright red and yellow mega sale backdrop with confetti, studio light, commercial product photo', vid: 'she lifts the bottle toward the camera and smiles, confetti falls, slow push in' },
+    review: { img: '{char} sits on her bed talking to the camera while holding a frosted serum bottle, selfie framing, soft morning window light, cosy Malaysian bedroom, authentic UGC look', vid: 'she talks naturally to the camera and turns the bottle to show it, slight handheld movement' },
+    unbox: { img: 'top-down close-up of the hands of {char} opening a brown delivery parcel on a white desk, a pastel product box inside, warm daylight', vid: 'the hands lift the lid and pull out the product box, gentle camera tilt' },
+    ba: { img: 'split screen portrait of {char}: left half tired dull skin under flat grey light, right half fresh glowing skin under soft warm light, clean beauty photography', vid: 'a soft light sweep moves from the left half to the right half' },
+    motion: { img: 'a frosted serum bottle with a gold cap on a pastel peach podium, soft shadows, floating petals, premium product photo', vid: 'petals drift past, the bottle turns slowly, a light sweep crosses the glass' },
+    affil: { img: '{char} in a small apartment holding a white wireless earbuds case toward the camera, ring light glow, TikTok review vibe', vid: 'he talks to the camera, opens the case and shows the earbuds' },
+    pack: { img: 'three frosted serum bottles with gold caps on a seamless pastel peach background, soft studio shadows, premium e-commerce packshot', vid: 'very slow push in, soft light shimmer on the glass' },
+    life: { img: '{char} in a bright Malaysian terrace-house kitchen arranging glass jars of homemade sambal on the counter, morning light', vid: 'she places a jar on the counter and smiles at the camera' },
+    raya: { img: '{char} at a Hari Raya open house table with ketupat, kuih raya jars and warm pelita lights, green and gold palette, festive and warm', vid: 'pelita flames flicker as she offers a jar of kuih toward the camera' },
+    thumb: { img: '{char} with a shocked face and open mouth on the left, pointing at a glowing smartphone on the right, bright yellow background, empty space at the top right, high contrast YouTube thumbnail photo', vid: 'quick subtle zoom in with a light flash' },
+    ootd: { img: '{char} poses on a sunny Kuala Lumpur street in an oversized beige blazer outfit, golden hour, street-style fashion photo', vid: 'she walks toward the camera and turns, hair moving in the breeze' },
+    orbit: { img: 'a perfume bottle on a dark reflective marble surface, dramatic rim light, cinematic product shot', vid: 'smooth slow orbit around the bottle' },
+    property: { img: '{char} as a property agent in a navy blazer standing at the open door of a modern Malaysian double-storey terrace house at golden hour, welcoming gesture', vid: 'the camera glides forward past him through the door into a bright living room' },
+    story: { img: '{char} at a desk pinning four pencil storyboard sketches of a product video onto a corkboard, warm purple lamp light', vid: 'the camera slides slowly along the storyboard panels' },
+    drama: { img: 'cinematic film still of {char} in a dim Kuala Lumpur office at night holding an opened secret letter, shocked expression, rain on the window, neon city lights, teal and red tones', vid: 'she slowly lowers the letter and looks up, lightning flashes outside' },
+    trailer: { img: '{char} standing in front of an old shophouse at a pasar malam at dusk, steam and string lights, anamorphic cinematic still, moody', vid: 'slow dolly in as the string lights flicker on' },
+    brand: { img: '{char} roasting coffee beans before dawn in a small kopi workshop, steam and warm tungsten light, documentary style', vid: 'he stirs the beans, steam rises, slow push in' },
+    explain: { img: '{char} smiling and explaining in front of a simple whiteboard with three drawn icons, bright blue studio, friendly educational look', vid: 'she gestures toward the whiteboard and nods' },
+    bm: { img: '{char} wearing headphones and speaking into a podcast microphone in a cosy studio with foam panels, warm light', vid: 'she speaks into the microphone, soft lights pulse in the background' },
+  };
+  const withChar = (txt, t) => String(txt || '').replace(/\{char\}/g, CAST[t.char]?.d || 'a Malaysian creator');
+  window.KV_TEMPLATES = { T, CAST, COVER, withChar };
 
   // ---- cover art: small original illustrations (SVG). Real sample pictures in public/tpl/<id>.jpg replace them when present. ----
   const bottle = (x, y, c = '#f5e6c8', cap = '#222') => `<g transform="translate(${x} ${y})"><rect x="-14" y="-6" width="28" height="56" rx="8" fill="${c}"/><rect x="-7" y="-22" width="14" height="18" rx="3" fill="${cap}"/><rect x="-10" y="14" width="20" height="16" rx="3" fill="#fff" opacity=".75"/></g>`;
@@ -72,6 +112,9 @@
     motion: { en: 'New stock just landed! Special price this week only, tap the yellow basket now.', ms: { title: 'Iklan Motion', sub: 'Gambar anda dianimasikan, paling murah', gets: ['Gambar produk bergerak', 'Suara latar Bahasa Melayu', 'Sari kata terbakar', 'Kira-kira 9 token'] } },
     affil: { en: 'Used it for a week, honestly worth it under RM30. Link is in the yellow basket.', ms: { title: 'Ulasan affiliate', sub: 'Ulasan jujur untuk pautan TikTok Shop', gets: ['Kreator bercakap ke kamera', 'Sesuai untuk mana-mana produk affiliate', 'Skrip boleh disunting dahulu', 'Kapsyen dan hashtag'] } },
     thumb: { ms: { title: 'Thumbnail YouTube', sub: 'Kulit lebar 16:9 dengan ruang untuk teks', gets: ['16:9 untuk YouTube', 'Wajah dekat yang menarik perhatian', 'Ruang kosong untuk tajuk', 'Tambah produk atau kawan anda'] } },
+    ootd: { ms: { title: 'Pakaian hari ini', sub: 'Hantaran fesyen gaya jalanan', gets: ['4:5 untuk Instagram dan TikTok', 'Gaya jalanan waktu senja', 'Tukar dengan model anda', 'Tambah pakaian anda sebagai produk'] } },
+    property: { ms: { title: 'Lawatan hartanah', sub: 'Video rumah untuk ejen', gets: ['Klip lawatan yang lancar', 'Ejen menyambut di pintu', 'Tambah gambar rumah sebagai bingkai mula', 'Menegak 9:16 untuk TikTok dan Reels'] } },
+    brand: { en: 'A 30 second brand film for a small Malaysian kopi business. The founder roasts beans before dawn, remembers learning from his grandfather, and serves the first cup to a regular. Warm, honest, ends with the brand name and a simple line.', ms: { title: 'Filem kisah jenama', sub: 'Kenapa perniagaan anda wujud', dump: 'Filem jenama 30 saat untuk perniagaan kopi kecil di Malaysia. Pengasas memanggang biji kopi sebelum subuh, teringat belajar daripada datuknya, dan menghidangkan cawan pertama kepada pelanggan tetap. Hangat dan jujur, tamat dengan nama jenama dan satu ayat ringkas.', gets: ['Kisah pengasas dalam 3 hingga 5 babak', 'Watak sama dalam setiap babak', 'Gaya dokumentari yang hangat', 'Papan cerita sebelum berbelanja'] } },
     pack: { ms: { title: 'Packshot bersih', sub: 'Penyenaraian Shopee dan TikTok Shop', gets: ['Segi empat 1:1 untuk penyenaraian', 'Cahaya studio lembut', 'Produk anda kekal tepat (tambah gambar produk)', 'Model murah secara lalai'] } },
     life: { ms: { title: 'Babak gaya hidup', sub: 'Produk di rumah sebenar', gets: ['4:5 untuk Instagram dan Facebook', 'Cahaya semula jadi', 'Terasa seperti rumah sebenar', 'Tambah kawan memegangnya'] } },
     raya: { ms: { title: 'Promosi perayaan', sub: 'Suasana Raya, CNY, Deepavali', gets: ['Cahaya perayaan yang hangat', 'Ruang untuk teks anda', 'Potret 4:5', 'Tukar suasana dalam prompt'] } },
@@ -102,12 +145,13 @@
   window.useTemplateId = (id) => { const t = T.find((x) => x.id === id); if (t) use(t); return !!t; };
   function use(t0) {
     const t = view(t0);
+    const ch = CAST[t.char];
     if (t.mode === 'ideas') {
-      IDEAS.dump = t.dump; IDEAS.lang = t.lang; IDEAS.result = null; IDEAS.chat = [];
+      IDEAS.dump = t.dump + (ch ? (t.lang === 'ms' ? ` Watak utama: ${ch.d}.` : ` Main character: ${ch.d}.`) : ''); IDEAS.lang = t.lang; IDEAS.result = null; IDEAS.chat = [];
       setMode('ideas'); renderAll(); selectExample('#id-dump'); toast(bm() ? 'Templat siap. Tambah produk anda, kemudian tekan hantar' : 'Template ready. Add your product, then press send');
       return;
     }
-    S.forms[t.mode] = { ...DEFAULTS[t.mode](), ...t.set };
+    S.forms[t.mode] = { ...DEFAULTS[t.mode](), ...t.set, ...(t.set?.prompt ? { prompt: withChar(t.set.prompt, t) } : {}), tpl: t.id, tplChar: ch && /\{char\}/.test(t.set?.prompt || '') ? ch.d : null, tplCharName: ch ? ch.name : null };
     setMode(t.mode); renderAll(); selectExample('#prompt');
     toast(bm() ? `Templat ${t.title} siap. Tambah produk anda, kemudian tekan Buat` : `${t.title} template ready. Add your product, then press Make`);
   }
@@ -119,13 +163,17 @@
       <div class="lib-chips" data-noi18n>${CATS.map((c) => `<button class="chip ${c === cat ? 'on' : ''}" data-tc="${c}">${M ? CAT_MS[c] : c}</button>`).join('')}</div>
       <div class="tpl-grid" data-noi18n>${list.map((t) => `<article class="tpl" style="--h:${t.h}">
         <div class="tpl-cover">${art(t.id, M) || `<span class="tpl-e">${t.e}</span>`}<small>${esc(M ? CAT_MS[t.cat] : t.cat)}</small></div>
-        <div class="tpl-b"><b>${esc(t.title)}</b><p>${esc(t.sub)}</p>
+        <div class="tpl-b"><b>${esc(t.title)}</b><p>${esc(t.sub)}</p>${t.char ? `<span class="tpl-cast">👤 ${esc(CAST[t.char].name)} · ${M ? 'boleh tukar dengan watak anda' : 'swap for your own'}</span>` : ''}
           <ul>${t.gets.map((g) => `<li>${esc(g)}</li>`).join('')}</ul>
           <button class="btn pri" data-tu="${t.id}">${M ? HEAD_MS[2] : 'Use this template'}</button></div></article>`).join('')}</div>`;
     box.querySelectorAll('.tpl').forEach((el, k) => { // real sample photo, if public/tpl/<id>.jpg exists
       const im = new Image(); const t = list[k];
       im.onload = () => { im.className = 'tpl-img'; im.alt = ''; el.querySelector('.tpl-cover')?.prepend(im); };
       im.src = 'tpl/' + t.id + '.jpg';
+      const v = document.createElement('video'); // looping video cover, if public/tpl/<id>.mp4 exists
+      Object.assign(v, { muted: true, loop: true, playsInline: true, autoplay: true, className: 'tpl-img', preload: 'metadata' });
+      v.onloadeddata = () => { el.querySelector('.tpl-cover')?.prepend(v); v.play().catch(() => {}); };
+      v.src = 'tpl/' + t.id + '.mp4';
     });
     box.querySelectorAll('[data-tc]').forEach((b) => (b.onclick = () => { cat = b.dataset.tc; window.renderTemplates(box); }));
     box.querySelectorAll('[data-tu]').forEach((b) => (b.onclick = () => use(T.find((x) => x.id === b.dataset.tu))));
