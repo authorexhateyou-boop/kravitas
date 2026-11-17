@@ -7,7 +7,7 @@ await p.goto('http://localhost:3365/');await p.waitForTimeout(800);
 ok('landing loads',await p.title()==='Kravitas');
 const links=await p.$$eval('a[href^="#"]',a=>a.map(x=>x.getAttribute('href')).filter(h=>h.length>1));
 let bad=[];for(const h of new Set(links)){if(!(await p.$(h)))bad.push(h)}ok('anchor links resolve',!bad.length,bad.join());
-for(const [sel,exp] of [['.hero .btn.big:not(.ghost)','/studio'],['nav a[href="#pricing"]','#pricing']]){const h=await p.$eval(sel,e=>e.getAttribute('href'));ok('link '+sel,h.includes(exp),h)}
+for(const [sel,exp] of [['.nav .btn.sm','/studio'],['nav a[href="#pricing"]','#pricing']]){const h=await p.$eval(sel,e=>e.getAttribute('href'));ok('link '+sel,h.includes(exp),h)}
 ok('no EN/BM toggle',await p.locator('[data-uilang]').count()===0);
 // filter chips
 await p.click('#fchips [data-f=image]');ok('filter image -> 2 cards',await p.locator('#lib .lc:visible').count()===2);

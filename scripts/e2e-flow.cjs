@@ -12,7 +12,7 @@ const cont=p.locator('#ask-go, [data-askgo], .id-ask .pri').first();
 if(await cont.count()){await cont.click();await p.waitForTimeout(3500)}
 for(let i=0;i<8&&!(await p.locator('[data-sb]').count());i++){await p.waitForTimeout(1500)}
 ok('ideas generated with Storyboard buttons',await p.locator('[data-sb]').count()>0,'cards='+await p.locator('.id-idea').count());
-ok('workflow strip present',await p.locator('.id-flow').count()===1);
+ok('no workflow strip',await p.locator('.id-flow').count()===0);
 ok('"Open in X" button present',await p.locator('.id-idea [data-use]').count()>0);
 // Open in X works
 const mode0=await p.evaluate(()=>S.mode);await p.locator('.id-idea [data-use]').first().click();await p.waitForTimeout(800);const mode1=await p.evaluate(()=>S.mode);ok('Open in {tool} switches mode',mode1!==mode0,mode0+'->'+mode1);

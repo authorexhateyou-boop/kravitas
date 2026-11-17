@@ -169,7 +169,7 @@ footer{border-top:1px solid var(--line);padding:26px 0;font-size:13px;color:var(
 .nav nav{margin:0 auto}.nav .signin{text-decoration:none;font-size:14px;font-weight:600;color:#d0d0d4;white-space:nowrap}.nav .signin:hover{color:#fff}
 .hero{min-height:0;display:block;place-items:normal;padding:64px 24px 56px}.hero::after{height:30%}.hero-in{margin:0 auto}
 .badge-pill{display:inline-flex;align-items:center;gap:8px;border:1px solid #333338;background:rgba(255,255,255,.04);border-radius:999px;padding:7px 14px;font-size:13px;color:#d6d6da;text-decoration:none}.badge-pill i{width:7px;height:7px;border-radius:50%;background:#ffd60a;box-shadow:0 0 0 4px rgba(255,214,10,.18)}
-.hero h1{margin:0;font-weight:500;font-size:clamp(38px,5.6vw,76px);line-height:1.02;letter-spacing:-.05em}.hero h1 em{font-style:normal;color:#8e8e96}
+.hero h1{margin:0;font-weight:500;font-size:clamp(38px,5.6vw,76px);line-height:1.02;letter-spacing:-.05em}.hero h1 em{font-style:normal;color:#8e8e96;display:block}
 .hero .lead{margin-top:22px;max-width:640px;font-size:clamp(16px,1.6vw,19px);color:#c7c7cc}
 .hero .cta{margin-top:30px}
 .compat{margin:22px 0 0;font-size:13px;color:var(--mut)}.compat b{color:#d6d6da;font-weight:600}
@@ -224,6 +224,27 @@ footer{padding:54px 0 30px}footer .wrap{display:block}
 @media (max-width:900px){.lib{grid-template-columns:1fr 1fr}.moves{grid-template-columns:1fr}.mvc h3{margin-top:18px}.fcols{grid-template-columns:1fr 1fr}.nav .signin{display:none}.hero{padding:44px 18px 40px}.block{padding:70px 0}}
 @media (max-width:560px){.lib{grid-template-columns:1fr}.trybox{padding:28px 0 0}.trybox .f-chat{border-radius:22px;padding:12px}.trybox textarea{min-height:92px}.fchips{flex-wrap:nowrap;overflow-x:auto;margin-right:-18px;padding-right:18px;scrollbar-width:none}.fchips button{flex:none}.topbar{font-size:12.5px}}
 @media (prefers-reduced-motion:reduce){.js .rv{opacity:1;transform:none;transition:none}.wave i,.mv .pk{animation:none}}
+
+/* ---------- hero v4: one message, one action ---------- */
+.hero::after,.hero::before{display:none !important;pointer-events:none}
+.hero{position:relative;overflow:hidden;padding:88px 24px 64px !important;text-align:center}
+.hero .glow{position:absolute;left:50%;top:58%;width:900px;height:520px;transform:translate(-50%,-50%);background:radial-gradient(closest-side,rgba(255,214,10,.10),rgba(255,255,255,.04) 55%,transparent);pointer-events:none}
+.hero-in{position:relative;z-index:1;max-width:820px;margin:0 auto}
+.hero h1{margin:0 !important;font-size:clamp(36px,5.4vw,68px) !important;line-height:1.04 !important;letter-spacing:-.045em !important;font-weight:600 !important}
+.hero h1 em{font-style:normal;color:#8e8e96}
+.hero .lead{margin:20px auto 0 !important;max-width:600px;font-size:clamp(16px,1.5vw,18px) !important;line-height:1.55;color:#b9b9c0 !important}
+.trybox{position:relative;z-index:1;padding:36px 0 0 !important;max-width:720px;margin:0 auto}
+.trybox .f-chat{max-width:720px !important}
+.trybox .f-row{display:flex;align-items:center;gap:8px}
+.trybox .f-go{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:11px 20px !important;font-size:14.5px !important;font-weight:700}
+.trybox .f-go span{transition:transform .2s}.trybox .f-go:hover span{transform:translateX(3px)}
+.try-ex{margin-top:16px !important}
+.try-ex span{font-size:12.5px;color:#6e6e76;text-transform:uppercase;letter-spacing:.12em;margin-right:2px}
+.free{margin:18px 0 0;font-size:13px;color:#8e8e96}
+.models-strip{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:10px 28px;padding:22px 24px;border-top:1px solid #1c1c20;border-bottom:1px solid #1c1c20;color:#6e6e76;font-size:13px}
+.models-strip span{text-transform:uppercase;letter-spacing:.14em;font-size:11.5px}
+.models-strip b{font-weight:600;color:#a9a9b0;letter-spacing:-.01em;font-size:15px}
+@media (max-width:560px){.hero{padding:48px 16px 40px !important}.models-strip{gap:8px 18px}.models-strip b{font-size:13.5px}.trybox .f-go{padding:10px 14px !important}}
 </style>
 </head>
 <body>
@@ -239,25 +260,24 @@ footer{padding:54px 0 30px}footer .wrap{display:block}
 
 <main id="top">
   <section class="hero">
-    <div class="film" aria-hidden="true"></div><div class="grain" aria-hidden="true"></div>
+    <div class="glow" aria-hidden="true"></div>
     <div class="hero-in">
-      <h1>Ads, videos and micro drama. <em>From one prompt.</em></h1>
-      <p class="lead">Kravitas is the AI studio for Malaysian sellers and creators. Type what you sell and get a ready-to-post TikTok Shop or Shopee ad.</p>
-      <div class="cta"><a class="btn big" href="/studio" data-studio>Start free <span class="arr" aria-hidden="true">→</span></a><a class="btn ghost big" href="#make">Browse what you can make</a></div>
-      <p class="compat">40 free tokens, no sign-up. Runs on <b>Kling 3.0</b>, <b>Seedance 2.0</b>, <b>Nano Banana 2</b> and <b>ElevenLabs</b>.</p>
+      <h1>Type what you sell. <em>Get an ad that sells it.</em></h1>
+      <p class="lead">Kravitas writes the script, puts an AI creator on camera and voices it in Bahasa Melayu. Ready for TikTok Shop and Shopee in minutes.</p>
     </div>
-  <div class="trybox" role="group" aria-label="Try Kravitas">
-    <form class="f-chat" id="try" action="/studio" method="get" data-studio-form>
-      <textarea name="idea" id="try-idea" rows="2" maxlength="2000" placeholder="Create your prompts here… e.g. serum vit C RM29, flash sale this weekend, buyers are women 20 to 35" aria-label="Your idea"></textarea>
-      <div class="f-row">
-        <label class="chip sel"><select name="lang" aria-label="Language"><option value="ms">Bahasa Melayu</option><option value="en">English</option><option value="manglish">Manglish</option></select></label>
-        <span class="chip ghost" title="Add your product and character in the studio">＋ Product · Character</span>
-        <button class="f-go" type="submit">Turn into prompts ✦ 2</button>
-      </div>
-    </form>
-    <div class="try-ex" id="try-ex"><span>Try:</span><button type="button" data-ex="Tudung bawal satin, 15 warna, koleksi raya, RM35">Tudung raya RM35</button><button type="button" data-ex="Sambal bilis homemade, pedas manis, RM12 sebotol, COD seluruh Malaysia">Sambal homemade</button><button type="button" data-ex="Micro drama 3 episodes: a kopitiam owner discovers her new waiter is a food critic">Micro drama idea</button></div>
-  </div>
+    <div class="trybox" role="group" aria-label="Try Kravitas">
+      <form class="f-chat" id="try" action="/studio" method="get" data-studio-form>
+        <textarea name="idea" id="try-idea" rows="2" maxlength="2000" placeholder="What are you selling? e.g. serum vit C RM29, flash sale this weekend, for women 20 to 35" aria-label="What are you selling?"></textarea>
+        <div class="f-row">
+          <label class="chip sel"><select name="lang" aria-label="Language of the ad"><option value="ms">Bahasa Melayu</option><option value="en">English</option><option value="manglish">Manglish</option></select></label>
+          <button class="f-go" type="submit">Get ad ideas <span aria-hidden="true">→</span></button>
+        </div>
+      </form>
+      <div class="try-ex" id="try-ex"><span>Try</span><button type="button" data-ex="Tudung bawal satin, 15 warna, koleksi raya, RM35">Tudung raya RM35</button><button type="button" data-ex="Sambal bilis homemade, pedas manis, RM12 sebotol, COD seluruh Malaysia">Sambal homemade</button><button type="button" data-ex="Micro drama 3 episodes: a kopitiam owner discovers her new waiter is a food critic">Micro drama</button></div>
+      <p class="free">40 free tokens · No sign-up · No card</p>
+    </div>
   </section>
+  <div class="models-strip" aria-label="Models we use"><span>Made with</span><b>Kling 3.0</b><b>Seedance 2.0</b><b>Nano Banana 2</b><b>MiniMax</b><b>ElevenLabs</b></div>
 
 
   <section class="block" id="make" style="padding-top:70px">

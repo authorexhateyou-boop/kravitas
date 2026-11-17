@@ -195,7 +195,7 @@ function guideHTML() {
     { done: S.friends.some((f) => !isSample(f)), t: 'Add your friend', d: 'Upload 1–3 clear photos of the face that stars in your videos. It stays the same in every shot.', btn: '＋ Add friend', act: 'data-new="friend"' },
     { done: S.products.some((p) => !isSample(p)), t: 'Add a product', d: 'A photo of what you promote, plus its price and selling points.', btn: '＋ Add product', act: 'data-new="product"' },
     { done: flag('if-brainstormed'), t: 'Brainstorm', d: 'Kravitas studies your photos and prompt, then suggests hooks, angles and ready-made ideas.', btn: '✨ Brainstorm', act: 'data-brain' },
-    { done: S.jobs.some((j) => j.status === 'done'), t: 'Generate & post', d: 'Pick an idea or preset, hit Generate, then download your video with captions.', btn: 'Make an ad', act: 'data-mode="ad"' },
+    { done: S.jobs.some((j) => j.status === 'done'), t: 'Generate & post', d: 'Pick an idea or preset, hit Generate, then download your video with captions.', btn: 'Browse templates', act: 'data-mode="templates"' },
   ];
   const n = steps.filter((x) => x.done).length;
   const next = steps.findIndex((x) => !x.done);
@@ -455,12 +455,6 @@ function voiceOptions() {
 const voiceSub = (k) => (k.startsWith('clone:') ? 'Cloned voice' : k.startsWith('mm:') ? 'MiniMax · natural Bahasa Melayu' : 'ElevenLabs');
 
 const REFS_OK = new Set(['ad', 'video', 'image']);
-const FLOW = [['ideas', '✨', 'Ideas'], ['image', '🖼', 'Image'], ['video', '🎬', 'Video'], ['voice', '🎙', 'Voice'], ['edit', '✂', 'Edit'], ['schedule', '📅', 'Schedule']];
-function flowStrip(cur) {
-  if (cur === 'ad') return `<div class="id-flow" aria-label="Your workflow"><button type="button" data-mode="ideas" class="done">✨ Ideas</button><i>→</i><span class="on">🛍 Ad · image, voice and video in one go</span><i>→</i><button type="button" data-mode="edit">✂ Edit</button><i>→</i><button type="button" data-mode="schedule">📅 Schedule</button><small class="flow-alt">or step by step: <button type="button" data-mode="image">Image</button> → <button type="button" data-mode="video">Video</button> → <button type="button" data-mode="voice">Voice</button></small></div>`;
-  const at = { ad: 'video', talk: 'video', story: 'video', shot: 'video' }[cur] || cur, i = FLOW.findIndex((x) => x[0] === at);
-  return `<div class="id-flow" aria-label="Your workflow">${FLOW.map(([k, ic, l], n) => `${n ? '<i>→</i>' : ''}${n === i ? `<span class="on">${ic} ${l}</span>` : `<button type="button" data-mode="${k}" class="${n < i ? 'done' : ''}">${ic} ${l}</button>`}`).join('')}</div>`;
-}
 function renderComposer(keepFocus) {
   if (!$('#composer') || !MODES[S.mode]?.tool) return;
   const f = F();

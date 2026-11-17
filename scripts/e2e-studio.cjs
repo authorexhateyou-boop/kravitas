@@ -5,7 +5,7 @@ const ctx=await b.newContext({viewport:{width:1366,height:850}});const p=await c
 p.on('dialog',d=>d.dismiss());
 await p.goto('http://localhost:3365/studio');await p.waitForTimeout(1500);
 // every rail mode renders
-for(const m of ['ideas','templates','ad','image','video','voice','edit','schedule','media','chars','products','series']){
+for(const m of ['ideas','templates','image','video','voice','edit','schedule','media','chars','products','series']){
  const btn=p.locator('.ws-rail [data-mode="'+m+'"]').first();
  if(!(await btn.count())){ok('rail '+m,false,'no button');continue}
  await btn.evaluate(e=>e.click());await p.waitForTimeout(450);
@@ -35,7 +35,7 @@ await p.locator('.ws-rail [data-mode="image"]').first().evaluate(e=>e.click());a
 const n0=await p.evaluate(()=>S.jobs.length);await p.click('#go');await p.waitForTimeout(3500);
 ok('image Generate creates a job',await p.evaluate(()=>S.jobs.length)>n0,n0+'->'+await p.evaluate(()=>S.jobs.length));
 // ad without product => validation, not crash
-await p.locator('.ws-rail [data-mode="ad"]').first().evaluate(e=>e.click());await p.waitForTimeout(500);await p.click('#go');await p.waitForTimeout(500);
+await p.evaluate(()=>setMode('ad'));await p.waitForTimeout(500);await p.click('#go');await p.waitForTimeout(500);
 ok('ad without product shows hint/menu',await p.locator('#pop:not([hidden]), .toast:visible, #toast:visible').count()>=1);
 ok('page errors',!errs.length,errs.slice(0,4).join(' | '));
 console.log(R.join('\n'));await b.close()})()

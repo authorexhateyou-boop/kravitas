@@ -1,5 +1,8 @@
 // Landing-page strings for the EN ⇄ BM switch (merged into i18n.js's dictionary).
 window.KV_DICT = {
+  'Type what you sell.': 'Taip apa yang anda jual.', 'Get an ad that sells it.': 'Dapat iklan yang menjualnya.',
+  'Kravitas writes the script, puts an AI creator on camera and voices it in Bahasa Melayu. Ready for TikTok Shop and Shopee in minutes.': 'Kravitas tulis skrip, letak kreator AI di depan kamera dan suarakan dalam Bahasa Melayu. Sedia untuk TikTok Shop dan Shopee dalam beberapa minit.',
+  'Get ad ideas': 'Dapatkan idea iklan', 'Try': 'Cuba', 'Micro drama': 'Drama mikro', '40 free tokens · No sign-up · No card': '40 token percuma · Tanpa daftar · Tanpa kad', 'Made with': 'Dibina dengan', 'Models we use': 'Model yang kami guna', 'What are you selling?': 'Apa yang anda jual?', 'Language of the ad': 'Bahasa iklan',
   'Prices in Malaysian ringgit. Cancel anytime; unused tokens stay on your account. Secure checkout by Stripe. Need more?': 'Harga dalam ringgit Malaysia. Batal bila-bila masa; token tak terguna kekal dalam akaun anda. Pembayaran selamat melalui Stripe. Perlu lagi?', 'Top up tokens from RM25': 'Tambah token dari RM25', 'any time.': 'bila-bila masa.',
   'Launch offer: 40% off every plan': 'Tawaran pelancaran: diskaun 40% untuk setiap pelan', 'Claim →': 'Tebus →', 'Sign in': 'Log masuk', 'Start': 'Mula', 'Start free': 'Mula percuma', 'Start free →': 'Mula percuma →',
   '9 things to make · Bahasa Melayu voices': '9 perkara boleh dibuat · Suara Bahasa Melayu', 'Ads, videos and micro drama.': 'Iklan, video dan drama mikro.', 'From one prompt.': 'Dari satu prompt.',

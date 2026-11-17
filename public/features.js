@@ -87,7 +87,7 @@ function stageHTML(label) {
   return `<div class="sc cam-${SHOT.camera}" style="--h:${hueOf(SHOT.prompt)};filter:${STYLE_FX[SHOT.style] || 'none'}"><div class="sun"></div><div class="mt"></div><div class="who ${who ? 'ph' : ''}" style="${who}">${who ? '' : esc((f?.name || 'K')[0].toUpperCase())}</div></div><div class="vig"></div><div class="hud">${esc(label)}</div>`;
 }
 // ---------- studio: one page for Ad, Video, Image, Voice and Schedule ----------
-const TOOLS = [['ideas', 'Ideas'], ['ad', 'Ad'], ['video', 'Video'], ['image', 'Image'], ['voice', 'Voice'], ['edit', 'Edit'], ['schedule', 'Schedule']];
+const TOOLS = [['ideas', 'Ideas'], ['video', 'Video'], ['image', 'Image'], ['voice', 'Voice'], ['edit', 'Edit'], ['schedule', 'Schedule']];
 const TOOL_JOBS = { ad: ['ugc'], video: ['shot', 'story'], image: ['image', 'avatarGen'], voice: ['voice'], edit: ['edit'], ideas: [], schedule: ['ugc', 'shot', 'story', 'avatar'] };
 function recentJobs() {
   const want = TOOL_JOBS[S.mode] || [];
@@ -190,7 +190,6 @@ function renderEditor(box) {
   const vopts = voiceOptions();
   const j = EDIT.job && S.jobs.find((x) => x.id === EDIT.job);
   box.innerHTML = `
-    ${flowStrip('edit')}
     <div class="ed-grid">
       <div class="zz-stagewrap"><div class="zz-stage ed-stage" id="ed-stage" style="aspect-ratio:${EDIT.aspect.replace(':', '/')}">${editStage()}</div></div>
       <div class="ed-tracks">
@@ -415,7 +414,6 @@ function renderIdeas(box) {
           <div><h3>Hooks</h3><ul class="hooks">${r.hooks.map((x, i) => `<li><span>${esc(x)}</span><button class="link" data-hook="${i}">Copy</button></li>`).join('')}</ul></div>
         </div>
         <div class="id-head"><h3>Ideas</h3><label class="id-all"><input type="checkbox" id="id-showall" ${IDEAS_DETAIL ? 'checked' : ''}> Show details and prompts</label></div>
-        <div class="id-flow" aria-label="Your workflow"><span class="on">✨ Ideas</span><i>→</i><button data-mode="image">🖼 Image</button><i>→</i><button data-mode="video">🎬 Video</button><i>→</i><button data-mode="voice">🎙 Voice</button><i>→</i><button data-mode="edit">✂ Edit</button><i>→</i><button data-mode="schedule">📅 Schedule</button></div>
         <div class="id-ideas ${IDEAS_DETAIL ? 'all' : ''}">${r.ideas.map((x, i) => `<div class="id-idea"><div class="id-top"><span class="mtag">${IDEA_MODE[x.mode] || x.mode}</span><b>${esc(x.title)}</b></div><p class="why">${esc(x.why)}</p><div class="id-acts"><button class="btn pri" data-sb="${i}">🎞 Storyboard <small>✦ ${sbPlanCost()}</small></button><button class="btn" data-use="${i}" title="Open it in ${IDEA_MODE[x.mode] || 'the tool'} with this prompt filled in">Open in ${IDEA_MODE[x.mode] || 'tool'} →</button><button class="btn ghost id-tog" data-tog="${i}" aria-expanded="false">Details ▾</button></div><div class="id-more">${(x.panels || []).length ? `<ol class="id-panels">${x.panels.map((t, n) => `<li><b>${n + 1}</b><span>${esc(t)}</span></li>`).join('')}</ol>` : ''}<p class="id-lbl">Prompt it will use</p><p class="pr">${esc(x.prompt)}</p>${Object.keys(x.settings || {}).length ? `<div class="chips">${Object.entries(x.settings).map(([k, v]) => `<span class="chip">${esc(k)}: ${esc(v)}</span>`).join('')}</div>` : ''}<div class="id-acts"><button class="btn" data-sbreal="${i}" title="Draw real images for every panel straight away">🎞 Real images <small>✦ ${sbPlanCost() + SB_N * sbKeyCost() - SB_N * (px().imageSchnell || 1)}</small></button><button class="btn" data-gen="${i}" title="Open it ready and start making it. You confirm the cost first.">Generate now</button><button class="btn" data-save="${i}" ${IDEAS.savedIds.has(ideaKey(x)) ? 'disabled' : ''}>${IDEAS.savedIds.has(ideaKey(x)) ? '✓ Saved' : 'Save'}</button></div></div></div>`).join('')}</div>
         <div class="id-acts" style="margin-top:8px"><button class="btn" id="id-saveall">Save all ${r.ideas.length}</button></div>
         <div class="b-chat">
@@ -867,7 +865,6 @@ function renderMain() {
   if (S.mode === 'edit') return renderEditor(box);
   if (S.mode === 'ideas') return renderIdeas(box);
   box.innerHTML = `<div class="fl-head"><h1>${FL_TITLE[S.mode] || ''}</h1><p>${HERO[S.mode]?.[1] || ''}</p></div>
-    ${flowStrip(S.mode)}
     <div class="fl-gal" id="fl-gal">${galleryHTML()}</div>
     <div class="cmp-dock"><div class="cmp-extras" id="cmp-extras" hidden></div>
     <div class="composer inline" id="composer"></div></div>
@@ -906,7 +903,7 @@ async function renderSeries(box) {
 let studioPreview = () => {};
 // ---------- workspace shell: tool rail · work area · settings panel ----------
 const RAIL = [
-  ['Create', [['ideas', '✨', 'Ideas'], ['templates', '🧩', 'Templates'], ['ad', '🛍', 'Ad'], ['image', '🖼', 'Image'], ['video', '🎬', 'Video'], ['voice', '🎙', 'Voice'], ['edit', '✂', 'Edit'], ['schedule', '📅', 'Schedule'], ['soon3d', '🧊', '3D', 'Coming soon']]],
+  ['Create', [['ideas', '✨', 'Ideas'], ['templates', '🧩', 'Templates'], ['image', '🖼', 'Image'], ['video', '🎬', 'Video'], ['voice', '🎙', 'Voice'], ['edit', '✂', 'Edit'], ['schedule', '📅', 'Schedule'], ['soon3d', '🧊', '3D', 'Coming soon']]],
   ['Library', [['media', '▦', 'All media'], ['chars', '☺', 'Characters'], ['products', '▣', 'Products'], ['series', '🎭', 'Series']]],
 ];
 const LIB_MODES = new Set(['media', 'chars', 'products']);
@@ -1218,7 +1215,7 @@ async function renderSchedule() {
       ${(p.results || []).filter((r) => r.url || r.error).map((r) => (r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">View post ↗</a>` : `<span class="perr">${esc(r.error)}</span>`)).join(' ')}</div>
       <span class="pst ${st.replace(' ', '-')}">${st}</span></div>`;
   };
-  el.innerHTML = `${flowStrip("schedule")}
+  el.innerHTML = `
     <div class="zz-sch-h"><p class="zz-lead" style="margin-top:0">Connect your accounts once, then post or schedule any video. TikTok and YouTube posts are labelled as AI-generated.</p>
       ${on ? '' : S.app.mode === 'preview' ? '' : '<div class="banner">Auto-posting switches on when POSTFORME_API_KEY is added on the server.</div>'}</div>
     <div class="accts">${Object.entries(PLATFORM_META).map(([k, p]) => {
