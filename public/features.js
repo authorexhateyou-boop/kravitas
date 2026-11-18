@@ -375,7 +375,6 @@ async function ideaPreview(x, i) {
 async function autoMake(box, idea) {
   if (idea.mode === 'ad') { // ads have their own one-shot engine: script, creator, voice, captions
     const mode = useIdea(idea, true);
-    if (!F().productId) return toast('Add your product with ＋, then press Generate. Kravitas makes the whole ad from there.');
     F().approve = false; renderComposer(); return $('#go')?.click();
   }
   if (idea.mode === 'image') { useIdea(idea, true); return setTimeout(() => $('#go')?.click(), 400); } // a picture: make the final image straight away

@@ -575,7 +575,6 @@ function payload() {
 }
 function validate() {
   const f = F();
-  if (S.mode === 'ad' && !f.productId) return 'Add a product first (＋ button)';
   if (S.mode === 'talk' && !f.friendId && !f.image) return 'Add a friend or a photo (＋ button)';
   if (S.mode !== 'ad' && !f.prompt.trim()) return S.mode === 'talk' ? 'Type what they should say' : S.mode === 'voice' ? (f.kind === 'tts' ? 'Type the voice-over text' : 'Describe the sound first') : 'Type a prompt first';
   return null;
