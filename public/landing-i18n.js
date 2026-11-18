@@ -50,7 +50,7 @@ window.KV_DICT = {
   'Mon': 'Isn', 'Tue': 'Sel', 'Wed': 'Rab', 'Thu': 'Kha', 'Fri': 'Jum', 'Sat': 'Sab', 'Sun': 'Ahd',
   'The right model for each job.': 'Model yang sesuai untuk setiap kerja.',
   'Kravitas picks the model for you and always shows which one it is using. Better plans unlock better models.': 'Kravitas pilih model untuk anda dan sentiasa tunjuk yang mana satu digunakan. Pelan lebih tinggi buka model lebih baik.',
-  'See every model, plan by plan': 'Lihat setiap model, ikut pelan',
+  'See every model, plan by plan': 'Lihat setiap model, ikut pelan', 'See every model and what it costs': 'Lihat setiap model dan kosnya', 'Every model is open on every plan. Pick the cheapest for daily posts or the best for a launch. Better models just cost more tokens.': 'Semua model dibuka untuk setiap pelan. Pilih yang paling murah untuk hantaran harian atau yang terbaik untuk pelancaran. Model lebih baik cuma guna lebih banyak token.', 'Good for': 'Sesuai untuk', 'Cost': 'Kos', 'Included': 'Termasuk',
   'Simple monthly plans.': 'Pelan bulanan yang mudah.',
   'Tokens refill every month. A Motion ad costs about 9 tokens and a Lite AI-video ad about 32.': 'Token diisi semula setiap bulan. Iklan Motion kira-kira 9 token dan iklan video AI Lite kira-kira 32.',
   'Prices in Malaysian ringgit. Cancel anytime; unused tokens stay on your account. Secure checkout by Stripe. One-off top-ups from RM25.': 'Harga dalam ringgit Malaysia. Batal bila-bila masa; token tak terguna kekal dalam akaun anda. Pembayaran selamat melalui Stripe. Tambah nilai sekali bayar dari RM25.',

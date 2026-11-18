@@ -1,9 +1,9 @@
 // Model picker: one Claude-style menu for every chatbox.
-// Models on top, "More models" below, an effort-style control, and anything the plan does not include is
-// greyed out with a lock and the plan name (not clickable).
+// Every model is listed and usable on any plan, cheapest first, each with what it costs in tokens for this job.
+// Better models just cost more; if the balance is short, the menu offers a top-up.
 (function () {
   const LOCK = '<svg class="lk" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
-  const ok = (need) => !need || need === 'free' || canUse(need);
+  const ok = () => true; // no plan locks: pay with tokens
   const planName = (n) => PLAN_LABEL[n] || n;
   const TOP = 3;
 
@@ -13,7 +13,7 @@
       const W = c.writers || {};
       return {
         title: 'Model', cur: IDEAS.writer || 'flash',
-        models: Object.entries(W).map(([id, w]) => ({ id, name: w.name, sub: w.note, plan: w.plan, more: !!w.more })),
+        models: Object.entries(W).map(([id, w]) => ({ id, name: w.name, sub: w.note, cost: (IDEAS.effort === 'deep' ? w.costDeep : w.cost) || 2, rank: w.cents || 0 })),
         pick: (id) => { IDEAS.writer = id; const v = document.querySelector('#id-model .v'); if (v) v.textContent = llmName() + ' ▾'; },
         effort: { title: 'Effort', note: 'How hard the AI thinks about your ideas.', cur: IDEAS.effort || 'balanced', opts: [['quick', 'Quick', 'Short and fast'], ['balanced', 'Balanced', 'Good for most'], ['deep', 'Deep', 'Thinks longer']], set: (v) => { IDEAS.effort = v; } },
       };
@@ -22,17 +22,17 @@
       const sub = (m) => [m.tag, m.perSec ? `✦ ${m.perSec}/sec` : ''].filter(Boolean).join(' · ');
       return {
         title: 'Video model', cur: f.model,
-        models: Object.entries(c.videoModels).map(([id, m]) => ({ id, name: m.label, sub: sub(m), plan: c.modelPlan?.[id], more: id === 'kling-pro' })),
+        models: Object.entries(c.videoModels).map(([id, m]) => ({ id, name: m.label, sub: m.tag, est: { model: id }, rank: m.perSec || 0 })),
         pick: (id) => { f.model = id; if (f.endImage && !c.videoModels[id]?.endFrame) f.endImage = null; },
-        effort: { title: 'Length', note: 'Longer shots cost more.', cur: String(f.duration), opts: [['5', '5s', ''], ['8', '8s', ''], ['10', '10s', '']], set: (v) => { f.duration = +v; } },
+        effort: { title: 'Length', note: 'Longer shots cost more. Seedance 2.5 can go up to 30s.', cur: String(f.duration), opts: [['5', '5s', ''], ['8', '8s', ''], ['10', '10s', ''], ...(String(f.model).startsWith('seedance-25') ? [['15', '15s', ''], ['30', '30s', '']] : [])], set: (v) => { f.duration = +v; } },
       };
     }
     if (mode === 'image') {
       return {
         title: 'Image model', cur: f.quality || 'full',
         models: [
-          { id: 'lite', name: 'Seedream 4', sub: 'Good quality · cheaper', plan: null },
-          { id: 'full', name: 'Nano Banana 2', sub: 'Sharpest, keeps faces and products', plan: 'creator' },
+          { id: 'lite', name: 'Seedream 4', sub: 'Good quality, cheaper', est: { quality: 'lite' }, rank: 1 },
+          { id: 'full', name: 'Nano Banana 2', sub: 'Sharpest, keeps faces and products', est: { quality: 'full' }, rank: 2 },
         ],
         pick: (id) => { f.quality = id; },
         effort: { title: 'Images per go', note: 'More images cost more tokens.', cur: String(f.count || 1), opts: [['1', '1', ''], ['2', '2', ''], ['4', '4', '']], set: (v) => { f.count = +v; } },
@@ -41,7 +41,7 @@
     if (mode === 'ad' || mode === 'talk' || mode === 'story') {
       const cfg = {
         title: 'Quality', cur: f.tier,
-        models: Object.entries(c.tiers || {}).map(([id, t]) => ({ id, name: TIER_NAME[id] || t.label, sub: TIER_DESC[id] || t.tag, plan: t.plan })),
+        models: Object.entries(c.tiers || {}).map(([id, t], k) => ({ id, name: TIER_NAME[id] || t.label, sub: TIER_DESC[id] || t.tag, est: { tier: id }, rank: k })),
         pick: (id) => { f.tier = id; },
       };
       if (mode === 'ad') cfg.effort = { title: 'Variations', note: 'One keyframe, several scripts to test.', cur: String(f.variants || 1), opts: [['1', '1 ad', ''], ['3', '3', ''], ['5', '5', '']].map(([v, l, s]) => [v, l, s, needFor('variants', +v)]), set: (v) => { f.variants = +v; } };
@@ -68,22 +68,24 @@
   let open = null;
   function render(anchor, mode, showMore) {
     const cfg = cfgFor(mode); if (!cfg) return;
-    const top = cfg.models.filter((m) => !m.more), more = cfg.models.filter((m) => m.more);
+    const top = [...cfg.models].sort((a, b) => (a.rank || 0) - (b.rank || 0)), more = [];
     const lockedAny = cfg.models.some((m) => !ok(m.plan)) || (cfg.effort?.opts || []).some((o) => o[3] && !ok(o[3]));
     const row = (m) => {
       const lock = !ok(m.plan), on = m.id === cfg.cur;
       return lock
         ? `<div class="it mp-row locked" aria-disabled="true" title="Included in the ${planName(m.plan)} plan"><span><b>${esc(m.name)}</b>${m.sub ? `<small>${esc(m.sub)}</small>` : ''}</span><em class="lockbadge">${LOCK}${planName(m.plan)}</em></div>`
-        : `<button class="it mp-row ${on ? 'on' : ''}" data-v="m:${esc(m.id)}"><span><b>${esc(m.name)}</b>${m.sub ? `<small>${esc(m.sub)}</small>` : ''}</span></button>`;
+        : `<button class="it mp-row ${on ? 'on' : ''}" data-v="m:${esc(m.id)}"><span><b>${esc(m.name)}</b>${m.sub ? `<small>${esc(m.sub)}</small>` : ''}</span>${m.cost != null || m.est ? `<em class="mp-cost" data-cost="${esc(m.id)}">${m.cost != null ? `✦ ${m.cost}` : '✦ …'}</em>` : ''}</button>`;
     };
     const eff = cfg.effort ? `<hr><div class="h">${esc(cfg.effort.title)}</div><div class="mp-seg" role="radiogroup">${cfg.effort.opts.map(([v, l, s, need]) => {
       const lock = need && !ok(need), on = v === cfg.effort.cur;
       return lock ? `<span class="mp-opt locked" aria-disabled="true" title="Included in the ${planName(need)} plan">${LOCK}${esc(l)} <em>${planName(need)}</em></span>` : `<button class="mp-opt ${on ? 'on' : ''}" data-v="e:${esc(v)}" title="${esc(s || '')}">${esc(l)}${s ? `<small>${esc(s)}</small>` : ''}</button>`;
     }).join('')}</div>${cfg.effort.note ? `<p class="mp-note">${esc(cfg.effort.note)}</p>` : ''}` : '';
-    const moreHtml = more.length
+    const moreHtml = '';
+    const _unused = more.length
       ? (showMore ? `<hr><div class="h">More models</div>${more.map(row).join('')}` : `<button class="it mp-more" data-v="mp:more"><span><b>More models</b><small>${more.length} more</small></span><i class="ck">›</i></button>`)
       : `<div class="it mp-row locked" aria-disabled="true"><span><b>More models</b><small>New ones are added here as they launch</small></span><em class="lockbadge">Soon</em></div>`;
-    const foot = lockedAny ? `<hr><button class="it mp-plans" data-v="mp:plans">Unlock more models with a plan →</button>` : '';
+    const have = S.app.credits ?? 0;
+    const foot = `<hr><div class="mp-foot"><span>Every model is open to you. Better models cost more tokens. You have <b>✦ ${have.toLocaleString()}</b>.</span><button class="link" data-v="mp:plans">Top up →</button></div>`;
     openPop(anchor, `<div class="mp"><div class="h">${esc(cfg.title)}</div>${top.map(row).join('')}${moreHtml}${eff}${foot}</div>`, (v) => {
       if (v === 'mp:more') return render(anchor, mode, true);
       if (v === 'mp:plans') { closePop(); return accountModal(); }
@@ -91,6 +93,16 @@
       if (v.startsWith('e:')) { cfg.effort.set(v.slice(2)); if (mode !== 'ideas') { renderComposer(); renderPresets(); } return render($('#composer [data-pill="' + (anchor.dataset.pill || '') + '"], #composer .mchip') || anchor, mode, showMore); }
     });
     open = { anchor, mode };
+    // what each model costs for THIS job (same settings, just a different model)
+    const base = mode === 'ideas' ? null : payload();
+    cfg.models.forEach(async (m) => {
+      if (!m.est || !base) return;
+      try {
+        const { credits } = await api('/api/estimate', { tool: MODES[S.mode].tool, input: { ...base, ...m.est } });
+        const el = document.querySelector(`#pop [data-cost="${CSS.escape(m.id)}"]`); if (!el) return;
+        el.textContent = `✦ ${credits}`; el.classList.toggle('short', credits > (S.app.credits ?? 0));
+      } catch {}
+    });
   }
   window.openModelPicker = (anchor, mode) => render(anchor, mode, false);
   window.hasModelPicker = (mode) => !!cfgFor(mode);

@@ -1076,3 +1076,10 @@ video.tpl-img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
 .id-idea .id-acts .btn{flex:1 1 0;white-space:nowrap}
 .id-links{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:13px}
 .id-links .link{color:#c7c7cc;font-size:13px}.id-links .link:hover{color:#fff}.id-links small{color:var(--muted)}
+/* model picker: price on every model */
+.mp .mp-row{align-items:center}
+.mp .mp-cost{margin-left:auto;font-style:normal;font-size:12.5px;font-weight:700;color:#d6d6da;background:#ffffff0d;border:1px solid #2e2e33;border-radius:999px;padding:3px 9px;white-space:nowrap;flex:none}
+.mp .mp-row.on .mp-cost{background:#fff;color:#000;border-color:#fff}
+.mp .mp-cost.short{color:#ff8a8a;border-color:#ff8a8a55}
+.mp-foot{display:flex;align-items:center;gap:10px;padding:4px 10px 6px;font-size:12px;color:var(--muted);line-height:1.4}
+.mp-foot b{color:#fff}.mp-foot .link{margin-left:auto;white-space:nowrap;color:#ffd60a;font-weight:700}

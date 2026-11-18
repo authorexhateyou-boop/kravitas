@@ -11,7 +11,7 @@ import { store } from './lib/store/index.js';
 import { saveDataUrl, saveAudioDataUrl, uid as newId } from './lib/media.js';
 import { isMock, keyMissing, falKey, llmModel, run as falRun, toRemote } from './lib/fal.js';
 import { TOOLS, STYLES, CAMERAS, createJob, expireStale, removeBg, live, planStory, planPanels, editPanels, drawPanel, tts } from './lib/pipelines.js';
-import { WRITERS, VIDEO_MODELS, VOICES, PRICE, TIERS, EMOTIONS, MODELS, MARKUP, MODEL_PLAN, MAX_VARIANTS, allowed, imageCost, ttsCost, tierOf } from './lib/models.js';
+import { credits, WRITERS, VIDEO_MODELS, VOICES, PRICE, TIERS, EMOTIONS, MODELS, MARKUP, MODEL_PLAN, MAX_VARIANTS, allowed, imageCost, ttsCost, tierOf } from './lib/models.js';
 import { AVATAR_PRESETS } from './lib/avatars.js';
 import * as social from './lib/social.js';
 import { PLATFORMS, ANGLES, LANGS } from './lib/prompts.js';
@@ -154,6 +154,11 @@ async function planOf(uid) {
   const p = await store.getProfile(uid);
   return p?.plan || 'free';
 }
+// Ideas cost depends on the writer model: cheap models keep the old 2 tokens, stronger ones cost what they cost us
+const writerCost = (writer, effort, followUp) => {
+  const w = WRITERS[writer] || WRITERS.flash, mul = effort === 'deep' ? 2 : effort === 'quick' ? 0.6 : 1;
+  return Math.max(followUp ? FOLLOWUP_COST : BRAINSTORM_COST, credits((w.cents || 0.6) * mul * (followUp ? 0.6 : 1)));
+};
 const PLAN_NAME = { basic: 'Basic', starter: 'Starter', creator: 'Creator', pro: 'Pro' };
 const planFail = (what, need) => Object.assign(new Error(`${what} needs the ${PLAN_NAME[need]} plan or higher.`), { status: 403, code: 'plan' });
 function checkPlan(plan, tool, i) {
@@ -163,7 +168,6 @@ function checkPlan(plan, tool, i) {
     const need = MODEL_PLAN[i.model];
     if (need && !allowed(plan, need)) throw planFail(VIDEO_MODELS[i.model]?.label || 'That model', need);
   }
-  if (tool === 'image' && i.quality === 'full' && !allowed(plan, 'creator')) throw planFail('Best image quality (Nano Banana 2)', 'creator');
   if (tool === 'ugc' && (i.variants || 1) > MAX_VARIANTS[plan]) throw planFail(`${i.variants} variations`, 'creator');
 }
 async function needPlan(uid, need, what) { const plan = await planOf(uid); if (!allowed(plan, need)) throw planFail(what, need); }
@@ -177,7 +181,7 @@ app.get('/api/state', wrap(async (req, res) => {
     catalog: {
       videoModels: Object.fromEntries(Object.entries(VIDEO_MODELS).map(([k, m]) => [k, { label: m.label, tag: m.tag, perSec: m.perSec, endFrame: !!m.endFrame }])),
       tiers: Object.fromEntries(Object.entries(TIERS).map(([k, t]) => [k, { label: t.label, tag: t.tag, maxSec: t.maxSec, plan: t.plan }])),
-      writers: WRITERS, modelPlan: MODEL_PLAN, maxVariants: MAX_VARIANTS, voices: VOICES, emotions: EMOTIONS, markup: MARKUP,
+      writers: Object.fromEntries(Object.entries(WRITERS).map(([k, w]) => [k, { ...w, cost: writerCost(k, 'balanced'), costDeep: writerCost(k, 'deep') }])), modelPlan: MODEL_PLAN, maxVariants: MAX_VARIANTS, voices: VOICES, emotions: EMOTIONS, markup: MARKUP,
       avatars: AVATAR_PRESETS.map(({ id, name, tagline, look }) => ({ id, name, tagline, look })),
       styles: Object.keys(STYLES), cameras: Object.keys(CAMERAS), price: PRICE,
       platforms: Object.fromEntries(Object.entries(PLATFORMS).map(([k, p]) => [k, p.name])),
@@ -307,7 +311,7 @@ app.post('/api/brainstorm', limit('brainstorm', 30, 60), wrap(async (req, res) =
   const refs = (Array.isArray(req.body.refs) ? req.body.refs : []).slice(0, 8).map((r) => (r?.kind === 'image' ? (store.isOwnUrl(r.url) ? { kind: 'image', url: r.url, name: str(r.name, 80) } : null) : r?.kind === 'doc' ? { kind: 'doc', name: str(r.name, 80), text: str(r.text, 30000) } : null)).filter(Boolean);
   const brand = String((await store.getProfile(req.uid))?.prefs?.brand || '');
   const followUp = Array.isArray(chat) && chat.length > 0;
-  const cost = followUp ? FOLLOWUP_COST : BRAINSTORM_COST;
+  const cost = writerCost(req.body.writer, req.body.effort, followUp);
   const [friend, product] = await Promise.all([
     friendId ? store.get('friends', req.uid, friendId) : null,
     productId ? store.get('products', req.uid, productId) : null,
@@ -317,7 +321,6 @@ app.post('/api/brainstorm', limit('brainstorm', 30, 60), wrap(async (req, res) =
   await store.adjust(req.uid, -cost, followUp ? 'Brainstorm follow-up' : 'Brainstorm', null);
   try {
     const w = WRITERS[req.body.writer];
-    if (w && !allowed(await planOf(req.uid), w.plan)) throw planFail(w.name, w.plan);
     res.json(await brainstorm({ mode, prompt: String(prompt || '').slice(0, 4000), friend, product, image: img, lang, chat, previous, brand, refs, effort: ['quick', 'balanced', 'deep'].includes(req.body.effort) ? req.body.effort : 'balanced', model: w && w.id !== WRITERS.flash.id ? w.id : null }));
   } catch (e) {
     await store.adjust(req.uid, cost, 'Refund (brainstorm failed)', null, true);
@@ -473,7 +476,7 @@ app.post('/api/panels/draw', limit('draw', 120, 60), wrap(async (req, res) => {
   const L = await lookups(req.uid);
   const aspect = ASPECTS.includes(b.aspect) ? b.aspect : '9:16';
   // Cheap by default for everyone; the expensive model only when the user picked it and the plan allows it.
-  const quality = kind === 'keyframe' && b.quality === 'full' && allowed(await planOf(req.uid), 'creator') ? 'full' : 'lite';
+  const quality = kind === 'keyframe' && b.quality === 'full' ? 'full' : 'lite';
   const f = L.friend(b.friendId), p = L.product(b.productId);
   const cost = kind === 'sketch' ? imageCost('lite', false) : imageCost(quality, !!(f || p));
   await store.adjust(req.uid, -cost, kind === 'sketch' ? 'Storyboard sketch' : 'Storyboard keyframe', null);

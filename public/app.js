@@ -438,7 +438,7 @@ function needFor(key, v) {
   const c = S.app.catalog;
   if (key === 'tier') return c.tiers?.[v]?.plan;
   if (key === 'model') return c.modelPlan?.[v];
-  if (key === 'quality') return v === 'full' ? 'creator' : null;
+  if (key === 'quality') return null; // every image model is open to every plan
   if (key === 'variants') return v > (c.maxVariants?.[access()] || 3) ? 'creator' : null;
   return null;
 }
@@ -944,9 +944,9 @@ function modelsModal() {
   const groups = [...new Set(rows.map((r) => r.g))];
   const nextPlan = ['basic', 'starter', 'creator', 'pro'].find((k) => (RANK[k] ?? 0) > (RANK[plan] ?? 0));
   const m = modal(`<h2>Models</h2>
-    <p class="muted" style="margin:0 0 4px">${S.app.mode === 'local' ? 'Everything is unlocked on your own computer.' : `Your plan: <b>${plan === 'free' ? 'Free trial' : esc(PLAN_LABEL[plan])}</b>. You can use <b>${n} of ${rows.length}</b>.`}</p>
+    <p class="muted" style="margin:0 0 4px">Every model is open to you on any plan. Better models cost more tokens per use, so pick cheap ones for daily posts and the best for a launch. You have <b>✦ ${(S.app.credits ?? 0).toLocaleString()}</b>.</p>
     ${groups.map((g) => `<label class="l" style="margin-top:16px">${esc(g)}</label><div class="mrows">${rows.filter((r) => r.g === g).map((r) => `<div class="mrow ${ok(r) ? '' : 'lock'}"><div><b>${esc(r.n)}</b><small>${esc(r.d)}</small></div><span class="mcost">${esc(r.c || '')}</span><span class="mplan">${ok(r) ? '✓' : `🔒 ${esc(PLAN_LABEL[r.p])}`}</span></div>`).join('')}</div>`).join('')}
-    ${n < rows.length && S.app.mode !== 'local' ? `<div class="acts" style="margin-top:16px"><button class="btn pri" id="mm-up">See plans${nextPlan ? ` · from ${PLAN_LABEL[nextPlan]}` : ''}</button></div>` : ''}`);
+    ${S.app.mode !== 'local' ? '<div class="acts" style="margin-top:16px"><button class="btn pri" id="mm-up">Top up tokens</button></div>' : ''}`);
   $('#mm-up', m) && ($('#mm-up', m).onclick = () => { closeModal && closeModal(); accountModal(); });
 }
 

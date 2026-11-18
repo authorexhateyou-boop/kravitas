@@ -23,13 +23,13 @@ document.documentElement.classList.add('js');
         '<a class="btn" href="' + studio + '" data-studio>Start with ' + esc(p.name) + ' →</a></div>';
     }).join('');
   }
-  function models() {
+  function models() { // every model, what it is good for and what it costs. No plan locks.
     var t = document.getElementById('models-table'); if (!t || !window.ModelData) return;
-    var order = ['basic', 'starter', 'creator', 'pro'], rows = ModelData.rows(), g = '', h = '<thead><tr><th>Model</th>' + order.map(function (k) { return '<th>' + ModelData.LABEL[k] + '</th>'; }).join('') + '</tr></thead><tbody>';
+    var rows = ModelData.rows(), g = '', h = '<thead><tr><th>Model</th><th>Good for</th><th>Cost</th></tr></thead><tbody>';
     rows.forEach(function (r) {
-      if (r.g !== g) { g = r.g; h += '<tr class="g"><th colspan="5">' + esc(g) + '</th></tr>'; }
-      var min = Math.max(1, ModelData.RANK[r.p]);
-      h += '<tr><td>' + esc(r.n) + '<small>' + esc(r.d) + '</small></td>' + order.map(function (k) { return ModelData.RANK[k] >= min ? '<td>✓</td>' : '<td class="no">–</td>'; }).join('') + '</tr>';
+      if (r.g !== g) { g = r.g; h += '<tr class="g"><th colspan="3">' + esc(g) + '</th></tr>'; }
+      var locked = r.p && r.p !== 'free';
+      h += '<tr><td>' + esc(r.n) + '</td><td><small>' + esc(r.d) + '</small></td><td>' + (locked ? esc(ModelData.LABEL[r.p]) + ' plan' : (r.c ? esc(r.c) : 'Included')) + '</td></tr>';
     });
     t.innerHTML = h + '</tbody>';
   }
