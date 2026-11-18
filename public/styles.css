@@ -1083,3 +1083,4 @@ video.tpl-img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
 .mp .mp-cost.short{color:#ff8a8a;border-color:#ff8a8a55}
 .mp-foot{display:flex;align-items:center;gap:10px;padding:4px 10px 6px;font-size:12px;color:var(--muted);line-height:1.4}
 .mp-foot b{color:#fff}.mp-foot .link{margin-left:auto;white-space:nowrap;color:#ffd60a;font-weight:700}
+.tpl-new{display:inline-block;margin-right:6px;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;background:#ffd60a;color:#000;border-radius:999px;padding:2px 7px;vertical-align:2px}

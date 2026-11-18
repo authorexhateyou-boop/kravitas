@@ -86,7 +86,7 @@ const MODES = {
   video: { tool: 'shot', label: 'Video' },
   image: { tool: 'image', label: 'Image' },
   talk: { tool: 'avatar', label: 'Talk', hidden: true }, // removed from the nav; kept so older creations still open
-  story: { tool: 'story', label: 'Story', hidden: true },
+  story: { tool: 'story', label: '60s video', hidden: true, open: true }, // not in the menu; opened by the 60-second template
   voice: { tool: 'voice', label: 'Voice' },
   edit: { label: 'Edit' }, // the editor has its own main card (no composer)
   ideas: { label: 'Ideas' }, // brainstorm dump → prompts, saved to the library
@@ -182,7 +182,7 @@ const HERO = {
   image: ['Shoot <em>anything</em>', 'Packshots, lifestyle and thumbnails with your friends and products.'],
   ad: ['Affiliate ads in <em>one click</em>', 'Add your product. Kravitas writes the script, records the voice and makes a short video for TikTok Shop and Shopee.'],
   talk: ['Make them <em>talk</em>', 'Your friend says anything, lip-synced, with captions.'],
-  story: ['One prompt, <em>full video</em>', 'Plan it scene by scene, edit any line, and re-render only what changed.'],
+  story: ['One prompt, <em>full video</em>', 'Type a topic. Kravitas writes it, draws every scene, makes them move, voices it and adds captions. About 60 seconds, ready to post.'],
   voice: ['Voice <em>studio</em>', 'ElevenLabs voice-overs, natural Bahasa Melayu voices, your own cloned voice, music and sound effects.'],
 };
 
@@ -415,7 +415,7 @@ function pillOptions(key) {
     seconds: { 8: '8s', 10: '10s', 15: '15s', 20: '20s', 30: '30s' },
     count: { 1: '1', 2: '2', 4: '4' },
     quality: { lite: 'Standard · Seedream 4', full: 'Best · Nano Banana 2' },
-    scenes: { 3: '3', 4: '4', 5: '5', 6: '6' },
+    scenes: { 3: '3', 4: '4', 5: '5', 6: '6', 8: '8', 10: '10 · about 60s', 12: '12' },
     format: { talking: 'Someone talks about it', showcase: 'Show the product' },
     angle: { review: 'Honest review', problem: 'Problem → fix', unboxing: 'Unboxing', deal: 'Flash sale', beforeafter: 'Before & after', compare: 'Vs. pricey one' },
     textMode: { script: 'Exact script', topic: 'Topic → AI writes' },
@@ -1022,7 +1022,7 @@ function poll() {
 function setDrawer(on) { document.body.classList.toggle('drawer', !!on); try { localStorage.setItem('kv-drawer', on ? '1' : '0'); } catch {} }
 try { if (localStorage.getItem('kv-drawer') === '1') document.body.classList.add('drawer'); if (localStorage.getItem('kv-rail') === '1') document.body.classList.add('rail-min'); } catch {}
 function setMode(m) {
-  if (!MODES[m] || MODES[m].hidden) m = 'ad';
+  if (!MODES[m] || (MODES[m].hidden && !MODES[m].open)) m = 'ad';
   S.mode = m;
 }
 function renderAll() {

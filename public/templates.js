@@ -2,6 +2,8 @@
 // then you add your product and press Make. Nothing is spent until you do.
 (function () {
   const T = [
+    { id: 'reels60', top: true, cat: 'Video', e: '🎞', h: 50, title: '60-second infotainment video', sub: 'One prompt, ready to post. Fast and cheap', mode: 'story', set: { scenes: 10, seconds: 60, tier: 'motion', aspect: '9:16', style: 'cinematic', lang: 'ms', voice: 'mm:Lively_Girl', captions: true },
+      gets: ['About 60 seconds, 10 scenes', 'Script, pictures, Bahasa Melayu voice and captions', 'Each picture moves (zoom and pan), no AI video cost', 'Usually ready in a few minutes'] },
     { id: 'flash', char: 'aina', cat: 'Ads', e: '⚡', h: 8, title: 'Flash sale ad', sub: '11.11 style urgency, 8s', mode: 'ad', set: { angle: 'deal', format: 'showcase', seconds: 8, lang: 'ms', prompt: 'Diskaun 50% hari ni sahaja, stok terhad, percuma pos' },
       gets: ['A hook in the first 2 seconds', 'Voice-over in Bahasa Melayu', 'Captions burned in', 'Caption and hashtags'] },
     { id: 'review', char: 'aina', cat: 'Ads', e: '🛒', h: 28, title: 'Honest review', sub: 'Creator talks to camera', mode: 'ad', set: { angle: 'review', format: 'talking', seconds: 8, lang: 'ms', prompt: 'Dah cuba 2 minggu, ini apa yang saya betul-betul rasa' },
@@ -46,6 +48,9 @@
   // {char} = the template's character. "the product" = the picture added with + if there is one, otherwise the sample described.
   const PRODUCT = 'the product (use the attached product photo exactly if there is one; otherwise a frosted glass serum bottle with a gold cap)';
   const FULL = {
+    reels60: {
+      ms: 'Video infotainment 60 saat untuk TikTok dan Reels tentang: 5 fakta mengejutkan tentang makanan jalanan Malaysia yang ramai orang tak tahu. Babak pertama mesti hentikan scroll dengan soalan atau fakta paling mengejutkan. Setiap babak beri satu fakta baru dengan contoh mudah, gaya bercerita macam kawan berborak, bukan baca berita. Gambar setiap babak terang, berwarna dan jelas, gaya foto sebenar. Babak terakhir ajak penonton follow untuk bahagian 2 dan komen fakta yang mereka paling terkejut.',
+      en: '60-second infotainment video for TikTok and Reels about: 5 surprising facts about Malaysian street food most people don\'t know. The first scene must stop the scroll with the most surprising question or fact. Each scene gives one new fact with a simple example, told like a friend chatting, not like reading the news. Every scene picture is bright, colourful and clear, real-photo style. The last scene asks viewers to follow for part 2 and comment which fact surprised them most.' },
     // ---------- ads: a brief the script writer turns into hook, script, scenes and captions ----------
     flash: {
       ms: 'Iklan jualan kilat 8 saat untuk TikTok Shop. Saat pertama mesti hentikan scroll: tunjuk harga lama dipotong dan harga baru besar di tengah skrin. Ayat pembuka: "Diskaun 50%, hari ni je!" Kemudian sebut satu manfaat utama produk dalam bahasa mudah, dan beritahu stok terhad serta pos percuma. Tutup dengan arahan jelas: "Tekan bakul kuning sekarang sebelum habis." Nada bertenaga dan mendesak tetapi mesra, macam kawan beritahu kawan. Ayat pendek, maksimum 8 patah perkataan setiap baris. Jangan buat janji perubatan atau dakwaan yang tak boleh dibuktikan.',
@@ -104,6 +109,7 @@
   // ---- cover prompts: what each template card shows. scripts/make-template-covers.mjs turns these into public/tpl/<id>.jpg (+ .mp4). ----
   // img = still for the card (16:9, no text in the picture); vid = how that still moves in the looping preview.
   const COVER = {
+    reels60: { img: 'a vertical phone screen showing a bright, colourful photo of Malaysian street food at a night market, steam rising, warm string lights, a bold caption bar at the bottom, dark background around the phone', vid: 'slow zoom into the phone screen as the photo gently pans' },
     flash: { img: '{char} holds a frosted glass serum bottle with a gold cap next to her face, excited smile, bright red and yellow mega sale backdrop with confetti, studio light, commercial product photo', vid: 'she lifts the bottle toward the camera and smiles, confetti falls, slow push in' },
     review: { img: '{char} sits on her bed talking to the camera while holding a frosted serum bottle, selfie framing, soft morning window light, cosy Malaysian bedroom, authentic UGC look', vid: 'she talks naturally to the camera and turns the bottle to show it, slight handheld movement' },
     unbox: { img: 'top-down close-up of the hands of {char} opening a brown delivery parcel on a white desk, a pastel product box inside, warm daylight', vid: 'the hands lift the lid and pull out the product box, gentle camera tilt' },
@@ -142,6 +148,7 @@
     motion: wrap('#3a2a6b', '#120b20', `<g stroke="#fff" stroke-opacity=".5" stroke-width="3" stroke-linecap="round"><path d="M70 70 h30 M60 90 h40 M74 110 h26"/></g>${bottle(160, 92, '#f5e6c8')}${spark(214, 52, 10, '#ffd60a')}`),
     affil: wrap('#1f4a5a', '#08161c', `${person(110, 84, '#c98d62', '#1a120c')}<g transform="translate(214 64)"><rect x="-34" y="-16" width="68" height="32" rx="16" fill="#ffd60a"/><text x="0" y="6" text-anchor="middle" font-family="Inter,Arial" font-weight="800" font-size="15" fill="#000">LINK</text></g>${bottle(214, 112, '#f2b5a7')}`),
     thumb: wrap('#6b1f1f', '#1c0808', `<rect x="18" y="20" width="264" height="130" rx="10" fill="#ffffff10" stroke="#fff" stroke-opacity=".4"/>${person(92, 92)}<text x="200" y="78" text-anchor="middle" font-family="Inter,Arial" font-weight="900" font-size="30" fill="#ffd60a">WOW!</text><text x="200" y="108" text-anchor="middle" font-family="Inter,Arial" font-weight="900" font-size="22" fill="#fff">RM29</text>`),
+    reels60: wrap('#3b2a12', '#120c05', `<rect x="112" y="18" width="76" height="134" rx="12" fill="#0b0b0d" stroke="#fff" stroke-opacity=".7" stroke-width="2"/><rect x="118" y="26" width="64" height="88" rx="6" fill="#d98b2b"/><circle cx="150" cy="70" r="18" fill="#f5c26b"/><rect x="122" y="120" width="56" height="7" rx="3.5" fill="#fff"/><rect x="128" y="132" width="44" height="5" rx="2.5" fill="#fff" fill-opacity=".5"/><text x="226" y="62" font-family="Inter,Arial" font-weight="900" font-size="26" fill="#ffd60a">60s</text>`),
     pack: wrap('#26364f', '#0b121d', `<ellipse cx="150" cy="138" rx="86" ry="12" fill="#0006"/>${bottle(150, 92, '#fdf3e0')}${bottle(106, 104, '#f2c5d0')}${bottle(194, 104, '#c9e4de')}`),
     life: wrap('#6b4b2a', '#1f150b', `<rect x="0" y="120" width="300" height="50" fill="#0003"/><rect x="40" y="36" width="70" height="74" rx="4" fill="#ffe8a8" opacity=".8"/><path d="M75 36 V110 M40 73 H110" stroke="#0004" stroke-width="3"/><rect x="150" y="96" width="110" height="34" rx="12" fill="#a97c50"/><rect x="150" y="82" width="110" height="22" rx="10" fill="#c39866"/>${bottle(205, 78, '#fff3d6')}`),
     raya: wrap('#12432f', '#06180f', `<circle cx="244" cy="40" r="22" fill="#ffd60a"/><circle cx="254" cy="34" r="20" fill="#12432f"/><g fill="#7bd88f"><path d="M90 60 l16 16 l-16 16 l-16 -16Z"/><path d="M140 80 l14 14 l-14 14 l-14 -14Z" fill="#a8e6b5"/></g><path d="M90 60 V30 M140 80 V40" stroke="#ffffff66" stroke-width="2"/>${bottle(210, 112, '#fff1c9')}<circle cx="60" cy="130" r="5" fill="#ffd60a"/><circle cx="80" cy="138" r="4" fill="#ffd60a"/><circle cx="112" cy="136" r="3" fill="#ffd60a"/>`),
@@ -156,6 +163,7 @@
   // ---- language: the whole template page and what it fills in follows the interface language (EN or BM) ----
   // en = English prompt / brief used when the interface is English; ms = Bahasa Melayu card text for the BM interface.
   const TX = {
+    reels60: { ms: { title: 'Video infotainment 60 saat', sub: 'Satu prompt, terus siap. Pantas dan murah', gets: ['Kira-kira 60 saat, 10 babak', 'Skrip, gambar, suara Bahasa Melayu dan sari kata', 'Setiap gambar bergerak (zum dan pan), tiada kos video AI', 'Biasanya siap dalam beberapa minit'] } },
     flash: { en: 'Half price today only, limited stock, free postage', ms: { title: 'Iklan jualan kilat', sub: 'Desakan gaya 11.11, 8s', gets: ['Hook dalam 2 saat pertama', 'Suara latar Bahasa Melayu', 'Sari kata terbakar', 'Kapsyen dan hashtag'] } },
     review: { en: "Tried it for 2 weeks, here's what I honestly think", ms: { title: 'Ulasan jujur', sub: 'Kreator bercakap ke kamera', gets: ['Skrip santai dan meyakinkan', 'Kawan atau pengacara yang bercakap', 'Sesuai dengan gambar produk anda', 'Sedia untuk TikTok 9:16'] } },
     unbox: { en: 'It just arrived! Let\'s open it together', ms: { title: 'Unboxing', sub: 'Kesan pertama', gets: ['Cerita membuka kotak', 'Syot dekat produk', 'Suara latar teruja', 'Sari kata'] } },
@@ -205,7 +213,7 @@
     }
     S.forms[t.mode] = { ...DEFAULTS[t.mode](), ...t.set, ...(t.set?.prompt ? { prompt: withChar(t.set.prompt, t) } : {}), tpl: t.id, tplChar: ch && /\{char\}/.test(t.set?.prompt || '') ? ch.d : null, tplCharName: ch ? ch.name : null };
     setMode(t.mode); renderAll(); selectExample('#prompt');
-    toast(bm() ? `Templat ${t.title} siap. Tambah produk anda, kemudian tekan Buat` : `${t.title} template ready. Add your product, then press Make`);
+    toast(bm() ? `${t.title} siap. Tukar prompt kalau mahu (tambah gambar dengan ＋ jika ada), kemudian tekan hantar` : `${t.title} is ready. Edit the prompt if you like (add a picture with ＋ if you have one), then press send`);
   }
 
   window.renderTemplates = function (box) {
@@ -215,7 +223,7 @@
       <div class="lib-chips" data-noi18n>${CATS.map((c) => `<button class="chip ${c === cat ? 'on' : ''}" data-tc="${c}">${M ? CAT_MS[c] : c}</button>`).join('')}</div>
       <div class="tpl-grid" data-noi18n>${list.map((t) => `<article class="tpl" style="--h:${t.h}">
         <div class="tpl-cover">${art(t.id, M) || `<span class="tpl-e">${t.e}</span>`}<small>${esc(M ? CAT_MS[t.cat] : t.cat)}</small></div>
-        <div class="tpl-b"><b>${esc(t.title)}</b><p>${esc(t.sub)}</p>${t.char ? `<span class="tpl-cast">👤 ${esc(CAST[t.char].name)} · ${M ? 'boleh tukar dengan watak anda' : 'swap for your own'}</span>` : ''}
+        <div class="tpl-b"><b>${t.top ? '<span class="tpl-new">New</span>' : ''}${esc(t.title)}</b><p>${esc(t.sub)}</p>${t.char ? `<span class="tpl-cast">👤 ${esc(CAST[t.char].name)} · ${M ? 'boleh tukar dengan watak anda' : 'swap for your own'}</span>` : ''}
           <ul>${t.gets.map((g) => `<li>${esc(g)}</li>`).join('')}</ul>
           <button class="btn pri" data-tu="${t.id}">${M ? HEAD_MS[2] : 'Use this template'}</button></div></article>`).join('')}</div>`;
     box.querySelectorAll('.tpl').forEach((el, k) => { // real sample photo, if public/tpl/<id>.jpg exists

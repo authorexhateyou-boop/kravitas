@@ -713,7 +713,7 @@ function renderSb(box) {
     <div class="sb2-music" data-s="3"><button class="btn" id="sb-music">${b.music ? '♪ Change soundtrack' : '♪ Add a soundtrack'}</button><input type="file" id="sb-mfile" accept="audio/*" hidden>
       ${b.music ? `<span class="sb2-help">${esc(b.music.name)}</span><label class="sb2-vol">Volume <input type="range" id="sb-mvol" min="5" max="60" value="${b.music.vol}"></label><button class="link" id="sb-mrm">Remove</button>` : '<span class="sb2-help">Optional. Your own track plays under the voice-over. MP3, WAV or M4A, up to 3 MB.</span>'}</div>
     <div class="sb2-bar">
-      <div data-s="2"><label class="l" for="sb-kq">Image model</label><select class="in" id="sb-kq"><option value="lite" ${(b.kq || 'lite') === 'lite' ? 'selected' : ''}>Standard · Seedream 4 (cheaper)</option><option value="full" ${b.kq === 'full' ? 'selected' : ''} ${canUse('creator') ? '' : 'disabled'}>Best · Nano Banana 2${canUse('creator') ? '' : ' · 🔒 Creator'}</option></select></div>
+      <div data-s="2"><label class="l" for="sb-kq">Image model</label><select class="in" id="sb-kq"><option value="lite" ${(b.kq || 'lite') === 'lite' ? 'selected' : ''}>Standard · Seedream 4 (cheaper)</option><option value="full" ${b.kq === 'full' ? 'selected' : ''} >Best · Nano Banana 2</option></select></div>
       <div data-s="3"><label class="l" for="sb-tier">Video quality</label>
         <select class="in" id="sb-tier">${Object.keys(tiers).map((k) => { const need = tiers[k].plan, lock = need && !canUse(need); return `<option value="${k}" ${k === b.tier ? 'selected' : ''}>${esc(TIER_NAME[k] || tiers[k].label)} · ${esc(TIER_DESC[k] || '')}${lock ? ` · 🔒 ${PLAN_LABEL[need]}` : ''}</option>`; }).join('')}</select></div>
     </div>
@@ -961,7 +961,7 @@ const RAIL = [
 ];
 const LIB_MODES = new Set(['media', 'chars', 'products']);
 const COMPOSER_MODES = new Set(['ad', 'image', 'video', 'voice']);
-const FL_TITLE = { ad: 'Make an ad', image: 'Make an image', video: 'Make a video', voice: 'Make a voice-over' };
+const FL_TITLE = { ad: 'Make an ad', image: 'Make an image', video: 'Make a video', voice: 'Make a voice-over', story: 'Make a 60-second video' };
 const FL_NOUN = { ad: 'ads', image: 'images', video: 'videos', voice: 'voice-overs' };
 const FL_EX = {
   ad: ['50% off today only, free shipping', 'Halal and safe for sensitive skin', 'New arrival, limited stock'],

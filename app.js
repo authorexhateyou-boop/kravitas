@@ -399,7 +399,6 @@ app.post('/api/voices', limit('voice-clone', 10, 60), wrap(async (req, res) => {
   const { name, audio, consent } = req.body;
   if (consent !== true) throw fail('Please confirm this is your voice or you have permission to clone it');
   if (!name?.trim()) throw fail('Name the voice');
-  await needPlan(req.uid, 'creator', 'Voice cloning');
   const sample = await saveAudioDataUrl(audio);
   await store.adjust(req.uid, -PRICE.voiceClone, 'Voice clone', null);
   try {
@@ -512,7 +511,7 @@ app.post('/api/panels/voice', limit('draw', 150, 60), wrap(async (req, res) => {
 // ---------- auto-posting ----------
 const needSocial = () => { if (!social.socialEnabled()) throw fail('Auto-posting is not switched on yet (add POSTFORME_API_KEY).', 501); };
 app.get('/api/social/accounts', wrap(async (req, res) => { needSocial(); res.json(await social.listAccounts(req.uid)); }));
-app.post('/api/social/connect', wrap(async (req, res) => { needSocial(); await needPlan(req.uid, 'creator', 'Auto-posting'); res.json({ url: await social.connectUrl(req.uid, req.body.platform) }); }));
+app.post('/api/social/connect', wrap(async (req, res) => { needSocial(); res.json({ url: await social.connectUrl(req.uid, req.body.platform) }); }));
 app.delete('/api/social/accounts/:id', wrap(async (req, res) => { needSocial(); await social.disconnect(req.uid, req.params.id); res.json({ ok: true }); }));
 app.get('/api/social/posts', wrap(async (req, res) => {
   const posts = await store.list('posts', req.uid);
@@ -557,7 +556,7 @@ function cleanInput(input) {
     const b = i.board;
     i.board = {
       title: str(b.title, 120), caption: str(b.caption, 600), hashtags: (Array.isArray(b.hashtags) ? b.hashtags : []).slice(0, 15).map((h) => str(h, 40)),
-      scenes: (Array.isArray(b.scenes) ? b.scenes : []).slice(0, 8).map((s) => ({ narration: str(s.narration, 400), visual: str(s.visual, 600), motion: str(s.motion, 200), ...(s.frame && store.isOwnUrl(s.frame) ? { frame: str(s.frame, 600) } : {}), ...(s.voice?.url && store.isOwnUrl(s.voice.url) && +s.voice.dur > 0 ? { voice: { url: str(s.voice.url, 600), dur: Math.min(60, +s.voice.dur) } } : {}) })).filter((s) => s.narration.trim()),
+      scenes: (Array.isArray(b.scenes) ? b.scenes : []).slice(0, 12).map((s) => ({ narration: str(s.narration, 400), visual: str(s.visual, 600), motion: str(s.motion, 200), ...(s.frame && store.isOwnUrl(s.frame) ? { frame: str(s.frame, 600) } : {}), ...(s.voice?.url && store.isOwnUrl(s.voice.url) && +s.voice.dur > 0 ? { voice: { url: str(s.voice.url, 600), dur: Math.min(60, +s.voice.dur) } } : {}) })).filter((s) => s.narration.trim()),
     };
     if (!i.board.scenes.length) delete i.board;
   }
