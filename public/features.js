@@ -344,6 +344,54 @@ async function ideasRefine(box, text) {
   } catch (e) { IDEAS.chat.pop(); toast(e.message, true); }
   IDEAS.busy = false; renderIdeas(box);
 }
+// ---------- preview picture on an idea card (a real Image job, so it is also waiting in Image to edit) ----------
+const prevCost = () => (IDEAS.refs.some((r) => r.kind === 'image') || IDEAS.productId || IDEAS.friendId ? px().imageLite : px().imageLite) || 6;
+function ideaPrev(x, i) {
+  if (x.preview) return `<img src="${x.preview}" alt="Preview of ${esc(x.title)}"><span class="id-prev-tag">Preview</span>`;
+  if (x.pbusy) return '<div class="id-prev-busy"><i></i><small>Drawing a preview…</small></div>';
+  return `<button class="id-prev-btn" data-prev="${i}">👁 See a preview <small>✦ ${prevCost()}</small></button>`;
+}
+async function ideaPreview(x, i) {
+  if (x.pbusy || x.preview) return;
+  const imgs = IDEAS.refs.filter((r) => r.kind === 'image').map((r) => r.url);
+  const aspect = x.mode === 'image' ? (x.settings?.aspect || '1:1') : ['9:16', '16:9', '1:1', '4:5'].includes(x.settings?.aspect) ? x.settings.aspect : '9:16';
+  const prompt = x.mode === 'image' ? x.prompt : `First frame of this video, as one still picture: ${(x.panels || [])[0] || x.prompt}`;
+  x.pbusy = true; const el = () => document.getElementById(`idp-${i}`); if (el()) el().innerHTML = ideaPrev(x, i);
+  try {
+    const job = await api('/api/jobs', { tool: 'image', input: { prompt: prompt.slice(0, 1900), quality: 'lite', count: 1, aspect, style: 'photo', productId: IDEAS.productId || undefined, friendId: IDEAS.friendId || undefined, ...(imgs.length ? { startImage: imgs[0], refImages: imgs.slice(1, 4) } : {}) } });
+    S.jobs.unshift(job); poll();
+    for (let t = 0; t < 90; t++) { // wait up to ~3 minutes
+      await new Promise((r) => setTimeout(r, 2000));
+      const j = S.jobs.find((y) => y.id === job.id);
+      if (j && j.status !== 'running') { const o = (j.outputs || []).find((y) => y.type === 'image'); if (o) { x.preview = o.url; x.previewJob = j.id; } else x.pfail = true; break; }
+    }
+  } catch (e) { x.pfail = true; IDEAS.noAutoPrev = true; if (e.code === 'credits' || e.code === 'plan') accountModal(); else toast(e.message, true); }
+  x.pbusy = false; if (el()) el().innerHTML = ideaPrev(x, i);
+  document.querySelectorAll('[data-prev]').forEach((b) => (b.onclick = () => ideaPreview(IDEAS.result.ideas[+b.dataset.prev], +b.dataset.prev)));
+  renderFeed();
+}
+
+// ---------- Make it for me: plan → real images → video (with voice and captions) in one go ----------
+async function autoMake(box, idea) {
+  if (idea.mode === 'ad') { // ads have their own one-shot engine: script, creator, voice, captions
+    const mode = useIdea(idea, true);
+    if (!F().productId) return toast('Add your product with ＋, then press Generate. Kravitas makes the whole ad from there.');
+    F().approve = false; renderComposer(); return $('#go')?.click();
+  }
+  if (idea.mode === 'image') { useIdea(idea, true); return setTimeout(() => $('#go')?.click(), 400); } // a picture: make the final image straight away
+  const est = sbPlanCost() + SB_N * ((px().imageLite) || 6);
+  if (!confirm(`Make the whole video for you?\n\nKravitas plans ${SB_N} scenes, draws real pictures, then makes the video with voice and captions.\nAbout ✦ ${est} for the plan and pictures, and the video price is shown before it starts.`)) return;
+  await sbStart(box, idea, true);
+  const b = IDEAS.sb; if (!b) return;
+  b.auto = 'images'; renderSb(box);
+  for (let t = 0; t < 120 && b.panels.some((x) => x.busy); t++) await new Promise((r) => setTimeout(r, 1500));
+  if (IDEAS.sb !== b) return; // user left
+  b.step = 3; b.auto = 'video'; renderSb(box);
+  sbEstimate(); for (let t = 0; t < 20 && b.est == null; t++) await new Promise((r) => setTimeout(r, 500));
+  if (!confirm(`Pictures are ready. Make the video now for ✦ ${b.est ?? '…'}?\n\nPress Cancel to check the scenes and voices first.`)) { b.auto = null; return renderSb(box); }
+  b.auto = null; await sbMake(box);
+}
+
 function useIdea(x, quiet) {
   const mode = IDEA_MODE[x.mode] ? x.mode : 'ad';
   const f = { ...DEFAULTS[mode](), ...(x.settings || {}), prompt: x.prompt || '' };
@@ -352,10 +400,12 @@ function useIdea(x, quiet) {
   if (mode === 'ad') { f.lang = x.lang || IDEAS.lang; f.approve = true; }
   const refImg = (IDEAS.refs.find((r) => r.kind === 'image') || {}).url;
   if (refImg && (mode === 'image' || mode === 'video')) f.startImage = refImg; // the reference picture goes with the idea
+  if (x.preview && mode === 'video') f.startImage = x.preview; // the preview becomes the first frame
   if (f.productId && !productById(f.productId)) f.productId = null;
   if (f.friendId && !friendById(f.friendId)) f.friendId = null;
   if (mode === 'video') { const st = x.settings || {}; Object.assign(SHOT, { prompt: x.prompt || SHOT.prompt, camera: st.camera || SHOT.camera, style: st.style || SHOT.style, aspect: st.aspect || SHOT.aspect, friendId: f.friendId || undefined, job: null }); }
   S.forms[mode] = f; setMode(mode); renderAll(); window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (x.previewJob && mode === 'image') setTimeout(() => jobModal(x.previewJob), 300); // open the preview so it can be touched up
   if (quiet) return mode;
   toast(`Idea loaded into ${IDEA_MODE[mode]}. ${mode === 'ad' && !f.productId ? 'Add your product, then Generate.' : 'Hit Generate when ready.'}`);
 }
@@ -414,7 +464,7 @@ function renderIdeas(box) {
           <div><h3>Hooks</h3><ul class="hooks">${r.hooks.map((x, i) => `<li><span>${esc(x)}</span><button class="link" data-hook="${i}">Copy</button></li>`).join('')}</ul></div>
         </div>
         <div class="id-head"><h3>Ideas</h3><label class="id-all"><input type="checkbox" id="id-showall" ${IDEAS_DETAIL ? 'checked' : ''}> Show details and prompts</label></div>
-        <div class="id-ideas ${IDEAS_DETAIL ? 'all' : ''}">${r.ideas.map((x, i) => `<div class="id-idea"><div class="id-top"><span class="mtag">${IDEA_MODE[x.mode] || x.mode}</span><b>${esc(x.title)}</b></div><p class="why">${esc(x.why)}</p><div class="id-acts"><button class="btn pri" data-sb="${i}">🎞 Storyboard <small>✦ ${sbPlanCost()}</small></button><button class="btn" data-use="${i}" title="Open it in ${IDEA_MODE[x.mode] || 'the tool'} with this prompt filled in">Open in ${IDEA_MODE[x.mode] || 'tool'} →</button><button class="btn ghost id-tog" data-tog="${i}" aria-expanded="false">Details ▾</button></div><div class="id-more">${(x.panels || []).length ? `<ol class="id-panels">${x.panels.map((t, n) => `<li><b>${n + 1}</b><span>${esc(t)}</span></li>`).join('')}</ol>` : ''}<p class="id-lbl">Prompt it will use</p><p class="pr">${esc(x.prompt)}</p>${Object.keys(x.settings || {}).length ? `<div class="chips">${Object.entries(x.settings).map(([k, v]) => `<span class="chip">${esc(k)}: ${esc(v)}</span>`).join('')}</div>` : ''}<div class="id-acts"><button class="btn" data-sbreal="${i}" title="Draw real images for every panel straight away">🎞 Real images <small>✦ ${sbPlanCost() + SB_N * sbKeyCost() - SB_N * (px().imageSchnell || 1)}</small></button><button class="btn" data-gen="${i}" title="Open it ready and start making it. You confirm the cost first.">Generate now</button><button class="btn" data-save="${i}" ${IDEAS.savedIds.has(ideaKey(x)) ? 'disabled' : ''}>${IDEAS.savedIds.has(ideaKey(x)) ? '✓ Saved' : 'Save'}</button></div></div></div>`).join('')}</div>
+        <div class="id-ideas ${IDEAS_DETAIL ? 'all' : ''}">${r.ideas.map((x, i) => `<div class="id-idea"><div class="id-prev" id="idp-${i}">${ideaPrev(x, i)}</div><div class="id-top"><span class="mtag">${IDEA_MODE[x.mode] || x.mode}</span><b>${esc(x.title)}</b></div><p class="why">${esc(x.why)}</p><div class="id-acts"><button class="btn pri" data-auto="${i}" title="Kravitas plans it, makes the pictures, the video and the voice in one go. You can still edit everything after.">⚡ Make it for me</button><button class="btn" data-use="${i}" title="Open it in ${IDEA_MODE[x.mode] || 'the tool'} with this prompt filled in">Continue in ${IDEA_MODE[x.mode] || 'tool'} →</button></div><div class="id-links"><button class="link" data-sb="${i}">🎞 Storyboard it first <small>✦ ${sbPlanCost()}</small></button><button class="link id-tog" data-tog="${i}" aria-expanded="false">Details ▾</button></div><div class="id-more">${(x.panels || []).length ? `<ol class="id-panels">${x.panels.map((t, n) => `<li><b>${n + 1}</b><span>${esc(t)}</span></li>`).join('')}</ol>` : ''}<p class="id-lbl">Prompt it will use</p><p class="pr">${esc(x.prompt)}</p>${Object.keys(x.settings || {}).length ? `<div class="chips">${Object.entries(x.settings).map(([k, v]) => `<span class="chip">${esc(k)}: ${esc(v)}</span>`).join('')}</div>` : ''}<div class="id-acts"><button class="btn" data-sbreal="${i}" title="Draw real images for every panel straight away">🎞 Real images <small>✦ ${sbPlanCost() + SB_N * sbKeyCost() - SB_N * (px().imageSchnell || 1)}</small></button><button class="btn" data-gen="${i}" title="Open it ready and start making it. You confirm the cost first.">Generate now</button><button class="btn" data-save="${i}" ${IDEAS.savedIds.has(ideaKey(x)) ? 'disabled' : ''}>${IDEAS.savedIds.has(ideaKey(x)) ? '✓ Saved' : 'Save'}</button></div></div></div>`).join('')}</div>
         <div class="id-acts" style="margin-top:8px"><button class="btn" id="id-saveall">Save all ${r.ideas.length}</button></div>
         <div class="b-chat">
           <h3>Refine with Kravitas</h3>
@@ -489,6 +539,10 @@ function renderIdeas(box) {
   const sa = box.querySelector('#id-showall'); if (sa) sa.onchange = () => { IDEAS_DETAIL = sa.checked; try { localStorage.setItem('kv-ideas-detail', sa.checked ? '1' : '0'); } catch (e) {} box.querySelector('.id-ideas')?.classList.toggle('all', sa.checked); };
   box.querySelectorAll('[data-gen]').forEach((b) => (b.onclick = () => genIdea(r.ideas[+b.dataset.gen], b)));
   box.querySelectorAll('[data-use]').forEach((b) => (b.onclick = () => useIdea(r.ideas[+b.dataset.use])));
+  box.querySelectorAll('[data-prev]').forEach((b) => (b.onclick = () => ideaPreview(r.ideas[+b.dataset.prev], +b.dataset.prev)));
+  box.querySelectorAll('[data-auto]').forEach((b) => (b.onclick = () => autoMake(box, r.ideas[+b.dataset.auto])));
+  // the first idea gets a preview picture straight away, so you see where it is going before you pick a tool
+  if (r && r.ideas[0] && !r.ideas[0].preview && !r.ideas[0].pbusy && !r.ideas[0].pfail && !IDEAS.noAutoPrev) ideaPreview(r.ideas[0], 0);
   box.querySelectorAll('[data-save]').forEach((b) => (b.onclick = () => { saveIdea(r.ideas[+b.dataset.save], r.hooks?.[0]); b.disabled = true; b.textContent = '✓ Saved'; }));
   box.querySelectorAll('[data-hook]').forEach((b) => (b.onclick = () => { navigator.clipboard?.writeText(r.hooks[+b.dataset.hook]).then(() => toast('Hook copied')).catch(() => {}); }));
   on('#id-saveall', 'onclick', async (e) => { e.target.disabled = true; for (const x of r.ideas) if (!IDEAS.savedIds.has(ideaKey(x))) await saveIdea(x, r.hooks?.[0]); renderIdeas(box); });
@@ -638,7 +692,7 @@ function renderSb(box) {
     <div class="sb2-top"><button class="link" id="sb-back">← Back to ideas</button><span class="mtag">Storyboard</span></div>
     ${sbSteps(b)}
     <input class="in sb2-title" id="sb-title" maxlength="120" value="${esc(b.title)}" ${loading ? 'disabled' : ''}>
-    <p class="sb2-help sb2-stephelp">${SB_HELP[st]}</p>
+    <p class="sb2-help sb2-stephelp">${b.auto ? `⚡ Making it for you: ${b.auto === 'images' ? 'drawing the real pictures…' : 'getting the video ready…'}` : SB_HELP[st]}</p>
     ${loading ? `<div class="id-think"><i></i><b>Planning your shots and sketching them…</b><small>This takes about 20 seconds.</small></div>` : `
     <label class="l" data-s="1" for="sb-look">Same in every panel <small class="muted">· character, product, setting · edit it, then redraw</small></label>
     <textarea class="in" data-s="1" id="sb-look" rows="3" maxlength="800">${esc(b.look)}</textarea>

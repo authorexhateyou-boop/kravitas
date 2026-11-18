@@ -32,8 +32,8 @@ for(const [m,txt] of [['image','red hoodie product photo'],['video','slow orbit 
 }
 // image generate -> job appears
 await p.locator('.ws-rail [data-mode="image"]').first().evaluate(e=>e.click());await p.waitForTimeout(500);await p.fill('#prompt','red hoodie product photo');await p.waitForTimeout(600);
-const n0=await p.evaluate(()=>S.jobs.length);await p.click('#go');await p.waitForTimeout(3500);
-ok('image Generate creates a job',await p.evaluate(()=>S.jobs.length)>n0,n0+'->'+await p.evaluate(()=>S.jobs.length));
+const n0=await p.evaluate(()=>S.jobs[0]?.id);await p.click('#go');await p.waitForTimeout(3500);
+ok('image Generate creates a job',await p.evaluate(()=>S.jobs[0]?.id)!==n0);
 // ad without product => validation, not crash
 await p.evaluate(()=>setMode('ad'));await p.waitForTimeout(500);await p.click('#go');await p.waitForTimeout(500);
 ok('ad without product shows hint/menu',await p.locator('#pop:not([hidden]), .toast:visible, #toast:visible').count()>=1);

@@ -455,6 +455,31 @@ function voiceOptions() {
 const voiceSub = (k) => (k.startsWith('clone:') ? 'Cloned voice' : k.startsWith('mm:') ? 'MiniMax · natural Bahasa Melayu' : 'ElevenLabs');
 
 const REFS_OK = new Set(['ad', 'video', 'image']);
+// ---------- project: carries your work from one step to the next (Image → Video → Voice → Edit → Schedule) ----------
+const PROJ = (() => { try { return JSON.parse(localStorage.getItem('kv-proj') || '{}'); } catch { return {}; } })();
+const saveProj = () => { try { localStorage.setItem('kv-proj', JSON.stringify(PROJ)); } catch {} };
+const hasVoice = (j) => ['story', 'ugc', 'talk', 'edit'].includes(j.tool) || !!j.input?.audio;
+function nextLabel(j, o) {
+  if (o.type === 'image') return 'Next: make it move →';
+  if (o.type === 'video') return j.tool === 'edit' ? 'Next: post it →' : hasVoice(j) ? 'Next: final edit →' : 'Next: add a voice →';
+  if (o.type === 'audio') return PROJ.video ? 'Next: put it together →' : 'Next: add it to a video →';
+  return 'Next →';
+}
+function nextStep(j, o) {
+  closeModal();
+  if (o.type === 'image') { setMode('video'); F().startImage = o.url; renderAll(); return toast('Your picture is the first frame. Describe how it should move, then Generate.'); }
+  if (o.type === 'video' && j.tool === 'edit') return postModal(j, o);
+  if (o.type === 'video' && !hasVoice(j)) { PROJ.video = { url: o.url, title: (j.title || '').slice(0, 60), jobId: j.id }; saveProj(); setMode('voice'); renderAll(); return toast('Write what the voice should say. It will be added to your video in Edit.'); }
+  if (o.type === 'video') { EDIT.clips = []; editAdd(o, j); setMode('edit'); return renderAll(); }
+  if (o.type === 'audio') {
+    EDIT.clips = [];
+    if (PROJ.video) editAdd({ url: PROJ.video.url, type: 'video', label: PROJ.video.title });
+    Object.assign(EDIT, { voiceMode: 'library', voiceUrl: o.url, voiceText: j.text || j.input?.prompt || '' });
+    setMode('edit'); renderAll();
+    return toast(PROJ.video ? 'Your video and voice are in Edit. Check it, then Render.' : 'Your voice is in Edit. Add a clip with ＋, then Render.');
+  }
+}
+window.nextStep = nextStep;
 function renderComposer(keepFocus) {
   if (!$('#composer') || !MODES[S.mode]?.tool) return;
   const f = F();
@@ -494,7 +519,7 @@ function renderComposer(keepFocus) {
     ? `<div class="tagrow">${['[excited]', '[whispers]', '[laughs]', '[sighs]', '[curious]', '[sarcastic]', '[pause]'].map((t) => `<button class="tagchip" data-tag="${t}">${t}</button>`).join('')}</div>` : '';
   // template character: swap it for the user's own friend, and nudge them to add their product
   if (f.tplChar && f.friendId && (f.prompt || '').includes(f.tplChar)) { f.prompt = f.prompt.replace(f.tplChar, 'the person in the reference photo'); f.tplChar = null; }
-  const tplNote = '';
+  const tplNote = m === 'voice' && PROJ.video ? `<div class="projnote"><video src="${PROJ.video.url}#t=0.5" muted preload="metadata"></video><span>This voice will go on <b>${esc(PROJ.video.title || 'your video')}</b></span><button class="link" data-projclear>Not for this video</button></div>` : '';
   const extras = tplNote + (m === 'voice' ? tags : (refs.length || needs ? `<div class="refs">${refs.join('')}${needs}</div>` : '')) + hint;
   const ex = $('#cmp-extras'); if (ex) { ex.innerHTML = extras; ex.hidden = !extras; }
   $('#composer').innerHTML = `
@@ -780,6 +805,7 @@ function jobModal(id) {
         ${first?.type === 'image' && j.tool !== 'avatarGen' ? '<button class="ic" id="imgedit" title="Edit this image" aria-label="Edit this image"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4"/></svg></button>' : ''}
         ${media.some((o) => o.type === 'video') && j.status === 'done' ? '<button class="ic" id="post" title="Post or schedule" aria-label="Post or schedule"><svg viewBox="0 0 24 24"><path d="M12 15V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v5h14v-5"/></svg></button>' : ''}
         ${j.tool === 'avatarGen' && !j.input?.preset && j.status === 'done' ? '<button class="btn pri sm" id="saveav">＋ Save as friend</button>' : ''}
+        ${j.status === 'done' && first ? `<button class="ic-next" id="nextstep">${nextLabel(j, first)}</button>` : ''}
         <details class="sb2-more mm"><summary aria-label="More actions" title="More">⋯</summary><div>
           <button class="btn" id="favm">${favSet().has(j.id) ? '★ Saved' : '☆ Favourite'}</button>
           ${first?.type === 'video' ? '<button class="btn" id="contin" title="Start the next shot where this one ended">⏭ Continue from last frame</button>' : ''}
@@ -826,6 +852,7 @@ function jobModal(id) {
   });
   $('#saveav', m) && ($('#saveav', m).onclick = () => saveAvatarFromJob(j, cur));
   $('#toedit', m) && ($('#toedit', m).onclick = () => { const o = cur && cur.type !== 'audio' ? cur : media.find((x) => x.type !== 'audio'); closeModal(); editAdd(o, j); setMode('edit'); renderAll(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  $('#nextstep', m) && ($('#nextstep', m).onclick = () => nextStep(j, cur || first));
   $('#post', m) && ($('#post', m).onclick = () => postModal(j, cur?.type === 'video' ? cur : media.find((o) => o.type === 'video')));
   $('#board', m) && ($('#board', m).onclick = () => storyboardModal({ board: j.board, reuseFrom: j.id, input: j.input }));
   $('#cp', m) && ($('#cp', m).onclick = () => navigator.clipboard.writeText(j.text).then(() => toast('Copied'), () => toast('Select the text to copy it', true)));
@@ -1024,6 +1051,7 @@ document.addEventListener('click', async (e) => {
   }
   const tg = t.closest('[data-toggle]');
   if (tg) { F()[tg.dataset.toggle] = !F()[tg.dataset.toggle]; return renderComposer(); }
+  if (t.closest('[data-projclear]')) { delete PROJ.video; saveProj(); renderComposer(); return; }
   if (t.closest('[data-tplclear]')) { const f = F(); f.prompt = (f.prompt || '').replace(f.tplChar, 'a person'); f.tplChar = null; renderComposer(); return; }
   const at = t.closest('[data-attach]');
   if (at) return attachMenu(at);
