@@ -4,6 +4,7 @@
 //   node scripts/make-template-covers.mjs --video         -> also a 5s looping clip from each still (public/tpl/<id>.mp4)
 //   node scripts/make-template-covers.mjs drama review    -> only these templates
 //   node scripts/make-template-covers.mjs --force ...     -> redo even if the file exists
+//   node scripts/make-template-covers.mjs --nine --video  -> just the nine landing-page cards, with clips
 //
 // Cost (rough): still = Nano Banana 2 ~ $0.04-0.08 each; clip = MiniMax H3 Turbo 5s ~ $0.08 each. All 19 with video ~ $3.
 // Edit the cast or cover prompts in public/templates.js (CAST and COVER), then run again with --force for that id.
@@ -14,7 +15,9 @@ if (fs.existsSync('.env')) for (const l of fs.readFileSync('.env', 'utf8').split
 const KEY = process.env.FAL_KEY; if (!KEY) { console.error('No FAL_KEY in .env'); process.exit(1); }
 
 const args = process.argv.slice(2), VIDEO = args.includes('--video'), FORCE = args.includes('--force');
-const only = args.filter((a) => !a.startsWith('--'));
+// --nine = the nine cards on the landing page ("Nine things, one studio")
+const NINE = ['review', 'motion', 'affil', 'drama', 'orbit', 'story', 'pack', 'thumb', 'bm'];
+const only = args.includes('--nine') ? NINE : args.filter((a) => !a.startsWith('--'));
 
 // load the template list exactly as the app sees it
 const win = {}; const ctx = { window: win, document: { addEventListener() {} }, console };
